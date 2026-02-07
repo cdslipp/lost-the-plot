@@ -26,6 +26,10 @@
 					class="transition hover:text-stone-700 dark:hover:text-stone-300">GitHub</a
 				>
 				<a
+					href="https://github.com/sponsors/cdslipp"
+					class="transition hover:text-stone-700 dark:hover:text-stone-300">Sponsor</a
+				>
+				<a
 					href="https://github.com/cdslipp/stageplotter/blob/main/LICENSE"
 					class="transition hover:text-stone-700 dark:hover:text-stone-300">License</a
 				>

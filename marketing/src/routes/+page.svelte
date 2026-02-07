@@ -317,15 +317,14 @@
 				<h2 class="text-2xl font-bold tracking-tight sm:text-3xl">Want the desktop app?</h2>
 				<SketchyLineShort />
 				<p class="mt-6 text-stone-500 dark:text-stone-400">
-					Same app, native wrapper. Faster startup, file system access, no browser tab. One-time
-					purchase, lifetime updates.
+					Same app, native wrapper. Faster startup, file system access, no browser tab. Also free.
 				</p>
 				<div class="mt-8">
 					<a
 						href="/download"
 						class="inline-flex items-center rounded-lg border-2 border-stone-300 px-6 py-3 font-sans text-sm font-medium transition hover:border-stone-400 hover:bg-stone-100 dark:border-stone-700 dark:hover:border-stone-600 dark:hover:bg-stone-800"
 					>
-						Download the app &mdash; $25 CAD
+						Download the desktop app
 					</a>
 				</div>
 			</div>

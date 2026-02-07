@@ -29,7 +29,9 @@
 		revision_date: new Date().toISOString().split('T')[0],
 		canvas: { width: 1100, height: 850 },
 		items: [] as any[],
-		musicians: [] as any[]
+		musicians: [] as any[],
+		stage_width: 24,
+		stage_depth: 16
 	});
 
 	// Persist reactive state to SQLite
@@ -37,8 +39,8 @@
 		if (!db.isReady) return;
 		try {
 			await db.run(
-				`INSERT OR REPLACE INTO stage_plots (id, name, revision_date, canvas_width, canvas_height, metadata, band_id)
-				 VALUES (?, ?, ?, ?, ?, ?, ?)`,
+				`INSERT OR REPLACE INTO stage_plots (id, name, revision_date, canvas_width, canvas_height, metadata, band_id, stage_width, stage_depth)
+				 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 				[
 					plotId,
 					stagePlot.plot_name,
@@ -46,7 +48,9 @@
 					stagePlot.canvas.width,
 					stagePlot.canvas.height,
 					JSON.stringify({ items: $state.snapshot(stagePlot.items), musicians: $state.snapshot(stagePlot.musicians) }),
-					bandId
+					bandId,
+					stagePlot.stage_width,
+					stagePlot.stage_depth
 				]
 			);
 		} catch (e) {
@@ -65,6 +69,8 @@
 				canvas_width: number;
 				canvas_height: number;
 				metadata: string;
+				stage_width: number | null;
+				stage_depth: number | null;
 			}>('SELECT * FROM stage_plots WHERE id = ?', [plotId]);
 
 			if (row) {
@@ -72,6 +78,8 @@
 				stagePlot.revision_date = row.revision_date;
 				stagePlot.canvas.width = row.canvas_width;
 				stagePlot.canvas.height = row.canvas_height;
+				stagePlot.stage_width = row.stage_width ?? 24;
+				stagePlot.stage_depth = row.stage_depth ?? 16;
 				if (row.metadata) {
 					try {
 						const meta = JSON.parse(row.metadata);
@@ -229,8 +237,14 @@
 		}
 	});
 
+	// Persist stage dimension changes
+	$effect(() => {
+		stagePlot.stage_width;
+		stagePlot.stage_depth;
+		write();
+	});
+
 	let placingItem = $state<any>(null);
-	let showHelp = $state(false);
 	let newMusician = $state({ name: '', instrument: '' });
 	let selecto: any;
 	let justSelected = false;
@@ -448,15 +462,48 @@
 
 	function duplicateItem(sourceItem: any, overrides: any = {}) {
 		if (!sourceItem) return;
-		const baseCopy = { ...sourceItem };
-		const newItem = { ...baseCopy, ...overrides, id: Date.now() };
-		if (overrides.x === undefined) {
+		const newItem = {
+			...sourceItem,
+			id: Date.now(),
+			position: { ...sourceItem.position },
+			itemData: sourceItem.itemData ? { ...sourceItem.itemData } : undefined,
+			...overrides
+		};
+		if (!overrides.position) {
 			newItem.position.x = Math.min(sourceItem.position.x + 20, canvasWidth - sourceItem.position.width);
-		}
-		if (overrides.y === undefined) {
 			newItem.position.y = Math.min(sourceItem.position.y + 20, canvasHeight - sourceItem.position.height);
 		}
 		stagePlot.items.push(newItem);
+		write();
+	}
+
+	function moveToFront(itemId: number) {
+		const idx = stagePlot.items.findIndex((i: any) => i.id === itemId);
+		if (idx === -1 || idx === stagePlot.items.length - 1) return;
+		const [item] = stagePlot.items.splice(idx, 1);
+		stagePlot.items.push(item);
+		write();
+	}
+
+	function moveToBack(itemId: number) {
+		const idx = stagePlot.items.findIndex((i: any) => i.id === itemId);
+		if (idx <= 0) return;
+		const [item] = stagePlot.items.splice(idx, 1);
+		stagePlot.items.unshift(item);
+		write();
+	}
+
+	function moveForward(itemId: number) {
+		const idx = stagePlot.items.findIndex((i: any) => i.id === itemId);
+		if (idx === -1 || idx === stagePlot.items.length - 1) return;
+		[stagePlot.items[idx], stagePlot.items[idx + 1]] = [stagePlot.items[idx + 1], stagePlot.items[idx]];
+		write();
+	}
+
+	function moveBackward(itemId: number) {
+		const idx = stagePlot.items.findIndex((i: any) => i.id === itemId);
+		if (idx <= 0) return;
+		[stagePlot.items[idx - 1], stagePlot.items[idx]] = [stagePlot.items[idx], stagePlot.items[idx - 1]];
 		write();
 	}
 
@@ -502,7 +549,7 @@
 			offsetX: (event as any).offsetX,
 			offsetY: (event as any).offsetY
 		}));
-		event.dataTransfer!.effectAllowed = 'move';
+		event.dataTransfer!.effectAllowed = 'copyMove';
 		(event.currentTarget as HTMLElement).style.opacity = '0.5';
 	}
 
@@ -514,11 +561,16 @@
 		const item = stagePlot.items.find((i: any) => i.id === data.id);
 		if (item && canvasEl) {
 			const rect = canvasEl.getBoundingClientRect();
-			const x = event.clientX - rect.left - data.offsetX;
-			const y = event.clientY - rect.top - data.offsetY;
-			item.position.x = Math.max(0, Math.min(x, canvasWidth - item.position.width));
-			item.position.y = Math.max(0, Math.min(y, canvasHeight - item.position.height));
-			write();
+			const x = Math.max(0, Math.min(event.clientX - rect.left - data.offsetX, canvasWidth - item.position.width));
+			const y = Math.max(0, Math.min(event.clientY - rect.top - data.offsetY, canvasHeight - item.position.height));
+
+			if (isAltPressed) {
+				duplicateItem(item, { position: { ...item.position, x, y } });
+			} else {
+				item.position.x = x;
+				item.position.y = y;
+				write();
+			}
 		}
 	}
 
@@ -660,7 +712,6 @@
 			<EditorToolbar
 				bind:title={stagePlot.plot_name}
 				revisionDate={stagePlot.revision_date}
-				bind:showHelp
 				onAddItem={openAddMenu}
 				onImportComplete={handleImportComplete}
 				onExportPdf={handleExportPdf}
@@ -674,19 +725,6 @@
 				{getItemPosition}
 				onTitleChange={() => write()}
 			/>
-			{#if showHelp}
-				<div class="mb-4 rounded-xl border border-border-primary bg-surface p-4 shadow-sm">
-					<h3 class="mb-2 font-semibold text-text-primary">How to use</h3>
-					<ul class="space-y-1 text-sm text-text-secondary">
-						<li>• Click Add Item to add an item</li>
-						<li>• Click on canvas to place the item</li>
-						<li>• Drag items to reposition them</li>
-						<li>• Click x to delete an item</li>
-						<li>• Click on an item to edit its properties</li>
-						<li>• Press 'Escape' to cancel placing</li>
-					</ul>
-				</div>
-			{/if}
 
 			<!-- Canvas Card -->
 			<div class="border border-border-primary bg-surface p-4 shadow-sm">
@@ -754,6 +792,19 @@
 								Duplicate
 							</ContextMenu.Item>
 							<ContextMenu.Separator class="bg-muted -mx-1 my-1 block h-px" />
+							<ContextMenu.Item onSelect={() => moveToFront(item.id)} class="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700">
+								Bring to Front
+							</ContextMenu.Item>
+							<ContextMenu.Item onSelect={() => moveForward(item.id)} class="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700">
+								Bring Forward
+							</ContextMenu.Item>
+							<ContextMenu.Item onSelect={() => moveBackward(item.id)} class="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700">
+								Send Backward
+							</ContextMenu.Item>
+							<ContextMenu.Item onSelect={() => moveToBack(item.id)} class="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700">
+								Send to Back
+							</ContextMenu.Item>
+							<ContextMenu.Separator class="bg-muted -mx-1 my-1 block h-px" />
 							<ContextMenu.Item onSelect={() => deleteItem(item.id)} class="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-red-50 dark:hover:bg-red-600/30">
 								Delete
 							</ContextMenu.Item>
@@ -801,6 +852,8 @@
 					bind:title={stagePlot.plot_name}
 					bind:lastModified={stagePlot.revision_date}
 					bind:showZones
+					bind:stageWidth={stagePlot.stage_width}
+					bind:stageDepth={stagePlot.stage_depth}
 					onUpdateItem={updateItemProperty}
 					onAddMusician={(name: string, instrument: string) => {
 						newMusician.name = name;

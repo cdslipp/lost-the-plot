@@ -27,6 +27,8 @@
 		title = $bindable<string>(''),
 		lastModified = $bindable<string>(''),
 		showZones = $bindable(true),
+		stageWidth = $bindable(24),
+		stageDepth = $bindable(16),
 		onUpdateItem = $bindable<
 			((itemId: number, property: string, value: string) => void) | undefined
 		>(undefined),
@@ -199,17 +201,6 @@
 </script>
 
 <div class="flex h-full flex-col">
-	<!-- Zone visibility toggle -->
-	<div class="mb-4 flex items-center justify-between">
-		<span class="text-xs text-text-secondary">Stage Zones</span>
-		<button
-			onclick={() => (showZones = !showZones)}
-			class="flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs transition {showZones ? 'bg-stone-900 text-white dark:bg-stone-100 dark:text-stone-900' : 'bg-muted text-text-secondary hover:bg-surface-hover'}"
-		>
-			{showZones ? 'Visible' : 'Hidden'}
-		</button>
-	</div>
-
 	{#if selectedItemsData.length === 0}
 		<!-- Document Properties -->
 		<div class="flex flex-1 flex-col">
@@ -447,6 +438,47 @@
 			</div>
 		</div>
 	{/if}
+
+	<!-- Stage Settings (bottom of panel) -->
+	<div class="mt-auto border-t border-border-primary pt-4 space-y-3">
+		<div>
+			<label class="mb-1 block text-xs text-text-secondary">Stage Size (feet)</label>
+			<div class="flex gap-2">
+				<input
+					type="number"
+					bind:value={stageWidth}
+					min="1"
+					placeholder="Width"
+					class="w-full rounded-lg border border-border-primary bg-surface px-2 py-1.5 text-sm text-text-primary focus:border-stone-500 focus:ring-2 focus:ring-stone-500"
+				/>
+				<span class="self-center text-xs text-text-tertiary">x</span>
+				<input
+					type="number"
+					bind:value={stageDepth}
+					min="1"
+					placeholder="Depth"
+					class="w-full rounded-lg border border-border-primary bg-surface px-2 py-1.5 text-sm text-text-primary focus:border-stone-500 focus:ring-2 focus:ring-stone-500"
+				/>
+			</div>
+		</div>
+
+		<button
+			class="w-full rounded-lg border border-dashed border-border-primary px-3 py-2 text-sm text-text-tertiary"
+			disabled
+		>
+			+ Add Riser (coming soon)
+		</button>
+
+		<div class="flex items-center justify-between">
+			<span class="text-xs text-text-secondary">Stage Zones</span>
+			<button
+				onclick={() => (showZones = !showZones)}
+				class="flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs transition {showZones ? 'bg-stone-900 text-white dark:bg-stone-100 dark:text-stone-900' : 'bg-muted text-text-secondary hover:bg-surface-hover'}"
+			>
+				{showZones ? 'Visible' : 'Hidden'}
+			</button>
+		</div>
+	</div>
 </div>
 
 {#if showDrumMicModal}

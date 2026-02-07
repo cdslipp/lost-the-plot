@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { APP_NAME, APP_URL, APP_VERSION, LEMON_SQUEEZY_CHECKOUT_URL } from '$lib/config';
+	import { APP_NAME, APP_URL, APP_VERSION, GITHUB_RELEASES, GITHUB_SPONSORS_URL } from '$lib/config';
 	import SketchyLine from '$lib/components/SketchyLine.svelte';
 	import SketchyLineShort from '$lib/components/SketchyLineShort.svelte';
 	import Checkmark from '$lib/components/Checkmark.svelte';
@@ -15,7 +15,6 @@
 		{
 			id: 'mac' as const,
 			name: 'macOS',
-			icon: '&#63743;',
 			format: '.dmg',
 			requirements: 'macOS 11 (Big Sur) or later',
 			instructions: [
@@ -27,7 +26,6 @@
 		{
 			id: 'windows' as const,
 			name: 'Windows',
-			icon: '&#xEDA1;',
 			format: '.msi',
 			requirements: 'Windows 10 or later',
 			instructions: [
@@ -39,7 +37,6 @@
 		{
 			id: 'linux' as const,
 			name: 'Linux',
-			icon: '&#x1F427;',
 			format: '.AppImage',
 			requirements: 'Ubuntu 20.04+, Fedora 36+, or equivalent',
 			instructions: [
@@ -77,7 +74,7 @@
 				Download {APP_NAME}
 			</h1>
 			<p class="mt-4 text-lg text-stone-500 dark:text-stone-400">
-				Native desktop app for macOS, Windows, and Linux. One-time purchase, lifetime updates.
+				Native desktop app for macOS, Windows, and Linux. Free and open source.
 			</p>
 			<p class="mt-2 font-sans text-sm text-stone-400 dark:text-stone-500">
 				Current version: {APP_VERSION}
@@ -137,10 +134,10 @@
 					</div>
 
 					<a
-						href={LEMON_SQUEEZY_CHECKOUT_URL}
-						class="lemonsqueezy-button mt-6 block rounded-lg bg-stone-900 px-4 py-2.5 text-center font-sans text-sm font-medium text-white transition hover:bg-stone-800 dark:bg-stone-100 dark:text-stone-900 dark:hover:bg-stone-200"
+						href="{GITHUB_RELEASES}/latest"
+						class="mt-6 block rounded-lg bg-stone-900 px-4 py-2.5 text-center font-sans text-sm font-medium text-white transition hover:bg-stone-800 dark:bg-stone-100 dark:text-stone-900 dark:hover:bg-stone-200"
 					>
-						Buy &amp; Download &mdash; $25 CAD
+						Download {platform.format}
 					</a>
 
 					<button
@@ -175,7 +172,7 @@
 			<h2 class="text-center text-2xl font-bold tracking-tight">What you get</h2>
 			<SketchyLineShort />
 			<ul class="mt-8 space-y-3">
-				{#each ['Everything in the free browser version', 'Native desktop app (macOS, Windows, Linux)', 'Faster startup and performance', 'File system integration', 'Lifetime updates — pay once, get every future version', 'Support ongoing development'] as benefit (benefit)}
+				{#each ['Everything in the browser version', 'Native desktop app (macOS, Windows, Linux)', 'Faster startup and performance', 'File system integration', 'Free and open source — always'] as benefit (benefit)}
 					<li class="flex items-start gap-3 font-sans text-sm text-stone-600 dark:text-stone-300">
 						<Checkmark />
 						{benefit}
@@ -187,19 +184,25 @@
 
 	<SketchyLine />
 
-	<!-- Already purchased -->
+	<!-- Support development -->
 	<section class="px-6 py-16">
 		<div class="mx-auto max-w-2xl text-center">
-			<h2 class="text-xl font-bold">Already purchased?</h2>
+			<h2 class="text-xl font-bold">Support development</h2>
 			<p class="mt-3 font-sans text-sm text-stone-500 dark:text-stone-400">
-				Check your email for the license key and download link from Lemon Squeezy. You can also
-				re-download from your
-				<a
-					href="https://app.lemonsqueezy.com/my-orders"
-					class="underline transition hover:text-stone-800 dark:hover:text-stone-200"
-					>order history</a
-				>.
+				{APP_NAME} is free and open source. If it's useful to you and you'd like to support
+				ongoing development, you can sponsor the project on GitHub.
 			</p>
+			<a
+				href={GITHUB_SPONSORS_URL}
+				class="mt-6 inline-flex items-center gap-2 rounded-lg border-2 border-stone-200 px-6 py-3 font-sans text-sm font-medium transition hover:border-stone-300 hover:bg-stone-50 dark:border-stone-700 dark:hover:border-stone-600 dark:hover:bg-stone-800"
+			>
+				<svg class="h-4 w-4" viewBox="0 0 16 16" fill="currentColor">
+					<path
+						d="M4.25 2.5c-1.336 0-2.75 1.164-2.75 3 0 2.15 1.58 4.144 3.365 5.682A20.565 20.565 0 008 13.393a20.561 20.561 0 003.135-2.211C12.92 9.644 14.5 7.65 14.5 5.5c0-1.836-1.414-3-2.75-3-1.373 0-2.609.986-3.029 2.456a.75.75 0 01-1.442 0C6.859 3.486 5.623 2.5 4.25 2.5z"
+					/>
+				</svg>
+				Sponsor on GitHub
+			</a>
 		</div>
 	</section>
 
@@ -208,10 +211,10 @@
 	<!-- Free alternative -->
 	<section class="px-6 py-16">
 		<div class="mx-auto max-w-2xl text-center">
-			<h2 class="text-xl font-bold">Or use the free browser version</h2>
+			<h2 class="text-xl font-bold">Or use the browser version</h2>
 			<SketchyLineShort />
 			<p class="mt-4 font-sans text-sm text-stone-500 dark:text-stone-400">
-				The browser version has every feature. It's free, works offline, and requires no install.
+				The browser version has every feature. It works offline and requires no install.
 			</p>
 			<a
 				href={APP_URL}

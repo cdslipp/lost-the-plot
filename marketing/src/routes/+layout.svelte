@@ -18,11 +18,11 @@
 	}
 
 	const navLinks = [
-		{ href: '/pricing', label: 'Pricing' },
 		{ href: '/download', label: 'Download' },
 		{ href: '/changelog', label: 'Changelog' },
 		{ href: '/gear-library', label: 'Gear Library' },
-		{ href: 'https://github.com/cdslipp/stageplotter', label: 'GitHub' }
+		{ href: 'https://github.com/cdslipp/stageplotter', label: 'GitHub' },
+		{ href: 'https://github.com/sponsors/cdslipp', label: 'Support' }
 	];
 </script>
 
