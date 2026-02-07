@@ -1,0 +1,131 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+
+/**
+ * Core types for StagePlotter, derived from the JSON schemas in static/specs/.
+ */
+
+export interface Band {
+	id: string;
+	name: string;
+	created_at?: string;
+	updated_at?: string;
+}
+
+export interface StagePlot {
+	version: string;
+	type: 'stage_plot';
+	plot_name: string;
+	revision_date: string;
+	canvas: CanvasSpec;
+	stage?: StageSpec;
+	items: StagePlotItem[];
+	musicians: Musician[];
+	metadata?: Record<string, unknown>;
+	band_id?: string;
+	event_name?: string;
+	event_date?: string;
+	event_time?: string;
+	venue?: string;
+}
+
+export interface CanvasSpec {
+	format?: 'letter';
+	orientation?: 'landscape' | 'portrait';
+	width: number;
+	height: number;
+	dpi?: number;
+}
+
+export interface StageSpec {
+	x: number;
+	y: number;
+	width: number;
+	height: number;
+	margins?: {
+		top: number;
+		right: number;
+		bottom: number;
+		left: number;
+	};
+}
+
+export interface StagePlotItem {
+	id: number;
+	name: string;
+	type: string;
+	category?: string;
+	currentVariant?: string;
+	position: ItemPosition;
+	channel: string;
+	musician: string;
+	itemData?: ItemData;
+	size?: string; // For stage decks
+}
+
+export interface ItemPosition {
+	x: number;
+	y: number;
+	width: number;
+	height: number;
+	zone?: string;
+	relativeX?: number;
+	relativeY?: number;
+}
+
+export interface ItemData {
+	name: string;
+	item_type?: string;
+	type?: string;
+	category?: string;
+	image?: string;
+	variants?: Record<string, string>;
+	path?: string;
+	keywords?: string[];
+	default_inputs?: DefaultInput[];
+}
+
+export interface DefaultInput {
+	name: string;
+	ch?: number;
+	source?: string;
+}
+
+export interface Musician {
+	id: number;
+	name: string;
+	instrument: string;
+}
+
+export type MemberType = 'performer' | 'crew' | 'management' | 'other';
+export type MemberStatus = 'permanent' | 'occasional' | 'temporary' | 'inactive';
+
+export interface Person {
+	id?: number;
+	band_id?: string;
+	musician_id?: number;
+	name: string;
+	role?: string;
+	pronouns?: string;
+	phone?: string;
+	email?: string;
+	member_type?: MemberType;
+	status?: MemberStatus;
+}
+
+export interface Input {
+	id: string;
+	name: string;
+	short_name?: string;
+	color?: string;
+	channel_id?: string;
+	linked_to?: string;
+	ideal_device?: string;
+	stand?: string;
+	phantom_power?: boolean;
+}
+
+export interface Output {
+	id: string;
+	name: string;
+	type?: 'wedge' | 'iem_stereo' | 'iem_mono' | 'sidefill' | 'sub';
+}

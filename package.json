@@ -1,0 +1,35 @@
+{
+	"name": "stageplotter",
+	"private": true,
+	"version": "0.1.0",
+	"type": "module",
+	"workspaces": [
+		"app",
+		"app/desktop",
+		"marketing",
+		"packages/*"
+	],
+	"scripts": {
+		"dev": "cd app && bun run dev",
+		"dev:desktop": "cd app && bun run dev:desktop",
+		"dev:marketing": "cd marketing && bun run dev",
+		"build": "cd app && bun run build",
+		"build:desktop": "cd app && bun run build:desktop",
+		"build:marketing": "cd marketing && bun run build",
+		"check": "cd app && bun run check",
+		"lint": "prettier --check . && eslint .",
+		"format": "prettier --write ."
+	},
+	"devDependencies": {
+		"@eslint/compat": "^1.4.0",
+		"@eslint/js": "^9.39.1",
+		"eslint": "^9.39.1",
+		"eslint-config-prettier": "^10.1.8",
+		"eslint-plugin-svelte": "^3.13.1",
+		"globals": "^16.5.0",
+		"prettier": "^3.7.4",
+		"prettier-plugin-svelte": "^3.4.0",
+		"prettier-plugin-tailwindcss": "^0.7.2",
+		"typescript-eslint": "^8.48.1"
+	}
+}
