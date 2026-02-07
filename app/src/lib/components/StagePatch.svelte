@@ -30,7 +30,7 @@
 	// Separate channel modes for inputs and outputs
 	let inputChannelMode = $state<ChannelMode>(48);
 	let outputChannelMode = $state<ChannelMode>(16);
-	const NUM_COLUMNS = 4;
+	const NUM_COLUMNS = 6;
 	
 	// Dynamic calculations for inputs
 	const TOTAL_INPUT_CHANNELS = $derived(inputChannelMode);
@@ -215,7 +215,7 @@ $effect(() => {
 					</div>
 				{:else}
 					<!-- Excel-like 4-column grid -->
-					<div class="grid grid-cols-4 gap-0 border border-border-primary">
+					<div class="grid grid-cols-6 gap-0 border border-border-primary">
 			{#each inputColumns as col, colIndex}
 				<div class="border-r border-border-primary last:border-r-0">
 					{#each col as channelNum}
@@ -302,7 +302,7 @@ $effect(() => {
 					</div>
 				{:else}
 					<!-- Excel-like 4-column grid for outputs -->
-					<div class="grid grid-cols-4 gap-0 border border-border-primary">
+					<div class="grid grid-cols-6 gap-0 border border-border-primary">
 			{#each outputColumns as col}
 				<div class="border-r border-border-primary last:border-r-0">
 					{#each col as channelNum}

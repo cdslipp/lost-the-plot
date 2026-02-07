@@ -14,6 +14,7 @@
 	import EditorToolbar from '$lib/components/EditorToolbar.svelte';
 	import MusicianPanel from '$lib/components/MusicianPanel.svelte';
 	import CanvasOverlay from '$lib/components/CanvasOverlay.svelte';
+	import { exportToPdf } from '$lib/utils/pdf';
 
 	let plotId = $derived($page.params.plotId);
 	let bandId = $derived($page.params.bandId);
@@ -617,6 +618,16 @@
 		write();
 	}
 
+	async function handleExportPdf() {
+		if (!canvasEl) return;
+		await exportToPdf({
+			plotName: stagePlot.plot_name,
+			canvasEl,
+			items: stagePlot.items,
+			musicians: stagePlot.musicians
+		});
+	}
+
 	function handleImportComplete() {
 		clearSelections();
 		placingItem = null;
@@ -628,24 +639,6 @@
 <svelte:window onkeydown={handleGlobalKeydown} />
 
 <div class="flex flex-col gap-6">
-	<!-- Title + Actions -->
-	<EditorToolbar
-		bind:title={stagePlot.plot_name}
-		revisionDate={stagePlot.revision_date}
-		bind:showZones
-		bind:showHelp
-		onAddItem={openAddMenu}
-		onImportComplete={handleImportComplete}
-		bind:items={stagePlot.items}
-		bind:musicians={stagePlot.musicians}
-		bind:canvasWidth
-		bind:canvasHeight
-		bind:lastModified={stagePlot.revision_date}
-		{getItemZone}
-		{getItemPosition}
-		onTitleChange={() => write()}
-	/>
-
 	<!-- Main content area with sidebars -->
 	<div class="flex flex-col gap-6 lg:flex-row lg:items-start">
 		<!-- Left Sidebar: Musicians -->
@@ -663,6 +656,24 @@
 
 		<!-- Main Content -->
 		<div class="flex-1" bind:this={stagePlotContainer}>
+			<!-- Title + Actions -->
+			<EditorToolbar
+				bind:title={stagePlot.plot_name}
+				revisionDate={stagePlot.revision_date}
+				bind:showHelp
+				onAddItem={openAddMenu}
+				onImportComplete={handleImportComplete}
+				onExportPdf={handleExportPdf}
+				backHref={'/bands/' + bandId}
+				bind:items={stagePlot.items}
+				bind:musicians={stagePlot.musicians}
+				bind:canvasWidth
+				bind:canvasHeight
+				bind:lastModified={stagePlot.revision_date}
+				{getItemZone}
+				{getItemPosition}
+				onTitleChange={() => write()}
+			/>
 			{#if showHelp}
 				<div class="mb-4 rounded-xl border border-border-primary bg-surface p-4 shadow-sm">
 					<h3 class="mb-2 font-semibold text-text-primary">How to use</h3>
@@ -777,17 +788,6 @@
 				</div>
 			</div>
 
-			<!-- Stage Patch Component -->
-			<div class="mt-6">
-				<StagePatch
-					items={stagePlot.items}
-					onUpdateItem={handlePatchItemUpdate}
-					onReorderPatch={handlePatchReorder}
-					onSelectItem={openItemEditor}
-					onAddItem={handlePatchAddItem}
-					onRemoveItem={handlePatchRemoveItem}
-				/>
-			</div>
 		</div>
 
 		<!-- Right Sidebar -->
@@ -800,6 +800,7 @@
 					bind:musicians={stagePlot.musicians}
 					bind:title={stagePlot.plot_name}
 					bind:lastModified={stagePlot.revision_date}
+					bind:showZones
 					onUpdateItem={updateItemProperty}
 					onAddMusician={(name: string, instrument: string) => {
 						newMusician.name = name;
@@ -813,6 +814,16 @@
 			</div>
 		</div>
 	</div>
+
+	<!-- Stage Patch Component — full width -->
+	<StagePatch
+		items={stagePlot.items}
+		onUpdateItem={handlePatchItemUpdate}
+		onReorderPatch={handlePatchReorder}
+		onSelectItem={openItemEditor}
+		onAddItem={handlePatchAddItem}
+		onRemoveItem={handlePatchRemoveItem}
+	/>
 </div>
 
 

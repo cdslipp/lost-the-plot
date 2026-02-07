@@ -14,3 +14,5 @@ export * as migration001 from './migrations/001_initial.js';
 export * as migration002 from './migrations/002_add_bands.js';
 export * as migration003 from './migrations/003_add_persons.js';
 export * as migration004 from './migrations/004_add_person_meta.js';
+export * as migration005 from './migrations/005_add_songs.js';
+export * as migration006 from './migrations/006_add_gigs_setlists.js';

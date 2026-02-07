@@ -1,5 +1,8 @@
 <script lang="ts">
 	import { APP_NAME, APP_URL } from '$lib/config';
+	import SketchyLine from '$lib/components/SketchyLine.svelte';
+	import SketchyLineShort from '$lib/components/SketchyLineShort.svelte';
+	import Footer from '$lib/components/Footer.svelte';
 
 	let scrollY = $state(0);
 
@@ -32,96 +35,80 @@
 
 	const decorativeItems: Array<{
 		src: string;
-		top: number;
+		initialY: number;
 		left?: string;
 		right?: string;
 		rotate: number;
 		size: number;
 		speed: number;
 	}> = [
-		// Left side
-		{ src: '/images/drumkit.png', top: 80, left: '3%', rotate: -8, size: 130, speed: 0.1 },
-		{ src: '/images/tabla.png', top: 280, left: '1%', rotate: -4, size: 75, speed: 0.2 },
-		{ src: '/images/fender.png', top: 520, left: '5%', rotate: 3, size: 85, speed: 0.15 },
-		{ src: '/images/banjo.png', top: 780, left: '2%', rotate: 6, size: 75, speed: 0.25 },
-		{ src: '/images/vox.png', top: 1050, left: '4%', rotate: 4, size: 95, speed: 0.08 },
-		{ src: '/images/cello.png', top: 1350, left: '2%', rotate: -3, size: 110, speed: 0.18 },
-		{ src: '/images/steelpan.png', top: 1600, left: '6%', rotate: 5, size: 80, speed: 0.28 },
-		{ src: '/images/boom57.png', top: 1900, left: '3%', rotate: -6, size: 85, speed: 0.12 },
-		{ src: '/images/marshall412.png', top: 2200, left: '4%', rotate: -2, size: 90, speed: 0.22 },
-		{ src: '/images/harp.png', top: 2500, left: '1%', rotate: 3, size: 100, speed: 0.08 },
-		{ src: '/images/guitaronstand.png', top: 2800, left: '5%', rotate: -4, size: 95, speed: 0.2 },
-		{ src: '/images/tambourine.png', top: 3100, left: '3%', rotate: 7, size: 65, speed: 0.3 },
-		// Right side
-		{ src: '/images/acoustic.png', top: 60, right: '5%', rotate: 15, size: 85, speed: 0.15 },
-		{ src: '/images/keytar.png', top: 350, right: '2%', rotate: -5, size: 110, speed: 0.22 },
-		{ src: '/images/congas.png', top: 650, right: '4%', rotate: -3, size: 85, speed: 0.08 },
-		{ src: '/images/violin.png', top: 900, right: '3%', rotate: 8, size: 80, speed: 0.25 },
-		{ src: '/images/lapsteel.png', top: 1200, right: '3%', rotate: -6, size: 110, speed: 0.12 },
-		{ src: '/images/ampeg.png', top: 1500, right: '5%', rotate: 4, size: 90, speed: 0.2 },
-		{ src: '/images/wireless_mic.png', top: 1750, right: '2%', rotate: -8, size: 75, speed: 0.28 },
-		{ src: '/images/tuba.png', top: 2050, right: '4%', rotate: 3, size: 100, speed: 0.1 },
-		{ src: '/images/keystand.png', top: 2350, right: '6%', rotate: -5, size: 85, speed: 0.18 },
-		{ src: '/images/subwoofer.png', top: 2650, right: '3%', rotate: 2, size: 90, speed: 0.22 },
-		{ src: '/images/mic.png', top: 2900, right: '5%', rotate: -7, size: 70, speed: 0.15 },
-		{ src: '/images/marshall.png', top: 3200, right: '2%', rotate: 5, size: 85, speed: 0.05 }
+		// Left side — uniform speed 2.5, spaced 400px apart
+		{ src: '/images/drumkit.png', initialY: -50, left: '3%', rotate: -8, size: 130, speed: 2.5 },
+		{ src: '/images/tabla.png', initialY: 350, left: '1%', rotate: -4, size: 75, speed: 2.5 },
+		{ src: '/images/fender.png', initialY: 750, left: '5%', rotate: 3, size: 85, speed: 2.5 },
+		{ src: '/images/banjo.png', initialY: 1150, left: '2%', rotate: 6, size: 75, speed: 2.5 },
+		{ src: '/images/vox.png', initialY: 1550, left: '4%', rotate: 4, size: 95, speed: 2.5 },
+		{ src: '/images/cello.png', initialY: 1950, left: '2%', rotate: -3, size: 110, speed: 2.5 },
+		{ src: '/images/steelpan.png', initialY: 2350, left: '6%', rotate: 5, size: 80, speed: 2.5 },
+		{ src: '/images/boom57.png', initialY: 2750, left: '3%', rotate: -6, size: 85, speed: 2.5 },
+		{ src: '/images/marshall412.png', initialY: 3150, left: '4%', rotate: -2, size: 90, speed: 2.5 },
+		{ src: '/images/harp.png', initialY: 3550, left: '1%', rotate: 3, size: 100, speed: 2.5 },
+		{ src: '/images/guitaronstand.png', initialY: 3950, left: '5%', rotate: -4, size: 95, speed: 2.5 },
+		{ src: '/images/tambourine.png', initialY: 4350, left: '3%', rotate: 7, size: 65, speed: 2.5 },
+		{ src: '/images/drumkit.png', initialY: 4750, left: '2%', rotate: 4, size: 110, speed: 2.5 },
+		{ src: '/images/fender.png', initialY: 5150, left: '4%', rotate: -5, size: 90, speed: 2.5 },
+		{ src: '/images/cello.png', initialY: 5550, left: '1%', rotate: 2, size: 100, speed: 2.5 },
+		{ src: '/images/steelpan.png', initialY: 5950, left: '5%', rotate: -7, size: 85, speed: 2.5 },
+		{ src: '/images/banjo.png', initialY: 6350, left: '3%', rotate: 3, size: 80, speed: 2.5 },
+		{ src: '/images/boom57.png', initialY: 6750, left: '2%', rotate: -4, size: 90, speed: 2.5 },
+		// Right side — uniform speed 3.0, spaced 400px apart, offset 200px from left
+		{ src: '/images/acoustic.png', initialY: 150, right: '5%', rotate: 15, size: 85, speed: 3.0 },
+		{ src: '/images/keytar.png', initialY: 550, right: '2%', rotate: -5, size: 110, speed: 3.0 },
+		{ src: '/images/congas.png', initialY: 950, right: '4%', rotate: -3, size: 85, speed: 3.0 },
+		{ src: '/images/violin.png', initialY: 1350, right: '3%', rotate: 8, size: 80, speed: 3.0 },
+		{ src: '/images/lapsteel.png', initialY: 1750, right: '3%', rotate: -6, size: 110, speed: 3.0 },
+		{ src: '/images/ampeg.png', initialY: 2150, right: '5%', rotate: 4, size: 90, speed: 3.0 },
+		{ src: '/images/wireless_mic.png', initialY: 2550, right: '2%', rotate: -8, size: 75, speed: 3.0 },
+		{ src: '/images/tuba.png', initialY: 2950, right: '4%', rotate: 3, size: 100, speed: 3.0 },
+		{ src: '/images/keystand.png', initialY: 3350, right: '6%', rotate: -5, size: 85, speed: 3.0 },
+		{ src: '/images/subwoofer.png', initialY: 3750, right: '3%', rotate: 2, size: 90, speed: 3.0 },
+		{ src: '/images/mic.png', initialY: 4150, right: '5%', rotate: -7, size: 70, speed: 3.0 },
+		{ src: '/images/marshall.png', initialY: 4550, right: '2%', rotate: 5, size: 85, speed: 3.0 },
+		{ src: '/images/acoustic.png', initialY: 4950, right: '4%', rotate: -3, size: 90, speed: 3.0 },
+		{ src: '/images/keytar.png', initialY: 5350, right: '3%', rotate: 6, size: 100, speed: 3.0 },
+		{ src: '/images/violin.png', initialY: 5750, right: '5%', rotate: -4, size: 85, speed: 3.0 },
+		{ src: '/images/tuba.png', initialY: 6150, right: '2%', rotate: 7, size: 95, speed: 3.0 },
+		{ src: '/images/congas.png', initialY: 6550, right: '4%', rotate: -6, size: 80, speed: 3.0 },
+		{ src: '/images/wireless_mic.png', initialY: 6950, right: '3%', rotate: 3, size: 75, speed: 3.0 }
 	];
 </script>
 
-{#snippet sketchyLine()}
-	<div class="mx-auto my-2 max-w-4xl px-6">
-		<svg viewBox="0 0 800 12" class="w-full" preserveAspectRatio="none">
-			<path
-				d="M0 6 C 50 4, 100 8, 150 5 S 250 7, 300 6 S 400 4, 450 7 S 550 5, 600 6 S 700 8, 750 5 L 800 6"
-				fill="none"
-				stroke="currentColor"
-				stroke-width="1.5"
-				class="text-stone-300 dark:text-stone-700"
-				stroke-linecap="round"
-			/>
-		</svg>
-	</div>
-{/snippet}
-
-{#snippet sketchyLineShort()}
-	<div class="mx-auto my-1 max-w-xs px-6">
-		<svg viewBox="0 0 200 8" class="w-full" preserveAspectRatio="none">
-			<path
-				d="M 20 4 C 50 2, 80 6, 110 3 S 160 5, 180 4"
-				fill="none"
-				stroke="currentColor"
-				stroke-width="1.2"
-				class="text-stone-300 dark:text-stone-700"
-				stroke-linecap="round"
-			/>
-		</svg>
-	</div>
-{/snippet}
-
 <svelte:window bind:scrollY />
 
-<div class="relative overflow-hidden">
-	<!-- Decorative scattered instruments (hidden on small screens) -->
-	<div
-		class="pointer-events-none absolute inset-0 z-0 hidden opacity-[0.12] lg:block dark:opacity-[0.07]"
-	>
-		{#each decorativeItems as item (item.src)}
-			<img
-				src={item.src}
-				alt=""
-				class="absolute select-none"
-				style="
-				top: {item.top}px;
+<!-- Decorative scattered instruments (hidden on small screens) -->
+<div
+	class="pointer-events-none fixed inset-0 z-0 hidden overflow-hidden opacity-[0.12] lg:block dark:opacity-[0.07]"
+>
+	{#each decorativeItems as item, i (i)}
+		<img
+			src={item.src}
+			alt=""
+			loading="lazy"
+			decoding="async"
+			class="absolute select-none"
+			style="
+				top: 0;
 				{item.left ? `left: ${item.left}` : `right: ${item.right}`};
 				width: {item.size}px;
-				transform: translateY({(scrollY - item.top) * item.speed}px) rotate({item.rotate}deg);
+				transform: translateY({item.initialY - scrollY * item.speed}px) rotate({item.rotate}deg);
 				will-change: transform;
 			"
-			/>
-		{/each}
-	</div>
+		/>
+	{/each}
+</div>
 
-	<div class="relative z-10">
+<div class="relative z-10 overflow-hidden">
+	<div class="relative">
 		<!-- Hero -->
 		<section class="px-6 pt-20 pb-16 text-center sm:pt-28">
 			<div class="mx-auto max-w-2xl">
@@ -185,13 +172,13 @@
 			</div>
 		</section>
 
-		{@render sketchyLine()}
+		<SketchyLine />
 
 		<!-- Features -->
 		<section id="features" class="px-6 py-20">
 			<div class="mx-auto max-w-4xl">
 				<h2 class="text-center text-2xl font-bold tracking-tight sm:text-3xl">What you get</h2>
-				{@render sketchyLineShort()}
+				<SketchyLineShort />
 				<div class="mt-12 grid gap-12 sm:grid-cols-2">
 					{#each features as feature (feature.title)}
 						<div class="flex gap-5">
@@ -218,13 +205,13 @@
 			</div>
 		</section>
 
-		{@render sketchyLine()}
+		<SketchyLine />
 
 		<!-- How it works -->
 		<section class="px-6 py-20">
 			<div class="mx-auto max-w-3xl">
 				<h2 class="text-center text-2xl font-bold tracking-tight sm:text-3xl">Three steps</h2>
-				{@render sketchyLineShort()}
+				<SketchyLineShort />
 				<div class="mt-12 space-y-10">
 					<div class="flex items-start gap-6">
 						<div
@@ -272,7 +259,7 @@
 			</div>
 		</section>
 
-		{@render sketchyLine()}
+		<SketchyLine />
 
 		<!-- Stage Plot Pro callout -->
 		<section class="px-6 py-20">
@@ -280,7 +267,7 @@
 				<h2 class="text-2xl font-bold tracking-tight sm:text-3xl">
 					Picking up where Stage Plot Pro left off
 				</h2>
-				{@render sketchyLineShort()}
+				<SketchyLineShort />
 				<p class="mt-6 text-stone-500 dark:text-stone-400">
 					Stage Plot Pro was the go-to for years. It's gone now. {APP_NAME} is built to fill that gap
 					-- same idea, modern tools, runs in your browser, and it's free.
@@ -294,13 +281,13 @@
 			</div>
 		</section>
 
-		{@render sketchyLine()}
+		<SketchyLine />
 
 		<!-- Open source callout -->
 		<section class="px-6 py-20">
 			<div class="mx-auto max-w-2xl text-center">
 				<h2 class="text-2xl font-bold tracking-tight sm:text-3xl">Free and open source</h2>
-				{@render sketchyLineShort()}
+				<SketchyLineShort />
 				<p class="mt-6 text-stone-500 dark:text-stone-400">
 					Licensed under AGPL-3.0. No accounts, no subscriptions, no tracking. Your data stays in
 					your browser.
@@ -322,33 +309,28 @@
 			</div>
 		</section>
 
-		<!-- Footer -->
-		<footer class="px-6 pt-4 pb-10">
-			<div class="mx-auto max-w-4xl">
-				<svg viewBox="0 0 800 8" class="mb-8 w-full" preserveAspectRatio="none">
-					<path
-						d="M0 4 C 30 2, 70 6, 120 3 S 200 5, 280 4 S 380 2, 440 5 S 540 3, 620 4 S 720 6, 780 3 L 800 4"
-						fill="none"
-						stroke="currentColor"
-						stroke-width="0.8"
-						class="text-stone-200 dark:text-stone-800"
-						stroke-linecap="round"
-					/>
-				</svg>
-				<div class="flex flex-col items-center justify-between gap-4 sm:flex-row">
-					<div class="font-sans text-sm text-stone-400 dark:text-stone-500">{APP_NAME}</div>
-					<div class="flex gap-6 font-sans text-sm text-stone-400 dark:text-stone-500">
-						<a
-							href="https://github.com/cdslipp/stageplotter"
-							class="transition hover:text-stone-700 dark:hover:text-stone-300">GitHub</a
-						>
-						<a
-							href="https://github.com/cdslipp/stageplotter/blob/main/LICENSE"
-							class="transition hover:text-stone-700 dark:hover:text-stone-300">License</a
-						>
-					</div>
+		<SketchyLine />
+
+		<!-- Download the app callout -->
+		<section class="px-6 py-20">
+			<div class="mx-auto max-w-2xl text-center">
+				<h2 class="text-2xl font-bold tracking-tight sm:text-3xl">Want the desktop app?</h2>
+				<SketchyLineShort />
+				<p class="mt-6 text-stone-500 dark:text-stone-400">
+					Same app, native wrapper. Faster startup, file system access, no browser tab. One-time
+					purchase, lifetime updates.
+				</p>
+				<div class="mt-8">
+					<a
+						href="/download"
+						class="inline-flex items-center rounded-lg border-2 border-stone-300 px-6 py-3 font-sans text-sm font-medium transition hover:border-stone-400 hover:bg-stone-100 dark:border-stone-700 dark:hover:border-stone-600 dark:hover:bg-stone-800"
+					>
+						Download the app &mdash; $25 CAD
+					</a>
 				</div>
 			</div>
-		</footer>
+		</section>
+
+		<Footer />
 	</div>
 </div>

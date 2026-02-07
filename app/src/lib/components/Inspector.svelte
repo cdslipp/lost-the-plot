@@ -26,6 +26,7 @@
 		musicians = $bindable<Musician[]>([]),
 		title = $bindable<string>(''),
 		lastModified = $bindable<string>(''),
+		showZones = $bindable(true),
 		onUpdateItem = $bindable<
 			((itemId: number, property: string, value: string) => void) | undefined
 		>(undefined),
@@ -198,6 +199,17 @@
 </script>
 
 <div class="flex h-full flex-col">
+	<!-- Zone visibility toggle -->
+	<div class="mb-4 flex items-center justify-between">
+		<span class="text-xs text-text-secondary">Stage Zones</span>
+		<button
+			onclick={() => (showZones = !showZones)}
+			class="flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs transition {showZones ? 'bg-stone-900 text-white dark:bg-stone-100 dark:text-stone-900' : 'bg-muted text-text-secondary hover:bg-surface-hover'}"
+		>
+			{showZones ? 'Visible' : 'Hidden'}
+		</button>
+	</div>
+
 	{#if selectedItemsData.length === 0}
 		<!-- Document Properties -->
 		<div class="flex flex-1 flex-col">

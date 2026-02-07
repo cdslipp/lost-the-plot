@@ -3,14 +3,17 @@
 	import { toggleMode } from 'mode-watcher';
 	import { ImportExport } from '$lib';
 
+	let exporting = $state(false);
+
 	let {
 		title = $bindable(''),
 		revisionDate,
-		showZones = $bindable(true),
 		showHelp = $bindable(false),
 		onAddItem,
 		onImportComplete,
 		onTitleChange,
+		onExportPdf,
+		backHref,
 		items = $bindable([]),
 		musicians = $bindable([]),
 		canvasWidth = $bindable(1100),
@@ -21,11 +24,12 @@
 	}: {
 		title: string;
 		revisionDate: string;
-		showZones: boolean;
 		showHelp: boolean;
 		onAddItem: () => void;
 		onImportComplete: () => void;
 		onTitleChange: () => void;
+		onExportPdf?: () => Promise<void>;
+		backHref?: string;
 		items: any[];
 		musicians: any[];
 		canvasWidth: number;
@@ -34,18 +38,41 @@
 		getItemZone: (item: any) => string;
 		getItemPosition: (item: any) => { x: number; y: number };
 	} = $props();
+
+	async function handleExportPdf() {
+		if (!onExportPdf || exporting) return;
+		exporting = true;
+		try {
+			await onExportPdf();
+		} finally {
+			exporting = false;
+		}
+	}
 </script>
 
 <div class="mb-4 flex items-center justify-between gap-4">
-	<input
-		bind:value={title}
-		oninput={() => onTitleChange()}
-		class="w-full border-b-2 border-dashed border-border-secondary bg-transparent px-2 py-1 font-serif text-4xl font-bold text-text-primary transition-all placeholder:font-normal placeholder:text-text-tertiary hover:border-border-primary focus:border-solid focus:border-stone-500 focus:outline-none"
-		placeholder="Plot Name"
-	/>
+	<div class="flex min-w-0 flex-1 items-center gap-3">
+		{#if backHref}
+			<a
+				href={backHref}
+				class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-border-primary text-text-secondary transition hover:bg-surface-hover hover:text-text-primary"
+				aria-label="Back"
+			>
+				<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+					<path fill-rule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clip-rule="evenodd" />
+				</svg>
+			</a>
+		{/if}
+		<input
+			bind:value={title}
+			oninput={() => onTitleChange()}
+			class="min-w-0 flex-1 border-b-2 border-dashed border-border-secondary bg-transparent px-2 py-1 font-serif text-3xl font-bold text-text-primary transition-all placeholder:font-normal placeholder:text-text-tertiary hover:border-border-primary focus:border-solid focus:border-stone-500 focus:outline-none"
+			placeholder="Plot Name"
+		/>
+	</div>
 	<div class="flex shrink-0 items-center gap-2">
 		<div class="hidden text-sm text-text-secondary sm:block">
-			Last Modified: {new Date(revisionDate).toLocaleDateString()}
+			{new Date(revisionDate).toLocaleDateString()}
 		</div>
 		<ImportExport
 			bind:title
@@ -58,6 +85,22 @@
 			{getItemPosition}
 			{onImportComplete}
 		/>
+		{#if onExportPdf}
+			<button
+				onclick={handleExportPdf}
+				disabled={exporting}
+				class="flex h-9 w-9 items-center justify-center rounded-full text-text-secondary transition hover:bg-surface-hover hover:text-text-primary disabled:opacity-50"
+				title="Export PDF"
+			>
+				{#if exporting}
+					<div class="h-4 w-4 animate-spin rounded-full border-2 border-text-secondary border-t-transparent"></div>
+				{:else}
+					<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+						<path fill-rule="evenodd" d="M6 2a2 2 0 00-2 2v12a2 2 0 002 2h8a2 2 0 002-2V7.414A2 2 0 0015.414 6L12 2.586A2 2 0 0010.586 2H6zm5 6a1 1 0 10-2 0v3.586l-1.293-1.293a1 1 0 10-1.414 1.414l3 3a1 1 0 001.414 0l3-3a1 1 0 00-1.414-1.414L11 11.586V8z" clip-rule="evenodd" />
+					</svg>
+				{/if}
+			</button>
+		{/if}
 		<button
 			onclick={() => (showHelp = !showHelp)}
 			class="flex h-9 w-9 items-center justify-center rounded-full text-text-secondary transition hover:bg-surface-hover hover:text-text-primary"
@@ -78,13 +121,6 @@
 			<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 hidden dark:block" viewBox="0 0 20 20" fill="currentColor">
 				<path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z" />
 			</svg>
-		</button>
-		<button
-			onclick={() => (showZones = !showZones)}
-			class="rounded-lg border border-border-primary px-3 py-2 text-sm text-text-primary hover:bg-surface-hover"
-			title="Show/Hide zone guidelines"
-		>
-			{showZones ? 'Hide Zones' : 'Show Zones'}
 		</button>
 		<button
 			onclick={onAddItem}

@@ -129,3 +129,47 @@ export interface Output {
 	name: string;
 	type?: 'wedge' | 'iem_stereo' | 'iem_mono' | 'sidefill' | 'sub';
 }
+
+export interface Song {
+	id?: number;
+	band_id?: string;
+	title: string;
+	starting_key?: string;
+	starting_tempo?: number;
+	instruments?: string;
+	notes?: string;
+	created_at?: string;
+	updated_at?: string;
+}
+
+export interface Gig {
+	id?: number;
+	band_id?: string;
+	name: string;
+	venue?: string;
+	date?: string;
+	time?: string;
+	plot_id?: string;
+	notes?: string;
+	created_at?: string;
+	updated_at?: string;
+}
+
+export interface Setlist {
+	id?: number;
+	gig_id?: number;
+	name: string;
+	created_at?: string;
+}
+
+export interface SetlistSong {
+	id?: number;
+	setlist_id?: number;
+	song_id?: number;
+	position: number;
+	notes?: string;
+	// Joined display fields
+	song_title?: string;
+	starting_key?: string;
+	starting_tempo?: number;
+}

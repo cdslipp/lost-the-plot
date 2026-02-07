@@ -1,5 +1,9 @@
 <script lang="ts">
 	import { APP_NAME, APP_URL } from '$lib/config';
+	import SketchyLine from '$lib/components/SketchyLine.svelte';
+	import SketchyLineShort from '$lib/components/SketchyLineShort.svelte';
+	import Checkmark from '$lib/components/Checkmark.svelte';
+	import Footer from '$lib/components/Footer.svelte';
 
 	const freeBenefits = [
 		'Full stage plot editor',
@@ -24,48 +28,6 @@
 	<title>Pricing - {APP_NAME}</title>
 </svelte:head>
 
-{#snippet sketchyLine()}
-	<div class="mx-auto my-2 max-w-4xl px-6">
-		<svg viewBox="0 0 800 12" class="w-full" preserveAspectRatio="none">
-			<path
-				d="M0 6 C 50 4, 100 8, 150 5 S 250 7, 300 6 S 400 4, 450 7 S 550 5, 600 6 S 700 8, 750 5 L 800 6"
-				fill="none"
-				stroke="currentColor"
-				stroke-width="1.5"
-				class="text-stone-300 dark:text-stone-700"
-				stroke-linecap="round"
-			/>
-		</svg>
-	</div>
-{/snippet}
-
-{#snippet sketchyLineShort()}
-	<div class="mx-auto my-1 max-w-xs px-6">
-		<svg viewBox="0 0 200 8" class="w-full" preserveAspectRatio="none">
-			<path
-				d="M 20 4 C 50 2, 80 6, 110 3 S 160 5, 180 4"
-				fill="none"
-				stroke="currentColor"
-				stroke-width="1.2"
-				class="text-stone-300 dark:text-stone-700"
-				stroke-linecap="round"
-			/>
-		</svg>
-	</div>
-{/snippet}
-
-{#snippet checkmark()}
-	<svg
-		class="mt-0.5 h-4 w-4 shrink-0 text-stone-400 dark:text-stone-500"
-		fill="none"
-		viewBox="0 0 24 24"
-		stroke-width="2.5"
-		stroke="currentColor"
-	>
-		<path d="M5 13l4 4L19 7" stroke-linecap="round" stroke-linejoin="round" />
-	</svg>
-{/snippet}
-
 <div class="relative z-10">
 	<section class="px-6 pt-16 pb-8 text-center sm:pt-24">
 		<div class="mx-auto max-w-2xl">
@@ -76,7 +38,7 @@
 		</div>
 	</section>
 
-	{@render sketchyLine()}
+	<SketchyLine />
 
 	<!-- Pricing cards -->
 	<section class="px-6 py-16">
@@ -93,7 +55,7 @@
 					<img src="/images/mic.png" alt="" class="h-10 opacity-30 dark:opacity-20" />
 				</div>
 
-				{@render sketchyLineShort()}
+				<SketchyLineShort />
 
 				<div class="mt-6">
 					<div class="flex items-baseline gap-1">
@@ -105,7 +67,7 @@
 				<ul class="mt-8 space-y-3">
 					{#each freeBenefits as benefit (benefit)}
 						<li class="flex items-start gap-3 font-sans text-sm text-stone-600 dark:text-stone-300">
-							{@render checkmark()}
+							<Checkmark />
 							{benefit}
 						</li>
 					{/each}
@@ -139,7 +101,7 @@
 					<img src="/images/marshall.png" alt="" class="h-10 opacity-30 dark:opacity-20" />
 				</div>
 
-				{@render sketchyLineShort()}
+				<SketchyLineShort />
 
 				<div class="mt-6">
 					<div class="flex items-baseline gap-1">
@@ -154,14 +116,14 @@
 				<ul class="mt-8 space-y-3">
 					{#each appBenefits as benefit (benefit)}
 						<li class="flex items-start gap-3 font-sans text-sm text-stone-600 dark:text-stone-300">
-							{@render checkmark()}
+							<Checkmark />
 							{benefit}
 						</li>
 					{/each}
 				</ul>
 
 				<a
-					href={APP_URL}
+					href="/download"
 					class="mt-8 block rounded-lg bg-stone-900 px-6 py-3 text-center font-sans text-sm font-medium text-white transition hover:bg-stone-800 dark:bg-stone-100 dark:text-stone-900 dark:hover:bg-stone-200"
 				>
 					Buy {APP_NAME}
@@ -170,13 +132,13 @@
 		</div>
 	</section>
 
-	{@render sketchyLine()}
+	<SketchyLine />
 
 	<!-- FAQ-ish -->
 	<section class="px-6 py-16">
 		<div class="mx-auto max-w-2xl">
 			<h2 class="text-center text-2xl font-bold tracking-tight">Common questions</h2>
-			{@render sketchyLineShort()}
+			<SketchyLineShort />
 			<div class="mt-10 space-y-8">
 				<div>
 					<h3 class="font-bold">Is the free version limited?</h3>
@@ -209,36 +171,5 @@
 		</div>
 	</section>
 
-	<!-- Footer -->
-	<footer class="px-6 pt-4 pb-10">
-		<div class="mx-auto max-w-4xl">
-			<svg viewBox="0 0 800 8" class="mb-8 w-full" preserveAspectRatio="none">
-				<path
-					d="M0 4 C 30 2, 70 6, 120 3 S 200 5, 280 4 S 380 2, 440 5 S 540 3, 620 4 S 720 6, 780 3 L 800 4"
-					fill="none"
-					stroke="currentColor"
-					stroke-width="0.8"
-					class="text-stone-200 dark:text-stone-800"
-					stroke-linecap="round"
-				/>
-			</svg>
-			<div class="flex flex-col items-center justify-between gap-4 sm:flex-row">
-				<a
-					href="/"
-					class="font-sans text-sm text-stone-400 transition hover:text-stone-700 dark:text-stone-500 dark:hover:text-stone-300"
-					>{APP_NAME}</a
-				>
-				<div class="flex gap-6 font-sans text-sm text-stone-400 dark:text-stone-500">
-					<a
-						href="https://github.com/cdslipp/stageplotter"
-						class="transition hover:text-stone-700 dark:hover:text-stone-300">GitHub</a
-					>
-					<a
-						href="https://github.com/cdslipp/stageplotter/blob/main/LICENSE"
-						class="transition hover:text-stone-700 dark:hover:text-stone-300">License</a
-					>
-				</div>
-			</div>
-		</div>
-	</footer>
+	<Footer />
 </div>

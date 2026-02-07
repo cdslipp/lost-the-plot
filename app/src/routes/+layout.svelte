@@ -67,8 +67,28 @@
 </svelte:head>
 
 <ModeWatcher />
-<div class="min-h-screen bg-bg-secondary font-sans text-text-primary">
-	<div class="container mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-8">
+<div class="relative min-h-screen bg-bg-secondary font-sans text-text-primary">
+	<!-- Sideways wordmark — decorative, sits behind all content -->
+	<div
+		class="pointer-events-none fixed left-0 top-0 z-0 flex h-screen items-end select-none"
+		aria-hidden="true"
+	>
+		<div class="flex flex-col items-center pb-8">
+			<img
+				src="/final_assets/guitars/electric/electricguitar/electricguitar.png"
+				alt=""
+				class="mb-4 w-16 opacity-20 dark:opacity-15"
+				style="transform: rotate(-8deg);"
+			/>
+			<span
+				class="whitespace-nowrap font-serif text-[clamp(7rem,15vh,13rem)] font-bold leading-none tracking-tight text-stone-300 dark:text-stone-700"
+				style="writing-mode: vertical-lr; transform: rotate(180deg);"
+			>
+				Lost the Plot
+			</span>
+		</div>
+	</div>
+	<div class="relative z-10 container mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-8">
 		{@render children()}
 	</div>
 </div>

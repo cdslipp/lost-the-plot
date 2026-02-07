@@ -13,7 +13,7 @@ Everything needed for a single usable stage plot.
 - ✅ **SQLite action history (undo/redo)** — Every mutation is an action record in SQLite. Undo = reverse the action. Full history scrubbing. This is the backbone of the data layer — build it first.
 - ⏳ **Keyboard-centric navigation** — Tab through items, arrow keys to nudge, Enter to confirm, Escape to deselect. Accessibility-first design.
 - ✅ **Save/load projects** — SQLite-backed project persistence via OPFS. One project = one stage plot with metadata.
-- **Basic PDF export** — Single-page PDF rendering of the current plot with input list
+- ✅ **Basic PDF export** — Single-page PDF rendering of the current plot with input list
 
 ## P1 — Templates, Customization & Band Management
 

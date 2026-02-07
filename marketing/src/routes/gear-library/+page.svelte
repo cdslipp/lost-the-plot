@@ -1,25 +1,13 @@
 <script lang="ts">
 	import { APP_NAME } from '$lib/config';
+	import SketchyLine from '$lib/components/SketchyLine.svelte';
+	import SketchyLineShort from '$lib/components/SketchyLineShort.svelte';
+	import Footer from '$lib/components/Footer.svelte';
 </script>
 
 <svelte:head>
 	<title>Gear Library - {APP_NAME}</title>
 </svelte:head>
-
-{#snippet sketchyLineShort()}
-	<div class="mx-auto my-1 max-w-xs px-6">
-		<svg viewBox="0 0 200 8" class="w-full" preserveAspectRatio="none">
-			<path
-				d="M 20 4 C 50 2, 80 6, 110 3 S 160 5, 180 4"
-				fill="none"
-				stroke="currentColor"
-				stroke-width="1.2"
-				class="text-stone-300 dark:text-stone-700"
-				stroke-linecap="round"
-			/>
-		</svg>
-	</div>
-{/snippet}
 
 <div class="relative z-10">
 	<section class="px-6 pt-16 pb-8 text-center sm:pt-24">
@@ -37,24 +25,13 @@
 		</div>
 	</section>
 
-	<div class="mx-auto my-2 max-w-4xl px-6">
-		<svg viewBox="0 0 800 12" class="w-full" preserveAspectRatio="none">
-			<path
-				d="M0 6 C 50 4, 100 8, 150 5 S 250 7, 300 6 S 400 4, 450 7 S 550 5, 600 6 S 700 8, 750 5 L 800 6"
-				fill="none"
-				stroke="currentColor"
-				stroke-width="1.5"
-				class="text-stone-300 dark:text-stone-700"
-				stroke-linecap="round"
-			/>
-		</svg>
-	</div>
+	<SketchyLine />
 
 	<!-- Preview grid -->
 	<section class="px-6 py-16">
 		<div class="mx-auto max-w-4xl">
 			<h2 class="text-center text-2xl font-bold tracking-tight">What's included</h2>
-			{@render sketchyLineShort()}
+			<SketchyLineShort />
 
 			<div class="mt-12 grid grid-cols-3 gap-6 sm:grid-cols-4 md:grid-cols-6">
 				{#each [{ src: '/images/marshall.png', name: 'Marshall Amp' }, { src: '/images/fender.png', name: 'Fender Amp' }, { src: '/images/vox.png', name: 'Vox Amp' }, { src: '/images/marshall412.png', name: 'Marshall 4x12' }, { src: '/images/drumkit.png', name: 'Drum Kit' }, { src: '/images/mic.png', name: 'Vocal Mic' }, { src: '/images/acoustic.png', name: 'Acoustic Guitar' }, { src: '/images/banjo.png', name: 'Banjo' }, { src: '/images/keytar.png', name: 'Keytar' }, { src: '/images/keystand.png', name: 'Keyboard Stand' }, { src: '/images/congas.png', name: 'Congas' }, { src: '/images/tabla.png', name: 'Tabla' }, { src: '/images/lapsteel.png', name: 'Lap Steel' }, { src: '/images/subwoofer.png', name: 'Subwoofer' }] as item (item.name)}
@@ -72,18 +49,7 @@
 		</div>
 	</section>
 
-	<div class="mx-auto my-2 max-w-4xl px-6">
-		<svg viewBox="0 0 800 12" class="w-full" preserveAspectRatio="none">
-			<path
-				d="M0 6 C 50 4, 100 8, 150 5 S 250 7, 300 6 S 400 4, 450 7 S 550 5, 600 6 S 700 8, 750 5 L 800 6"
-				fill="none"
-				stroke="currentColor"
-				stroke-width="1.5"
-				class="text-stone-300 dark:text-stone-700"
-				stroke-linecap="round"
-			/>
-		</svg>
-	</div>
+	<SketchyLine />
 
 	<!-- What it is -->
 	<section class="px-6 py-16">
@@ -119,36 +85,5 @@
 		</div>
 	</section>
 
-	<!-- Footer -->
-	<footer class="px-6 pt-4 pb-10">
-		<div class="mx-auto max-w-4xl">
-			<svg viewBox="0 0 800 8" class="mb-8 w-full" preserveAspectRatio="none">
-				<path
-					d="M0 4 C 30 2, 70 6, 120 3 S 200 5, 280 4 S 380 2, 440 5 S 540 3, 620 4 S 720 6, 780 3 L 800 4"
-					fill="none"
-					stroke="currentColor"
-					stroke-width="0.8"
-					class="text-stone-200 dark:text-stone-800"
-					stroke-linecap="round"
-				/>
-			</svg>
-			<div class="flex flex-col items-center justify-between gap-4 sm:flex-row">
-				<a
-					href="/"
-					class="font-sans text-sm text-stone-400 transition hover:text-stone-700 dark:text-stone-500 dark:hover:text-stone-300"
-					>{APP_NAME}</a
-				>
-				<div class="flex gap-6 font-sans text-sm text-stone-400 dark:text-stone-500">
-					<a
-						href="https://github.com/cdslipp/stageplotter"
-						class="transition hover:text-stone-700 dark:hover:text-stone-300">GitHub</a
-					>
-					<a
-						href="https://github.com/cdslipp/stageplotter/blob/main/LICENSE"
-						class="transition hover:text-stone-700 dark:hover:text-stone-300">License</a
-					>
-				</div>
-			</div>
-		</div>
-	</footer>
+	<Footer />
 </div>
