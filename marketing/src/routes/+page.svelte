@@ -51,9 +51,23 @@
 		{ src: '/images/cello.png', initialY: 1950, left: '2%', rotate: -3, size: 110, speed: 2.5 },
 		{ src: '/images/steelpan.png', initialY: 2350, left: '6%', rotate: 5, size: 80, speed: 2.5 },
 		{ src: '/images/boom57.png', initialY: 2750, left: '3%', rotate: -6, size: 85, speed: 2.5 },
-		{ src: '/images/marshall412.png', initialY: 3150, left: '4%', rotate: -2, size: 90, speed: 2.5 },
+		{
+			src: '/images/marshall412.png',
+			initialY: 3150,
+			left: '4%',
+			rotate: -2,
+			size: 90,
+			speed: 2.5
+		},
 		{ src: '/images/harp.png', initialY: 3550, left: '1%', rotate: 3, size: 100, speed: 2.5 },
-		{ src: '/images/guitaronstand.png', initialY: 3950, left: '5%', rotate: -4, size: 95, speed: 2.5 },
+		{
+			src: '/images/guitaronstand.png',
+			initialY: 3950,
+			left: '5%',
+			rotate: -4,
+			size: 95,
+			speed: 2.5
+		},
 		{ src: '/images/tambourine.png', initialY: 4350, left: '3%', rotate: 7, size: 65, speed: 2.5 },
 		{ src: '/images/drumkit.png', initialY: 4750, left: '2%', rotate: 4, size: 110, speed: 2.5 },
 		{ src: '/images/fender.png', initialY: 5150, left: '4%', rotate: -5, size: 90, speed: 2.5 },
@@ -68,7 +82,14 @@
 		{ src: '/images/violin.png', initialY: 1350, right: '3%', rotate: 8, size: 80, speed: 3.0 },
 		{ src: '/images/lapsteel.png', initialY: 1750, right: '3%', rotate: -6, size: 110, speed: 3.0 },
 		{ src: '/images/ampeg.png', initialY: 2150, right: '5%', rotate: 4, size: 90, speed: 3.0 },
-		{ src: '/images/wireless_mic.png', initialY: 2550, right: '2%', rotate: -8, size: 75, speed: 3.0 },
+		{
+			src: '/images/wireless_mic.png',
+			initialY: 2550,
+			right: '2%',
+			rotate: -8,
+			size: 75,
+			speed: 3.0
+		},
 		{ src: '/images/tuba.png', initialY: 2950, right: '4%', rotate: 3, size: 100, speed: 3.0 },
 		{ src: '/images/keystand.png', initialY: 3350, right: '6%', rotate: -5, size: 85, speed: 3.0 },
 		{ src: '/images/subwoofer.png', initialY: 3750, right: '3%', rotate: 2, size: 90, speed: 3.0 },
@@ -79,7 +100,14 @@
 		{ src: '/images/violin.png', initialY: 5750, right: '5%', rotate: -4, size: 85, speed: 3.0 },
 		{ src: '/images/tuba.png', initialY: 6150, right: '2%', rotate: 7, size: 95, speed: 3.0 },
 		{ src: '/images/congas.png', initialY: 6550, right: '4%', rotate: -6, size: 80, speed: 3.0 },
-		{ src: '/images/wireless_mic.png', initialY: 6950, right: '3%', rotate: 3, size: 75, speed: 3.0 }
+		{
+			src: '/images/wireless_mic.png',
+			initialY: 6950,
+			right: '3%',
+			rotate: 3,
+			size: 75,
+			speed: 3.0
+		}
 	];
 </script>
 

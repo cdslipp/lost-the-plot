@@ -1,6 +1,12 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { APP_NAME, APP_URL, APP_VERSION, GITHUB_RELEASES, GITHUB_SPONSORS_URL } from '$lib/config';
+	import {
+		APP_NAME,
+		APP_URL,
+		APP_VERSION,
+		GITHUB_RELEASES,
+		GITHUB_SPONSORS_URL
+	} from '$lib/config';
 	import SketchyLine from '$lib/components/SketchyLine.svelte';
 	import SketchyLineShort from '$lib/components/SketchyLineShort.svelte';
 	import Checkmark from '$lib/components/Checkmark.svelte';
@@ -189,8 +195,8 @@
 		<div class="mx-auto max-w-2xl text-center">
 			<h2 class="text-xl font-bold">Support development</h2>
 			<p class="mt-3 font-sans text-sm text-stone-500 dark:text-stone-400">
-				{APP_NAME} is free and open source. If it's useful to you and you'd like to support
-				ongoing development, you can sponsor the project on GitHub.
+				{APP_NAME} is free and open source. If it's useful to you and you'd like to support ongoing development,
+				you can sponsor the project on GitHub.
 			</p>
 			<a
 				href={GITHUB_SPONSORS_URL}

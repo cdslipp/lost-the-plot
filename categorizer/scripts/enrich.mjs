@@ -244,6 +244,12 @@ const NAME_OVERRIDES = {
 	'stagecraft/stage/stagedgef': 'Stage Edge (Front)',
 	'stagecraft/stage/stagefront': 'Stage Front',
 	'stagecraft/stairs': 'Stairs',
+	'stagecraft/truss': 'Truss',
+	'drums/individual_drums/kick': 'Kick Drum',
+	'drums/individual_drums/snare': 'Snare Drum',
+	'drums/individual_drums/floortom': 'Floor Tom',
+	'drums/individual_drums/tom1': 'Rack Tom 1',
+	'drums/individual_drums/tom2': 'Rack Tom 2',
 	'strings/cello': 'Cello',
 	'strings/harp': 'Harp',
 	'strings/viola': 'Viola',
@@ -281,6 +287,7 @@ function getSubcategory(path, itemType) {
 		if (seg2 === 'drum_kits') return 'kit';
 		if (seg2 === 'hardware') return 'hardware';
 		if (seg2 === 'cymbals') return 'cymbal';
+		if (seg2 === 'individual_drums') return 'individual_drum';
 		return 'drums';
 	}
 	// Guitars
@@ -357,6 +364,7 @@ function getSubcategory(path, itemType) {
 		if (seg2 === 'riser') return 'riser';
 		if (seg2 === 'stage') return 'stage_element';
 		if (seg2 === 'stairs') return 'stairs';
+		if (seg2 === 'truss') return 'truss';
 		return 'stagecraft';
 	}
 	// Percussion - derive from name/path
@@ -371,7 +379,8 @@ function getSubcategory(path, itemType) {
 		if (path.includes('tabla')) return 'tabla';
 		if (path.includes('djembe')) return 'djembe';
 		if (path.includes('cajon')) return 'cajon';
-		if (path.includes('daf') || path.includes('dholak') || path.includes('dhumbuk')) return 'hand_drum';
+		if (path.includes('daf') || path.includes('dholak') || path.includes('dhumbuk'))
+			return 'hand_drum';
 		if (path.includes('percussionpad')) return 'percussion_pad';
 		if (path.includes('tambourine')) return 'tambourine';
 		if (path.includes('claves')) return 'claves';
@@ -391,7 +400,8 @@ function getSubcategory(path, itemType) {
 		if (path.includes('oboe')) return 'oboe';
 		if (path.includes('recorder') || path.includes('ocarina')) return 'recorder';
 		if (path.includes('harmonica')) return 'harmonica';
-		if (path.includes('bagpipes') || path.includes('gajda') || path.includes('kaval')) return 'folk_wind';
+		if (path.includes('bagpipes') || path.includes('gajda') || path.includes('kaval'))
+			return 'folk_wind';
 		return 'wind';
 	}
 	// Power
@@ -406,9 +416,11 @@ function getSubcategory(path, itemType) {
 		if (path.includes('pedalboard') || path.includes('bosspedal')) return 'pedal';
 		if (path.includes('laptop') || path.includes('ipad')) return 'computer';
 		if (path.includes('video') || path.includes('ledwall')) return 'video';
-		if (path.includes('compressor') || path.includes('eq') || path.includes('gates')) return 'signal_processor';
+		if (path.includes('compressor') || path.includes('eq') || path.includes('gates'))
+			return 'signal_processor';
 		if (path.includes('fan')) return 'utility';
-		if (path.includes('barricade') || path.includes('sandbag') || path.includes('gobo')) return 'stage_utility';
+		if (path.includes('barricade') || path.includes('sandbag') || path.includes('gobo'))
+			return 'stage_utility';
 		if (path.includes('flightcase')) return 'case';
 		if (path.includes('floorbox')) return 'floor_box';
 		if (path.includes('sampler') || path.includes('cdplayer')) return 'playback';
@@ -427,7 +439,19 @@ function getSubcategory(path, itemType) {
 // ─── PROVISION DEFAULT ──────────────────────────────────────────────────────
 function getProvisionDefault(itemType, path) {
 	const artistTypes = ['instrument', 'amp', 'drumset', 'pedal'];
-	const venueTypes = ['monitor', 'speaker', 'microphone', 'stagebox', 'mixer', 'di_box', 'stand', 'power', 'cable_connector', 'furniture', 'stagecraft'];
+	const venueTypes = [
+		'monitor',
+		'speaker',
+		'microphone',
+		'stagebox',
+		'mixer',
+		'di_box',
+		'stand',
+		'power',
+		'cable_connector',
+		'furniture',
+		'stagecraft'
+	];
 	const naTypes = ['person', 'marker', 'label'];
 
 	if (naTypes.includes(itemType)) return '';
@@ -436,7 +460,8 @@ function getProvisionDefault(itemType, path) {
 
 	// equipment
 	if (itemType === 'equipment') {
-		if (path.includes('dj_gear') || path.includes('laptop') || path.includes('ipad')) return 'artist_provided';
+		if (path.includes('dj_gear') || path.includes('laptop') || path.includes('ipad'))
+			return 'artist_provided';
 		return 'venue_provided';
 	}
 	return '';
@@ -452,7 +477,19 @@ function getConnectors(itemType, category, path) {
 		if (category === 'guitars') return ['TS'];
 		if (category === 'keys') {
 			// Acoustic pianos, harpsichord, celesta, accordion have no connectors
-			if (['grandpiano', 'grandpiano1', 'closedgrand', 'babygrand', 'upright', 'harpsichord', 'celesta', 'accordion'].some(k => path.includes(k))) return [];
+			if (
+				[
+					'grandpiano',
+					'grandpiano1',
+					'closedgrand',
+					'babygrand',
+					'upright',
+					'harpsichord',
+					'celesta',
+					'accordion'
+				].some((k) => path.includes(k))
+			)
+				return [];
 			return ['TRS']; // Electric keys
 		}
 		if (category === 'strings') return []; // Acoustic strings
@@ -541,7 +578,13 @@ function generateTags(item, subcategory) {
 	if (['pedal', 'di_box'].includes(item_type)) tags.push('signal_chain');
 
 	// DJ
-	if (path.includes('dj_gear') || path.includes('dj_setup') || path.includes('sl1200') || path.includes('djm') || path.includes('cdj')) {
+	if (
+		path.includes('dj_gear') ||
+		path.includes('dj_setup') ||
+		path.includes('sl1200') ||
+		path.includes('djm') ||
+		path.includes('cdj')
+	) {
 		if (!tags.includes('dj')) tags.push('dj');
 	}
 
@@ -561,7 +604,12 @@ const BRAND_MODEL_DB = {
 
 // ─── COMMON MODELS DB ───────────────────────────────────────────────────────
 const COMMON_MODELS_DB = {
-	'guitars/electric/electricguitar': ['Fender Stratocaster', 'Gibson Les Paul', 'Fender Telecaster', 'PRS Custom 24'],
+	'guitars/electric/electricguitar': [
+		'Fender Stratocaster',
+		'Gibson Les Paul',
+		'Fender Telecaster',
+		'PRS Custom 24'
+	],
 	'guitars/acoustic/acousticguitar': ['Martin D-28', 'Taylor 314ce', 'Gibson J-45'],
 	'guitars/bass/p_bass': ['Fender Precision Bass', 'Fender Jazz Bass'],
 	'amps/bass/bassamp': ['Ampeg SVT', 'Fender Rumble', 'GK 800RB'],
@@ -629,9 +677,17 @@ const DIMENSIONS_DB = {
 	steel_drum: { width: 24, depth: 24, height: 36 },
 	// Strings
 	orchestral_string: { width: 24, depth: 12, height: 48 },
+	// Individual drums
+	individual_drum: { width: 14, depth: 14, height: 14 },
+	'drums/individual_drums/kick': { width: 22, depth: 16, height: 22 },
+	'drums/individual_drums/snare': { width: 14, depth: 14, height: 6 },
+	'drums/individual_drums/floortom': { width: 16, depth: 16, height: 16 },
+	'drums/individual_drums/tom1': { width: 12, depth: 12, height: 10 },
+	'drums/individual_drums/tom2': { width: 13, depth: 13, height: 11 },
 	// Stagecraft
 	riser: { width: 96, depth: 48, height: 12 },
 	stairs: { width: 48, depth: 36, height: 24 },
+	truss: { width: 120, depth: 12, height: 12 },
 	// Equipment
 	rack: { width: 20, depth: 20, height: 42 },
 	di_box: { width: 5, depth: 4, height: 2 },
@@ -679,13 +735,21 @@ function getDefaultInputs(path, itemType, category, subcategory) {
 				];
 			}
 			// Electric keys
-			if (['stage_piano', 'synth', 'clavinet', 'mellotron', 'drum_machine', 'keytar'].includes(subcategory)) {
+			if (
+				['stage_piano', 'synth', 'clavinet', 'mellotron', 'drum_machine', 'keytar'].includes(
+					subcategory
+				)
+			) {
 				return [
 					{ name: 'Keys L', connector: 'TRS' },
 					{ name: 'Keys R', connector: 'TRS' }
 				];
 			}
 			return [];
+		}
+		// Individual drums are miked
+		if (category === 'drums') {
+			return [{ name: 'Drum', connector: 'XLR' }];
 		}
 		// Strings & winds are typically miked (no direct input from instrument)
 		return [];
@@ -728,7 +792,8 @@ function getAutoNumberPrefix(item, subcategory, category) {
 		if (path.includes('trombone')) return 'Horn';
 		if (path.includes('recorder') || path.includes('ocarina')) return 'Rec';
 		if (path.includes('harmonica')) return 'Harm';
-		if (path.includes('bagpipes') || path.includes('gajda') || path.includes('kaval')) return 'Wind';
+		if (path.includes('bagpipes') || path.includes('gajda') || path.includes('kaval'))
+			return 'Wind';
 		return 'Wind';
 	}
 
@@ -761,7 +826,7 @@ function getCategory(path) {
 
 function walkLeafDirs(dir, base = '') {
 	const entries = readdirSync(dir, { withFileTypes: true });
-	const dirs = entries.filter(e => e.isDirectory());
+	const dirs = entries.filter((e) => e.isDirectory());
 	if (dirs.length === 0) return base ? [base] : [];
 	const results = [];
 	for (const d of dirs) {
@@ -813,7 +878,12 @@ for (const item of items) {
 	if (enrichedItem.name === item.name && !NAME_OVERRIDES[item.path]) {
 		// Flag items with ugly auto-generated names
 		if (/^[A-Z][a-z]+[A-Z]/.test(item.name) || item.name.includes('_')) {
-			flags.push({ type: 'name_review', path: item.path, name: item.name, suggestion: 'Auto name may need review' });
+			flags.push({
+				type: 'name_review',
+				path: item.path,
+				name: item.name,
+				suggestion: 'Auto name may need review'
+			});
 		}
 	}
 
@@ -864,9 +934,17 @@ for (const item of items) {
 
 // ─── ORPHAN SCAN ────────────────────────────────────────────────────────────
 const allLeafDirs = walkLeafDirs(ASSETS_DIR);
-const itemPaths = new Set(items.map(i => i.path));
-const orphans = allLeafDirs.filter(d => !itemPaths.has(d) && !d.startsWith('alphabet') && !d.startsWith('numerals') && !d.startsWith('symbols'));
-const alphabetOrphans = allLeafDirs.filter(d => d.startsWith('alphabet') || d.startsWith('numerals') || d.startsWith('symbols'));
+const itemPaths = new Set(items.map((i) => i.path));
+const orphans = allLeafDirs.filter(
+	(d) =>
+		!itemPaths.has(d) &&
+		!d.startsWith('alphabet') &&
+		!d.startsWith('numerals') &&
+		!d.startsWith('symbols')
+);
+const alphabetOrphans = allLeafDirs.filter(
+	(d) => d.startsWith('alphabet') || d.startsWith('numerals') || d.startsWith('symbols')
+);
 
 // ─── WRITE ENRICHED JSON ────────────────────────────────────────────────────
 writeFileSync(OUTPUT_PATH, JSON.stringify(enriched, null, '\t') + '\n');
@@ -875,15 +953,15 @@ console.log(`\nWrote ${enriched.length} items to ${OUTPUT_PATH}`);
 // ─── STATS ──────────────────────────────────────────────────────────────────
 const stats = {
 	total: enriched.length,
-	withCategory: enriched.filter(i => i.category).length,
-	withSubcategory: enriched.filter(i => i.subcategory).length,
-	withProvision: enriched.filter(i => i.provision_default).length,
-	withConnectors: enriched.filter(i => i.connectors && i.connectors.length > 0).length,
-	withTags: enriched.filter(i => i.tags && i.tags.length > 0).length,
-	withBrand: enriched.filter(i => i.brand).length,
-	withDimensions: enriched.filter(i => i.dimensions).length,
-	withDefaultInputs: enriched.filter(i => i.default_inputs && i.default_inputs.length > 0).length,
-	withPrefix: enriched.filter(i => i.auto_number_prefix).length
+	withCategory: enriched.filter((i) => i.category).length,
+	withSubcategory: enriched.filter((i) => i.subcategory).length,
+	withProvision: enriched.filter((i) => i.provision_default).length,
+	withConnectors: enriched.filter((i) => i.connectors && i.connectors.length > 0).length,
+	withTags: enriched.filter((i) => i.tags && i.tags.length > 0).length,
+	withBrand: enriched.filter((i) => i.brand).length,
+	withDimensions: enriched.filter((i) => i.dimensions).length,
+	withDefaultInputs: enriched.filter((i) => i.default_inputs && i.default_inputs.length > 0).length,
+	withPrefix: enriched.filter((i) => i.auto_number_prefix).length
 };
 
 // ─── GENERATE REPORT ────────────────────────────────────────────────────────
@@ -897,7 +975,7 @@ for (const [key, val] of Object.entries(stats)) {
 
 // Flagged items
 report += `\n## Name Review\n\nItems where auto-cleaned name may need manual attention:\n\n`;
-const nameFlags = flags.filter(f => f.type === 'name_review');
+const nameFlags = flags.filter((f) => f.type === 'name_review');
 if (nameFlags.length === 0) {
 	report += `None - all items have clean names.\n`;
 } else {
@@ -913,22 +991,47 @@ if (orphans.length > 0) {
 	report += `| Directory | Suggested Action |\n|-----------|------------------|\n`;
 	for (const o of orphans) {
 		let action = 'Investigate';
-		if (o.includes('stageboxes') && !o.includes('stagebox')) action = 'Empty parent dir — can delete';
+		if (o.includes('stageboxes') && !o.includes('stagebox'))
+			action = 'Empty parent dir — can delete';
 		if (o.includes('individual_drums')) action = 'Legacy dir — can delete';
 		if (o.includes('truss')) action = 'Consider adding to catalog';
-		if (o.includes('player') || o.includes('man') || o.includes('woman') || o.includes('guitarist') || o.includes('bassist') || o.includes('drummer') || o.includes('pianist') || o.includes('violinist') || o.includes('trumpetplayer') || o.includes('saxophonist') || o.includes('zinfoniaplayer') || o.includes('keytarplayer') || o.includes('percussionist') || o.includes('accordionist') || o.includes('mandoman') || o.includes('keystand')) action = 'Misplaced asset — belongs elsewhere';
+		if (
+			o.includes('player') ||
+			o.includes('man') ||
+			o.includes('woman') ||
+			o.includes('guitarist') ||
+			o.includes('bassist') ||
+			o.includes('drummer') ||
+			o.includes('pianist') ||
+			o.includes('violinist') ||
+			o.includes('trumpetplayer') ||
+			o.includes('saxophonist') ||
+			o.includes('zinfoniaplayer') ||
+			o.includes('keytarplayer') ||
+			o.includes('percussionist') ||
+			o.includes('accordionist') ||
+			o.includes('mandoman') ||
+			o.includes('keystand')
+		)
+			action = 'Misplaced asset — belongs elsewhere';
 		if (o.includes('nordstage88')) action = 'Duplicate of keys/nordstage88 — can delete';
 		if (o.includes('stageplotpro')) action = 'Duplicate of monitors/ entry — can delete';
-		if (o.includes('electricguitar') || o.includes('guitaronstand') || o.includes('sampler')) action = 'Misplaced in amps/guitar — belongs in guitars/ or equipment/';
-		if (o.includes('standw') || o.includes('fenderampback')) action = 'Variant/alternate — consider adding to catalog';
+		if (o.includes('electricguitar') || o.includes('guitaronstand') || o.includes('sampler'))
+			action = 'Misplaced in amps/guitar — belongs in guitars/ or equipment/';
+		if (o.includes('standw') || o.includes('fenderampback'))
+			action = 'Variant/alternate — consider adding to catalog';
 		if (o.includes('marshall412_a')) action = 'Marshall 4x12 variant — consider adding';
-		if (o.includes('femacoustic') || o.includes('banjo_guy') || o.includes('femkeystand')) action = 'Player asset misplaced in instrument dir';
+		if (o.includes('femacoustic') || o.includes('banjo_guy') || o.includes('femkeystand'))
+			action = 'Player asset misplaced in instrument dir';
 		if (o.includes('sixbass')) action = 'Six bass drum setup — listed under drums/hardware';
-		if (o.includes('djembe') && o.includes('dj_gear')) action = 'Djembe misplaced in dj_gear — belongs in percussion/';
-		if (o.includes('fantom') && o.includes('fan')) action = 'Roland Fantom misplaced in fan dir — belongs in keys/';
+		if (o.includes('djembe') && o.includes('dj_gear'))
+			action = 'Djembe misplaced in dj_gear — belongs in percussion/';
+		if (o.includes('fantom') && o.includes('fan'))
+			action = 'Roland Fantom misplaced in fan dir — belongs in keys/';
 		if (o.includes('bongos') && o.includes('bongo')) action = 'Sub-dir in bongo — may be variant';
 		if (o.includes('headsetmic')) action = 'Sub-dir of headset — may need path fix';
-		if (o.match(/people\/male\/(double|female|male|quarter|xlr)/)) action = 'Connector assets misplaced in people/male/';
+		if (o.match(/people\/male\/(double|female|male|quarter|xlr)/))
+			action = 'Connector assets misplaced in people/male/';
 		if (o.includes('people/male/mandolin')) action = 'Instrument misplaced in people/male/';
 		report += `| \`${o}\` | ${action} |\n`;
 	}
@@ -949,11 +1052,18 @@ report += `| \`drums/hardware/sixbass\` | Six bass drum setup — confusing name
 // Missing brand/model
 report += `\n## Items That May Have Known Brands\n\nItems that look branded but weren't in the override map:\n\n`;
 report += `| Path | Current Name | Note |\n|------|-------------|------|\n`;
-const potentialBranded = enriched.filter(i =>
-	!i.brand &&
-	(i.path.includes('bose') || i.path.includes('yamaha') || i.path.includes('roland') ||
-	 i.path.includes('marshall') || i.path.includes('fender') || i.path.includes('nord') ||
-	 i.path.includes('pioneer') || i.path.includes('technics') || i.path.includes('shure'))
+const potentialBranded = enriched.filter(
+	(i) =>
+		!i.brand &&
+		(i.path.includes('bose') ||
+			i.path.includes('yamaha') ||
+			i.path.includes('roland') ||
+			i.path.includes('marshall') ||
+			i.path.includes('fender') ||
+			i.path.includes('nord') ||
+			i.path.includes('pioneer') ||
+			i.path.includes('technics') ||
+			i.path.includes('shure'))
 );
 for (const i of potentialBranded) {
 	report += `| \`${i.path}\` | ${i.name} | Looks branded |\n`;

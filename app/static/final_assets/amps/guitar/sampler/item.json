@@ -1,7 +1,0 @@
-{
-	"name": "Sampler",
-	"item_type": "output",
-	"variants": {
-		"default": "sampler.png"
-	}
-}

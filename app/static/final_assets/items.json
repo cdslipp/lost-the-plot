@@ -851,6 +851,76 @@
 		"common_models": []
 	},
 	{
+		"name": "Kick Drum",
+		"item_type": "instrument",
+		"variants": {
+			"default": "kick.png"
+		},
+		"path": "drums/individual_drums/kick",
+		"is_backline": true,
+		"auto_number_prefix": "Drums",
+		"person_subcategory": "",
+		"brand": "",
+		"model": "",
+		"common_models": []
+	},
+	{
+		"name": "Snare Drum",
+		"item_type": "instrument",
+		"variants": {
+			"default": "snare.png"
+		},
+		"path": "drums/individual_drums/snare",
+		"is_backline": true,
+		"auto_number_prefix": "Drums",
+		"person_subcategory": "",
+		"brand": "",
+		"model": "",
+		"common_models": []
+	},
+	{
+		"name": "Floor Tom",
+		"item_type": "instrument",
+		"variants": {
+			"default": "floortom.png"
+		},
+		"path": "drums/individual_drums/floortom",
+		"is_backline": true,
+		"auto_number_prefix": "Drums",
+		"person_subcategory": "",
+		"brand": "",
+		"model": "",
+		"common_models": []
+	},
+	{
+		"name": "Rack Tom 1",
+		"item_type": "instrument",
+		"variants": {
+			"default": "tom1.png"
+		},
+		"path": "drums/individual_drums/tom1",
+		"is_backline": true,
+		"auto_number_prefix": "Drums",
+		"person_subcategory": "",
+		"brand": "",
+		"model": "",
+		"common_models": []
+	},
+	{
+		"name": "Rack Tom 2",
+		"item_type": "instrument",
+		"variants": {
+			"default": "tom2.png"
+		},
+		"path": "drums/individual_drums/tom2",
+		"is_backline": true,
+		"auto_number_prefix": "Drums",
+		"person_subcategory": "",
+		"brand": "",
+		"model": "",
+		"common_models": []
+	},
+	{
 		"name": "Boss Pedal",
 		"item_type": "pedal",
 		"variants": {
@@ -4237,6 +4307,22 @@
 			"default": "stairs.png"
 		},
 		"path": "stagecraft/stairs",
+		"is_backline": false,
+		"auto_number_prefix": "",
+		"person_subcategory": "",
+		"brand": "",
+		"model": "",
+		"common_models": []
+	},
+	{
+		"name": "Truss",
+		"item_type": "stagecraft",
+		"variants": {
+			"default": "truss.png",
+			"quad": "trussq.png",
+			"projector": "projector_truss.png"
+		},
+		"path": "stagecraft/truss",
 		"is_backline": false,
 		"auto_number_prefix": "",
 		"person_subcategory": "",

@@ -9,9 +9,9 @@ Everything needed for a single usable stage plot.
 - ✅ **Drag-and-drop canvas** — Implement the documented canvas architecture (1056×816px letter landscape) with the real-world scale system (2.327 px/in reference scale)
 - ✅ **Item catalog / command palette** — Cmd+K searchable palette with 50+ categorized items from `item_data.json` (mics, amps, keyboards, drums, monitors, DI boxes, etc.)
 - ✅ **Reactive input list** — Auto-generated input/channel list that stays in sync with plotted items. Add a vocal mic → input list gains a row. Remove it → row disappears.
-- ⏳ **Dynamic labeling & linking** — Bidirectional: click an input list row to highlight the item on stage, click a stage item to highlight its input list entry
+- ⏳ **Dynamic labeling & linking** — Bidirectional: click an input list row to highlight the item on stage ✅, click a stage item to highlight/flash its input list entry ❌
 - ✅ **SQLite action history (undo/redo)** — Every mutation is an action record in SQLite. Undo = reverse the action. Full history scrubbing. This is the backbone of the data layer — build it first.
-- ⏳ **Keyboard-centric navigation** — Tab through items, arrow keys to nudge, Enter to confirm, Escape to deselect. Accessibility-first design.
+- ✅ **Keyboard-centric navigation** — Tab through items, arrow keys to nudge (1px increments, boundary-constrained), Escape to deselect. Accessibility-first design.
 - ✅ **Save/load projects** — SQLite-backed project persistence via OPFS. One project = one stage plot with metadata.
 - ✅ **Basic PDF export** — Single-page PDF rendering of the current plot with input list
 
