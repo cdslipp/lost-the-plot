@@ -2,12 +2,7 @@
 	import PersonCombobox from './PersonCombobox.svelte';
 	import { displayValue, toFeet, unitLabel } from '$lib/utils/scale';
 	import { toggleMode } from 'mode-watcher';
-	import {
-		getItemVariants,
-		getVariantKeys,
-		buildImagePath,
-		getCurrentImageSrc
-	} from '$lib/utils/canvasUtils';
+	import { getCurrentImageSrc } from '$lib/utils/canvasUtils';
 	import { getPlotState } from '$lib/state/stagePlotState.svelte';
 	import type { StagePlotItem } from '@stageplotter/shared';
 
@@ -44,48 +39,6 @@
 		{ w: 4, d: 8, label: "4'×8'" },
 		{ w: 8, d: 8, label: "8'×8'" }
 	];
-
-	function rotateItemLeft(item: StagePlotItem) {
-		const variants = getItemVariants(item);
-		if (!variants) return;
-
-		const variantKeys = Object.keys(variants);
-		const currentIndex = variantKeys.indexOf(item.currentVariant || 'default');
-		const newIndex = (currentIndex - 1 + variantKeys.length) % variantKeys.length;
-		item.currentVariant = variantKeys[newIndex];
-
-		const newImagePath = variants[item.currentVariant];
-		if (newImagePath) {
-			const img = new Image();
-			img.src = buildImagePath(item, newImagePath);
-			img.onload = () => {
-				item.position.width = img.naturalWidth;
-				item.position.height = img.naturalHeight;
-			};
-		}
-		ps.updateItemProperty(item.id, 'currentVariant', item.currentVariant);
-	}
-
-	function rotateItemRight(item: StagePlotItem) {
-		const variants = getItemVariants(item);
-		if (!variants) return;
-
-		const variantKeys = Object.keys(variants);
-		const currentIndex = variantKeys.indexOf(item.currentVariant || 'default');
-		const newIndex = (currentIndex + 1) % variantKeys.length;
-		item.currentVariant = variantKeys[newIndex];
-
-		const newImagePath = variants[item.currentVariant];
-		if (newImagePath) {
-			const img = new Image();
-			img.src = buildImagePath(item, newImagePath);
-			img.onload = () => {
-				item.position.width = img.naturalWidth;
-				item.position.height = img.naturalHeight;
-			};
-		}
-		ps.updateItemProperty(item.id, 'currentVariant', item.currentVariant);
-	}
 
 	// Handle bulk updates
 	function applyBulkPerson() {

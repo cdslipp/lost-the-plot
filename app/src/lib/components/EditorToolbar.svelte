@@ -9,6 +9,9 @@
 
 	import { generateX32Scn, downloadScnFile, type ScnChannelData } from '$lib/utils/scnGenerator';
 	import { browser } from '$app/environment';
+	import { getPlotState } from '$lib/state/stagePlotState.svelte';
+
+	const ps = getPlotState();
 
 	const isMac = browser && /Mac|iPhone|iPad|iPod/.test(navigator.platform);
 	const modKey = isMac ? '⌘' : 'Ctrl+';
@@ -19,59 +22,15 @@
 	let editingDate = $state(false);
 
 	let {
-		title = $bindable(''),
-		revisionDate = $bindable(''),
-		onRevisionDateChange,
 		onAddItem,
 		onImportComplete,
-		onTitleChange,
 		onExportPdf,
-		backHref,
-		items = $bindable([]),
-		musicians = $bindable([]),
-		canvasWidth = $bindable(1100),
-		canvasHeight = $bindable(850),
-		lastModified = $bindable(''),
-		getItemZone,
-		getItemPosition,
-		bandName = '',
-		persons = [],
-		stageWidth = 24,
-		stageDepth = 16,
-		consoleType = null,
-		channelColors = {},
-		stereoLinks = []
+		backHref
 	}: {
-		title: string;
-		revisionDate: string;
-		onRevisionDateChange?: () => void;
 		onAddItem: () => void;
 		onImportComplete: () => void;
-		onTitleChange: () => void;
 		onExportPdf?: () => Promise<void>;
 		backHref?: string;
-		items: any[];
-		musicians: any[];
-		canvasWidth: number;
-		canvasHeight: number;
-		lastModified: string;
-		getItemZone: (item: any) => string;
-		getItemPosition: (item: any) => { x: number; y: number };
-		bandName?: string;
-		consoleType?: string | null;
-		channelColors?: Record<number, string>;
-		stereoLinks?: number[];
-		persons?: Array<{
-			name: string;
-			role?: string | null;
-			pronouns?: string | null;
-			phone?: string | null;
-			email?: string | null;
-			member_type?: string | null;
-			status?: string | null;
-		}>;
-		stageWidth?: number;
-		stageDepth?: number;
 	} = $props();
 
 	async function handleExportPdf() {
@@ -85,24 +44,23 @@
 	}
 
 	function handleExportScn() {
-		// Build channel data from items
-		const channels: ScnChannelData[] = items
+		const channels: ScnChannelData[] = ps.items
 			.filter((item: any) => item.channel)
 			.map((item: any) => ({
 				channel: parseInt(item.channel),
 				name: item.name || '',
-				colorId: channelColors?.[parseInt(item.channel)]
+				colorId: ps.channelColors?.[parseInt(item.channel)]
 			}));
 
 		const scnContent = generateX32Scn({
-			sceneName: title || 'Untitled',
+			sceneName: ps.plotName || 'Untitled',
 			channels,
-			channelColors: channelColors ?? {},
-			stereoLinks: stereoLinks ?? [],
+			channelColors: ps.channelColors ?? {},
+			stereoLinks: ps.stereoLinks ?? [],
 			maxChannels: 32
 		});
 
-		const filename = `${(title || 'scene').replace(/[^a-zA-Z0-9_-]/g, '_')}.scn`;
+		const filename = `${(ps.plotName || 'scene').replace(/[^a-zA-Z0-9_-]/g, '_')}.scn`;
 		downloadScnFile(scnContent, filename);
 	}
 
@@ -110,18 +68,23 @@
 		if (sharing) return;
 		sharing = true;
 		try {
-			// Load the catalog to build the index
 			const resp = await fetch('/final_assets/items.json');
 			const catalog: { path: string }[] = await resp.json();
 			const catalogIndex = buildCatalogIndex(catalog);
 
+			const musicians = ps.plotPersons.map((p) => ({
+				id: p.id,
+				name: p.name,
+				instrument: p.role || ''
+			}));
+
 			const payload = await encodePayload(
 				{
-					stageWidth,
-					stageDepth,
-					items,
+					stageWidth: ps.stageWidth,
+					stageDepth: ps.stageDepth,
+					items: ps.items as any[],
 					musicians,
-					persons: persons.map((p) => ({
+					persons: ps.bandPersonsFull.map((p) => ({
 						name: p.name,
 						role: p.role ?? undefined,
 						pronouns: p.pronouns ?? undefined,
@@ -134,7 +97,7 @@
 				catalogIndex
 			);
 
-			const url = buildShareUrl(window.location.origin, bandName, title, payload);
+			const url = buildShareUrl(window.location.origin, ps.bandName, ps.plotName, payload);
 
 			await navigator.clipboard.writeText(url);
 			shareCopied = true;
@@ -172,8 +135,8 @@
 		{/if}
 		<div class="min-w-0 flex-1">
 			<input
-				bind:value={title}
-				oninput={() => onTitleChange()}
+				bind:value={ps.plotName}
+				oninput={() => ps.debouncedWrite()}
 				class="w-full min-w-0 border-b-2 border-dashed border-border-secondary bg-transparent px-2 py-1 font-serif text-3xl font-bold text-text-primary transition-all placeholder:font-normal placeholder:text-text-tertiary hover:border-border-primary focus:border-solid focus:border-stone-500 focus:outline-none"
 				placeholder="Plot Name"
 			/>
@@ -182,15 +145,15 @@
 					type="date"
 					value={(() => {
 						try {
-							return new Date(revisionDate).toISOString().split('T')[0];
+							return new Date(ps.revisionDate).toISOString().split('T')[0];
 						} catch {
 							return new Date().toISOString().split('T')[0];
 						}
 					})()}
 					onchange={(e) => {
 						const target = e.target as HTMLInputElement;
-						revisionDate = target.value;
-						onRevisionDateChange?.();
+						ps.revisionDate = target.value;
+						ps.debouncedWrite();
 						editingDate = false;
 					}}
 					onblur={() => (editingDate = false)}
@@ -204,9 +167,9 @@
 				>
 					Revised: {(() => {
 						try {
-							return new Date(revisionDate).toISOString().split('T')[0];
+							return new Date(ps.revisionDate).toISOString().split('T')[0];
 						} catch {
-							return revisionDate;
+							return ps.revisionDate;
 						}
 					})()}
 				</button>
@@ -238,19 +201,7 @@
 			{/if}
 			{shareCopied ? 'Copied!' : 'Share'}
 		</button>
-		<ImportExport
-			bind:title
-			bind:lastModified
-			bind:items
-			bind:canvasWidth
-			bind:canvasHeight
-			{getItemZone}
-			{getItemPosition}
-			{onImportComplete}
-			onExportPdf={handleExportPdf}
-			onExportScn={handleExportScn}
-			{consoleType}
-		/>
+		<ImportExport {onImportComplete} onExportPdf={handleExportPdf} onExportScn={handleExportScn} />
 		<button
 			onclick={onAddItem}
 			class="flex items-center gap-2 rounded-lg bg-stone-900 px-4 py-2 text-sm text-white transition hover:bg-stone-800 dark:bg-stone-100 dark:text-stone-900 dark:hover:bg-stone-200"

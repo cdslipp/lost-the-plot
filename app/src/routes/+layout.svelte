@@ -135,7 +135,7 @@
 	<div class="pointer-events-none fixed top-0 left-0 z-20 flex h-screen items-end select-none">
 		<div class="flex flex-col items-center pb-8">
 			<button
-				class="pointer-events-auto mb-16 h-20 w-16 cursor-pointer border-none bg-transparent p-0 outline-none"
+				class="pointer-events-auto mb-16 lg:mb-24 h-20 w-16 cursor-pointer border-none bg-transparent p-0 outline-none"
 				style="transform: rotate(-8deg);"
 				onclick={handleInstrumentClick}
 				aria-label="Change instrument"

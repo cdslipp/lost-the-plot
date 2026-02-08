@@ -31,7 +31,8 @@ import {
 	getPersonsForPlot,
 	getActivePersonsByBandId,
 	getFullPersonsByBandId,
-	createPerson as createPersonDb
+	createPerson as createPersonDb,
+	type PersonRow
 } from '$lib/db/repositories/persons';
 import {
 	addPersonToPlot as addPersonToPlotDb,
@@ -88,7 +89,7 @@ export class StagePlotState {
 	bandPersons = $state<
 		{ id: number; name: string; role: string | null; member_type: string | null }[]
 	>([]);
-	bandPersonsFull = $state<any[]>([]);
+	bandPersonsFull = $state<PersonRow[]>([]);
 
 	// UI state
 	showZones = $state(true);
@@ -646,6 +647,24 @@ export class StagePlotState {
 	}
 
 	// --- Variant rotation ---
+
+	rotateItemLeft(item: any) {
+		const variants = getItemVariants(item);
+		if (!variants) return;
+		const variantKeys = getVariantKeys(item);
+		const currentIndex = variantKeys.indexOf(item.currentVariant || 'default');
+		const newIndex = (currentIndex - 1 + variantKeys.length) % variantKeys.length;
+		item.currentVariant = variantKeys[newIndex];
+		const newImagePath = variants[item.currentVariant];
+		const img = new Image();
+		img.src = buildImagePath(item, newImagePath);
+		img.onload = () => {
+			item.position.width = img.naturalWidth;
+			item.position.height = img.naturalHeight;
+			this.commitChange();
+		};
+		this.updateItemProperty(item.id, 'currentVariant', item.currentVariant);
+	}
 
 	rotateItemRight(item: any) {
 		const variants = getItemVariants(item);

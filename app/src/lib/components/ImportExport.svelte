@@ -6,7 +6,9 @@
 		type CanvasDimensions,
 		type StageArea
 	} from '$lib/utils/canvas';
-	import type { StagePlotItem } from '@stageplotter/shared';
+	import { getPlotState } from '$lib/state/stagePlotState.svelte';
+
+	const ps = getPlotState();
 
 	type StagePlotExport = {
 		version: string;
@@ -38,19 +40,13 @@
 	};
 
 	let {
-		title = $bindable<string>(''),
-		lastModified = $bindable<string>(''),
-		items = $bindable<StagePlotItem[]>([]),
-		canvasWidth = $bindable<number>(1100),
-		canvasHeight = $bindable<number>(850),
-		getItemZone = $bindable<((item: StagePlotItem) => string) | undefined>(undefined),
-		getItemPosition = $bindable<((item: StagePlotItem) => { x: number; y: number }) | undefined>(
-			undefined
-		),
-		onImportComplete = $bindable<(() => void) | undefined>(undefined),
-		onExportPdf = $bindable<(() => Promise<void>) | undefined>(undefined),
-		onExportScn = $bindable<(() => void) | undefined>(undefined),
-		consoleType = $bindable<string | null>(null)
+		onImportComplete,
+		onExportPdf,
+		onExportScn
+	}: {
+		onImportComplete?: () => void;
+		onExportPdf?: () => Promise<void>;
+		onExportScn?: () => void;
 	} = $props();
 
 	let fileInput: HTMLInputElement;
@@ -58,19 +54,18 @@
 
 	// Export functionality
 	function exportStagePlot() {
-		// Use standard configuration for consistent layout
 		const standardConfig = getStandardConfig();
 
 		const stagePlot: StagePlotExport = {
 			version: '1.0.0',
 			type: 'stage_plot',
-			plot_name: title || 'Untitled Stage Plot',
-			revision_date: new Date().toISOString().split('T')[0], // YYYY-MM-DD format
+			plot_name: ps.plotName || 'Untitled Stage Plot',
+			revision_date: new Date().toISOString().split('T')[0],
 			canvas: standardConfig.canvas,
 			stage: standardConfig.stage,
-			items: items.map((item) => {
-				const zone = getItemZone ? getItemZone(item) : 'DSC';
-				const relativePos = getItemPosition ? getItemPosition(item) : { x: 0, y: 0 };
+			items: ps.items.map((item) => {
+				const zone = ps.getItemZone(item);
+				const relativePos = ps.getItemPosition(item);
 
 				return {
 					id: item.id,
@@ -98,15 +93,13 @@
 			}
 		};
 
-		// Create and download the file
 		const dataStr = JSON.stringify(stagePlot, null, 2);
 		const dataBlob = new Blob([dataStr], { type: 'application/json' });
 
 		const link = document.createElement('a');
 		link.href = URL.createObjectURL(dataBlob);
 
-		// Generate filename from plot name or use default
-		const plotName = title || 'stage-plot';
+		const plotName = ps.plotName || 'stage-plot';
 		const safeName = plotName.replace(/[^a-z0-9]/gi, '-').toLowerCase();
 		const timestamp = new Date().toISOString().split('T')[0];
 		link.download = `${safeName}-${timestamp}.json`;
@@ -115,7 +108,6 @@
 		link.click();
 		document.body.removeChild(link);
 
-		// Close the menu
 		isMenuOpen = false;
 	}
 
@@ -153,24 +145,20 @@
 			try {
 				const jsonData = JSON.parse(e.target?.result as string);
 
-				// Basic validation
 				if (!jsonData.version || !jsonData.type || jsonData.type !== 'stage_plot') {
 					throw new Error('Invalid stage plot file format');
 				}
 
-				// Load the data
-				if (jsonData.plot_name) title = jsonData.plot_name;
+				if (jsonData.plot_name) ps.plotName = jsonData.plot_name;
 				if (jsonData.revision_date)
-					lastModified = new Date(jsonData.revision_date).toISOString().split('T')[0];
+					ps.revisionDate = new Date(jsonData.revision_date).toISOString().split('T')[0];
 
-				// Load canvas dimensions (enforce standard format)
 				const standardConfig = getStandardConfig();
-				canvasWidth = standardConfig.canvas.width;
-				canvasHeight = standardConfig.canvas.height;
+				ps.canvasWidth = standardConfig.canvas.width;
+				ps.canvasHeight = standardConfig.canvas.height;
 
-				// Load items
 				if (jsonData.items && Array.isArray(jsonData.items)) {
-					items = jsonData.items.map((exportedItem: any) => ({
+					ps.items = jsonData.items.map((exportedItem: any) => ({
 						id: exportedItem.id,
 						name: exportedItem.name,
 						type: exportedItem.type || 'input',
@@ -187,10 +175,8 @@
 					}));
 				}
 
-				// Update last modified to now since we just imported
-				lastModified = new Date().toISOString().split('T')[0];
+				ps.revisionDate = new Date().toISOString().split('T')[0];
 
-				// Notify parent component
 				if (onImportComplete) onImportComplete();
 
 				alert('Stage plot imported successfully!');
@@ -202,7 +188,6 @@
 
 		reader.readAsText(file);
 
-		// Reset file input
 		target.value = '';
 	}
 </script>
@@ -307,7 +292,7 @@
 			</DropdownMenu.Item>
 		{/if}
 
-		{#if onExportScn && consoleType === 'x32'}
+		{#if onExportScn && ps.consoleType === 'x32'}
 			<DropdownMenu.Item
 				onSelect={handleExportScn}
 				class="flex cursor-pointer items-start gap-3 rounded-md px-3 py-2 text-sm text-text-primary hover:bg-surface-hover"

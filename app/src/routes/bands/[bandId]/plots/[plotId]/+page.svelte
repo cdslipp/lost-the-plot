@@ -43,11 +43,11 @@
 	const selectedIds = $derived(
 		new Set(selectedItems.map((el: any) => el.dataset?.id).filter(Boolean))
 	);
-	let editingItem = $state<any>(null);
 	let isAddingItem = $state(false);
 	let replacingItemId = $state<number | null>(null);
 	let placingItem = $state<any>(null);
 	let selecto: any;
+	// Plain `let` (not $state) — used as a synchronous flag to prevent click-after-select races
 	let justSelected = false;
 
 	// --- Pointer drag state ---
@@ -248,18 +248,6 @@
 			mediumQuery.removeEventListener('change', updateLayout);
 			desktopQuery.removeEventListener('change', updateLayout);
 		};
-	});
-
-	// --- Item position tracking effect ---
-	$effect(() => {
-		if (ps.items.length > 0 && ps.canvasWidth > 0 && ps.canvasHeight > 0) {
-			ps.items.forEach((item: any) => {
-				item.position.x;
-				item.position.y;
-				item.position.width;
-				item.position.height;
-			});
-		}
 	});
 
 	// --- Command palette / item placement ---
@@ -622,7 +610,6 @@
 	function handleImportComplete() {
 		clearSelections();
 		placingItem = null;
-		editingItem = null;
 		ps.commitChange();
 	}
 
@@ -679,28 +666,10 @@
 <div class="flex h-[calc(100dvh-4.25rem)] flex-col gap-3 overflow-hidden">
 	<div class="shrink-0">
 		<EditorToolbar
-			bind:title={ps.plotName}
-			bind:revisionDate={ps.revisionDate}
 			onAddItem={openAddMenu}
 			onImportComplete={handleImportComplete}
 			onExportPdf={handleExportPdf}
 			backHref={'/bands/' + bandId}
-			bind:items={ps.items}
-			musicians={ps.plotPersons.map((p) => ({ id: p.id, name: p.name, instrument: p.role || '' }))}
-			bind:canvasWidth={ps.canvasWidth}
-			bind:canvasHeight={ps.canvasHeight}
-			bind:lastModified={ps.revisionDate}
-			getItemZone={(item) => ps.getItemZone(item)}
-			getItemPosition={(item) => ps.getItemPosition(item)}
-			onTitleChange={() => ps.debouncedWrite()}
-			onRevisionDateChange={() => ps.debouncedWrite()}
-			bandName={ps.bandName}
-			persons={ps.bandPersonsFull}
-			stageWidth={ps.stageWidth}
-			stageDepth={ps.stageDepth}
-			consoleType={ps.consoleType}
-			channelColors={ps.channelColors}
-			stereoLinks={ps.stereoLinks}
 		/>
 	</div>
 
@@ -759,10 +728,8 @@
 											<div
 												{...itemProps}
 												class="group selectable-item absolute cursor-move select-none"
-												class:ring-2={editingItem?.id === item.id ||
-													selectedIds.has(String(item.id))}
-												class:ring-blue-500={editingItem?.id === item.id ||
-													selectedIds.has(String(item.id))}
+												class:ring-2={selectedIds.has(String(item.id))}
+												class:ring-blue-500={selectedIds.has(String(item.id))}
 												data-id={item.id}
 												style="left: {item.position.x}px; top: {item.position.y}px; width: {item
 													.position.width}px; height: {item.position.height}px; touch-action: none;"
@@ -990,11 +957,11 @@
 				class="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden"
 				bind:this={stagePlotContainer}
 			>
-				<div class="flex min-h-0 flex-1 flex-col overflow-hidden">
+				<div class="flex min-h-0 flex-[2] flex-col overflow-hidden">
 					{@render canvasContent()}
 				</div>
 
-				<div class="min-h-0 flex-1 overflow-hidden">
+				<div class="min-h-0 flex-1 max-h-[500px] overflow-hidden">
 					{@render patchContent(6)}
 				</div>
 			</div>

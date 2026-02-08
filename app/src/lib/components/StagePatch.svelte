@@ -230,9 +230,6 @@
 		return '';
 	}
 
-	// Context menu state
-	let contextMenuChannel = $state<number | null>(null);
-
 	// Load items on component mount
 	onMount(async () => {
 		try {
@@ -395,11 +392,7 @@
 									{@const linked = isLinked(channelNum)}
 									{@const linkedTop = isLinkedTop(channelNum)}
 									{@const linkedBottom = isLinkedBottom(channelNum)}
-									<ContextMenu.Root
-										onOpenChange={(open) => {
-											if (open) contextMenuChannel = channelNum;
-										}}
-									>
+									<ContextMenu.Root>
 										<ContextMenu.Trigger>
 											<div
 												class="flex items-center border-b border-border-primary last:border-b-0 {linkedTop
@@ -695,11 +688,7 @@
 									{@const linked = isOutputLinked(channelNum)}
 									{@const linkedTop = isOutputLinkedTop(channelNum)}
 									{@const linkedBottom = isOutputLinkedBottom(channelNum)}
-									<ContextMenu.Root
-										onOpenChange={(open) => {
-											if (open) contextMenuChannel = channelNum;
-										}}
-									>
+									<ContextMenu.Root>
 										<ContextMenu.Trigger>
 											<div
 												class="flex items-center border-b border-border-primary last:border-b-0 {linkedTop
