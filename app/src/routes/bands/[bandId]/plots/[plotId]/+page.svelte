@@ -1,7 +1,7 @@
 <script lang="ts">
 	// SPDX-License-Identifier: AGPL-3.0-only
 	import { onMount } from 'svelte';
-	import { ItemCommandPalette, StagePatch, ImportExport } from '$lib';
+	import { ItemCommandPalette, StagePatch } from '$lib';
 	import type { ProcessedItem } from '$lib/utils/finalAssetsLoader';
 	import Selecto from 'selecto';
 	import { onClickOutside, PressedKeys } from 'runed';
@@ -17,7 +17,6 @@
 	import { browser } from '$app/environment';
 	import { getVariantKeys, getCurrentImageSrc } from '$lib/utils/canvasUtils';
 	import { StagePlotState, setPlotState } from '$lib/state/stagePlotState.svelte';
-	import type { ChannelMode } from '@stageplotter/shared';
 
 	// --- Route params ---
 	let plotId = $derived($page.params.plotId);
