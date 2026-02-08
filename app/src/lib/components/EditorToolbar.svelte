@@ -174,13 +174,19 @@
 			<input
 				bind:value={title}
 				oninput={() => onTitleChange()}
-				class="min-w-0 w-full border-b-2 border-dashed border-border-secondary bg-transparent px-2 py-1 font-serif text-3xl font-bold text-text-primary transition-all placeholder:font-normal placeholder:text-text-tertiary hover:border-border-primary focus:border-solid focus:border-stone-500 focus:outline-none"
+				class="w-full min-w-0 border-b-2 border-dashed border-border-secondary bg-transparent px-2 py-1 font-serif text-3xl font-bold text-text-primary transition-all placeholder:font-normal placeholder:text-text-tertiary hover:border-border-primary focus:border-solid focus:border-stone-500 focus:outline-none"
 				placeholder="Plot Name"
 			/>
 			{#if editingDate}
 				<input
 					type="date"
-					value={(() => { try { return new Date(revisionDate).toISOString().split('T')[0]; } catch { return new Date().toISOString().split('T')[0]; } })()}
+					value={(() => {
+						try {
+							return new Date(revisionDate).toISOString().split('T')[0];
+						} catch {
+							return new Date().toISOString().split('T')[0];
+						}
+					})()}
 					onchange={(e) => {
 						const target = e.target as HTMLInputElement;
 						revisionDate = target.value;
@@ -194,9 +200,15 @@
 				<button
 					type="button"
 					onclick={() => (editingDate = true)}
-					class="mt-0.5 px-2 text-[11px] font-medium text-text-tertiary hover:text-text-secondary transition-colors cursor-pointer"
+					class="mt-0.5 cursor-pointer px-2 text-[11px] font-medium text-text-tertiary transition-colors hover:text-text-secondary"
 				>
-					Revised: {(() => { try { return new Date(revisionDate).toISOString().split('T')[0]; } catch { return revisionDate; } })()}
+					Revised: {(() => {
+						try {
+							return new Date(revisionDate).toISOString().split('T')[0];
+						} catch {
+							return revisionDate;
+						}
+					})()}
 				</button>
 			{/if}
 		</div>

@@ -2,7 +2,7 @@
 	import { STAGE_SIZES, formatDimensions } from '$lib/utils/scale';
 
 	type StageDeckSize = '4x4' | '4x8' | '8x8';
-	
+
 	let {
 		size = $bindable<StageDeckSize>('4x4'),
 		x = $bindable<number>(0),
@@ -38,7 +38,7 @@
 		rx="4"
 		ry="4"
 	/>
-	
+
 	<!-- Wood grain lines for texture -->
 	{#each Array(Math.floor(stageSize.height / 8)) as _, i}
 		<line
@@ -51,24 +51,12 @@
 			opacity="0.3"
 		/>
 	{/each}
-	
+
 	<!-- Corner reinforcements -->
-	{#each [
-		[4, 4],
-		[stageSize.width - 12, 4],
-		[4, stageSize.height - 12],
-		[stageSize.width - 12, stageSize.height - 12]
-	] as [cornerX, cornerY]}
-		<rect
-			x={cornerX}
-			y={cornerY}
-			width="8"
-			height="8"
-			fill="#8B7355"
-			rx="1"
-		/>
+	{#each [[4, 4], [stageSize.width - 12, 4], [4, stageSize.height - 12], [stageSize.width - 12, stageSize.height - 12]] as [cornerX, cornerY]}
+		<rect x={cornerX} y={cornerY} width="8" height="8" fill="#8B7355" rx="1" />
 	{/each}
-	
+
 	<!-- Size label (only show if deck is large enough) -->
 	{#if stageSize.width > 60 && stageSize.height > 40}
 		<text
@@ -102,16 +90,16 @@
 		cursor: move;
 		transition: opacity 0.2s ease;
 	}
-	
+
 	.stage-deck:hover {
 		opacity: 0.9;
 	}
-	
+
 	.stage-deck.selected {
 		filter: drop-shadow(0 0 4px #2563eb);
 	}
-	
+
 	.stage-deck:hover rect:first-child {
-		fill: #DAA520;
+		fill: #daa520;
 	}
 </style>

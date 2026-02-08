@@ -5,34 +5,18 @@
 	import ChannelColorPicker from './ChannelColorPicker.svelte';
 	import {
 		CONSOLES,
-		getConsoleColor
+		getConsoleColor,
+		type StagePlotItem,
+		type PlotOutputItem,
+		type ChannelMode
 	} from '@stageplotter/shared';
 
-	type Item = {
-		id: number;
-		name: string;
-		channel: string;
-		person_id: number | null;
-		itemData: any;
-		category?: string;
-	};
-
-	type OutputItem = {
-		id: number;
-		name: string;
-		channel: string;
-		itemData: any;
-		link_mode?: 'mono' | 'stereo_pair';
-	};
-
-	type ChannelMode = 8 | 16 | 24 | 32 | 48;
-
 	type Props = {
-		items: Item[];
-		outputs?: OutputItem[];
+		items: StagePlotItem[];
+		outputs?: PlotOutputItem[];
 		onUpdateItem?: (itemId: number, property: string, value: string) => void;
 		onReorderPatch?: (fromIndex: number, toIndex: number) => void;
-		onSelectItem?: (item: Item, event: MouseEvent) => void;
+		onSelectItem?: (item: StagePlotItem, event: MouseEvent) => void;
 		onAddItem?: (item: ProcessedItem, channel: number) => void;
 		onRemoveItem?: (channel: number) => void;
 		onOutputSelect?: (item: ProcessedItem, channel: number) => void;
@@ -86,7 +70,7 @@
 	const OUTPUT_ROWS_PER_COLUMN = $derived(Math.ceil(outputChannelMode / NUM_COLUMNS));
 
 	// Derive console definition from selected type
-	const consoleDef = $derived(consoleType ? CONSOLES[consoleType] ?? null : null);
+	const consoleDef = $derived(consoleType ? (CONSOLES[consoleType] ?? null) : null);
 	const availableColors = $derived(consoleDef?.colors ?? []);
 
 	// State for loaded items
@@ -98,10 +82,10 @@
 	// This ensures perfect, reactive linkage with the canvas.
 	// Map channel → full canvas item (stagePlot item) for quick lookup
 	const canvasItemByChannel = $derived.by(() => {
-		const map: Record<number, Item | null> = {};
+		const map: Record<number, StagePlotItem | null> = {};
 		items.forEach((it) => {
 			if (it.channel) {
-				map[parseInt(it.channel as string)] = it as Item;
+				map[parseInt(it.channel as string)] = it;
 			}
 		});
 		return map;
@@ -263,7 +247,6 @@
 				includeAccessories: true,
 				includeSymbols: false
 			});
-
 		} catch (err) {
 			console.error('Error loading final assets:', err);
 		} finally {
@@ -331,29 +314,23 @@
 	// Split input channels into columns
 	const inputColumns = $derived.by(() => {
 		return Array.from({ length: NUM_COLUMNS }, (_, col) =>
-			inputChannelNumbers.slice(
-				col * INPUT_ROWS_PER_COLUMN,
-				(col + 1) * INPUT_ROWS_PER_COLUMN
-			)
+			inputChannelNumbers.slice(col * INPUT_ROWS_PER_COLUMN, (col + 1) * INPUT_ROWS_PER_COLUMN)
 		);
 	});
 
 	// Split output channels into columns
 	const outputColumns = $derived.by(() => {
 		return Array.from({ length: NUM_COLUMNS }, (_, col) =>
-			outputChannelNumbers.slice(
-				col * OUTPUT_ROWS_PER_COLUMN,
-				(col + 1) * OUTPUT_ROWS_PER_COLUMN
-			)
+			outputChannelNumbers.slice(col * OUTPUT_ROWS_PER_COLUMN, (col + 1) * OUTPUT_ROWS_PER_COLUMN)
 		);
 	});
 </script>
 
-<div class="h-full border border-border-primary bg-surface rounded-xl shadow-sm overflow-hidden">
+<div class="h-full overflow-hidden rounded-xl border border-border-primary bg-surface shadow-sm">
 	<Tabs.Root value="inputs" class="w-full">
 		<!-- Tab Headers -->
 		<div class="border-b border-border-primary bg-muted/30 px-4 pt-4">
-			<div class="flex items-center justify-between mb-3">
+			<div class="mb-3 flex items-center justify-between">
 				<h2 class="text-xl font-semibold text-text-primary">Patch List</h2>
 				<div class="flex items-center gap-3">
 					<div class="text-sm text-text-secondary">
@@ -364,8 +341,11 @@
 					</div>
 					{#if onClearPatch}
 						<button
-							onclick={() => { if (confirm('Clear all channel assignments? Items will remain on the canvas.')) onClearPatch(); }}
-							class="rounded-md border border-border-primary px-2.5 py-1 text-xs text-text-secondary transition hover:bg-red-50 hover:text-red-600 hover:border-red-300 dark:hover:bg-red-900/20 dark:hover:text-red-400 dark:hover:border-red-700"
+							onclick={() => {
+								if (confirm('Clear all channel assignments? Items will remain on the canvas.'))
+									onClearPatch();
+							}}
+							class="rounded-md border border-border-primary px-2.5 py-1 text-xs text-text-secondary transition hover:border-red-300 hover:bg-red-50 hover:text-red-600 dark:hover:border-red-700 dark:hover:bg-red-900/20 dark:hover:text-red-400"
 							title="Clear all channel assignments"
 						>
 							Clear Patch
@@ -377,13 +357,13 @@
 			<Tabs.List class="flex gap-1">
 				<Tabs.Trigger
 					value="inputs"
-					class="flex-1 text-center px-4 py-3 text-sm font-medium rounded-t-lg transition-colors data-[state=active]:bg-surface data-[state=active]:text-text-primary data-[state=inactive]:text-text-secondary hover:text-text-primary"
+					class="flex-1 rounded-t-lg px-4 py-3 text-center text-sm font-medium transition-colors hover:text-text-primary data-[state=active]:bg-surface data-[state=active]:text-text-primary data-[state=inactive]:text-text-secondary"
 				>
 					Inputs
 				</Tabs.Trigger>
 				<Tabs.Trigger
 					value="outputs"
-					class="flex-1 text-center px-4 py-3 text-sm font-medium rounded-t-lg transition-colors data-[state=active]:bg-surface data-[state=active]:text-text-primary data-[state=inactive]:text-text-secondary hover:text-text-primary"
+					class="flex-1 rounded-t-lg px-4 py-3 text-center text-sm font-medium transition-colors hover:text-text-primary data-[state=active]:bg-surface data-[state=active]:text-text-primary data-[state=inactive]:text-text-secondary"
 				>
 					Outputs
 				</Tabs.Trigger>
@@ -398,7 +378,7 @@
 					<div class="py-8 text-center text-text-secondary">
 						<div class="flex flex-col items-center gap-2">
 							<div
-								class="animate-spin h-6 w-6 border-2 border-text-secondary border-t-transparent rounded-full"
+								class="h-6 w-6 animate-spin rounded-full border-2 border-text-secondary border-t-transparent"
 							></div>
 							<div>Loading items...</div>
 						</div>
@@ -415,13 +395,23 @@
 									{@const linked = isLinked(channelNum)}
 									{@const linkedTop = isLinkedTop(channelNum)}
 									{@const linkedBottom = isLinkedBottom(channelNum)}
-									<ContextMenu.Root onOpenChange={(open) => { if (open) contextMenuChannel = channelNum; }}>
+									<ContextMenu.Root
+										onOpenChange={(open) => {
+											if (open) contextMenuChannel = channelNum;
+										}}
+									>
 										<ContextMenu.Trigger>
 											<div
-												class="border-b border-border-primary last:border-b-0 flex items-center {linkedTop ? 'h-10 border-b-0' : linkedBottom ? 'h-10 border-b border-border-primary' : 'h-10'}"
+												class="flex items-center border-b border-border-primary last:border-b-0 {linkedTop
+													? 'h-10 border-b-0'
+													: linkedBottom
+														? 'h-10 border-b border-border-primary'
+														: 'h-10'}"
 											>
 												<!-- Channel number cell with color picker -->
-												<div class="w-10 h-full flex-shrink-0 flex items-center justify-center border-r border-border-primary">
+												<div
+													class="flex h-full w-10 flex-shrink-0 items-center justify-center border-r border-border-primary"
+												>
 													{#if availableColors.length > 0}
 														<ChannelColorPicker
 															colors={availableColors}
@@ -430,22 +420,49 @@
 															onSelectColor={(ch, colorId) => onChannelColorChange?.(ch, colorId)}
 														>
 															<div
-																class="w-full h-full flex items-center justify-center text-xs font-semibold cursor-pointer transition-colors {linked ? 'ring-1 ring-inset ring-yellow-400/50' : ''} {!channelColors[channelNum] && selectedInputItemsByChannel[channelNum] ? 'bg-blue-600 text-white' : !channelColors[channelNum] ? 'bg-muted/50 text-text-secondary' : ''}"
+																class="flex h-full w-full cursor-pointer items-center justify-center text-xs font-semibold transition-colors {linked
+																	? 'ring-1 ring-yellow-400/50 ring-inset'
+																	: ''} {!channelColors[channelNum] &&
+																selectedInputItemsByChannel[channelNum]
+																	? 'bg-blue-600 text-white'
+																	: !channelColors[channelNum]
+																		? 'bg-muted/50 text-text-secondary'
+																		: ''}"
 																style={getChannelBadgeStyle(channelNum)}
 															>
 																{#if linkedTop}
 																	<span class="flex flex-col items-center leading-none">
 																		<span>{channelNum}</span>
-																		<svg class="w-3 h-3 opacity-60 -mb-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-																			<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
-																			<path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+																		<svg
+																			class="-mb-0.5 h-3 w-3 opacity-60"
+																			viewBox="0 0 24 24"
+																			fill="none"
+																			stroke="currentColor"
+																			stroke-width="2"
+																		>
+																			<path
+																				d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"
+																			/>
+																			<path
+																				d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"
+																			/>
 																		</svg>
 																	</span>
 																{:else if linkedBottom}
 																	<span class="flex flex-col items-center leading-none">
-																		<svg class="w-3 h-3 opacity-60 -mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-																			<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
-																			<path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+																		<svg
+																			class="-mt-0.5 h-3 w-3 opacity-60"
+																			viewBox="0 0 24 24"
+																			fill="none"
+																			stroke="currentColor"
+																			stroke-width="2"
+																		>
+																			<path
+																				d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"
+																			/>
+																			<path
+																				d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"
+																			/>
 																		</svg>
 																		<span>{channelNum}</span>
 																	</span>
@@ -456,7 +473,11 @@
 														</ChannelColorPicker>
 													{:else}
 														<div
-															class="w-full h-full flex items-center justify-center text-xs font-semibold cursor-pointer transition-colors {selectedInputItemsByChannel[channelNum] ? 'bg-blue-600 text-white' : 'bg-muted/50 text-text-secondary'}"
+															class="flex h-full w-full cursor-pointer items-center justify-center text-xs font-semibold transition-colors {selectedInputItemsByChannel[
+																channelNum
+															]
+																? 'bg-blue-600 text-white'
+																: 'bg-muted/50 text-text-secondary'}"
 															onclick={() => {
 																const itm = canvasItemByChannel[channelNum];
 																itm && onSelectItem?.(itm, new MouseEvent('click'));
@@ -470,22 +491,18 @@
 												<!-- Combobox cell -->
 												<div class="flex-1 px-1">
 													<Combobox.Root
-														value={selectedInputItemsByChannel[channelNum]?.id ??
-															undefined}
+														value={selectedInputItemsByChannel[channelNum]?.id ?? undefined}
 														type="single"
 														name="input-{channelNum}"
-														inputValue={selectedInputItemsByChannel[channelNum]
-															?.name ?? ''}
+														inputValue={selectedInputItemsByChannel[channelNum]?.name ?? ''}
 														onValueChange={(value) => {
-															const selected = allAvailableItems.find(
-																(item) => item.id === value
-															);
+															const selected = allAvailableItems.find((item) => item.id === value);
 															handleInputItemSelect(channelNum, selected || null);
 														}}
 													>
 														<div class="relative">
 															<Combobox.Input
-																class="w-full h-8 px-2 text-xs bg-transparent border-0 outline-none placeholder:text-text-secondary/50 focus:ring-1 focus:ring-foreground/20 rounded"
+																class="focus:ring-foreground/20 h-8 w-full rounded border-0 bg-transparent px-2 text-xs outline-none placeholder:text-text-secondary/50 focus:ring-1"
 																placeholder="Select item..."
 																oninput={(e) => {
 																	inputSearchValues[channelNum] = (
@@ -494,7 +511,7 @@
 																}}
 															/>
 															<Combobox.Trigger
-																class="absolute right-1 top-1/2 -translate-y-1/2 w-4 h-4 opacity-50 hover:opacity-100"
+																class="absolute top-1/2 right-1 h-4 w-4 -translate-y-1/2 opacity-50 hover:opacity-100"
 															>
 																<svg
 																	xmlns="http://www.w3.org/2000/svg"
@@ -502,7 +519,7 @@
 																	fill="none"
 																	stroke="currentColor"
 																	stroke-width="2"
-																	class="w-full h-full"
+																	class="h-full w-full"
 																>
 																	<path d="M6 9l6 6 6-6" />
 																</svg>
@@ -519,12 +536,10 @@
 																		<Combobox.Item
 																			value={item.id}
 																			label={item.name}
-																			class="relative flex cursor-pointer select-none items-center rounded px-2 py-1.5 text-xs outline-none data-[highlighted]:bg-muted"
+																			class="relative flex cursor-pointer items-center rounded px-2 py-1.5 text-xs outline-none select-none data-[highlighted]:bg-muted"
 																		>
 																			{#snippet children({ selected })}
-																				<span class="truncate"
-																					>{item.name}</span
-																				>
+																				<span class="truncate">{item.name}</span>
 																				{#if selected}
 																					<svg
 																						class="ml-auto h-3 w-3"
@@ -533,17 +548,13 @@
 																						stroke="currentColor"
 																						stroke-width="2"
 																					>
-																						<path
-																							d="M20 6L9 17l-5-5"
-																						/>
+																						<path d="M20 6L9 17l-5-5" />
 																					</svg>
 																				{/if}
 																			{/snippet}
 																		</Combobox.Item>
 																	{:else}
-																		<div
-																			class="px-2 py-1.5 text-xs text-text-secondary"
-																		>
+																		<div class="px-2 py-1.5 text-xs text-text-secondary">
 																			No items found
 																		</div>
 																	{/each}
@@ -555,7 +566,9 @@
 											</div>
 										</ContextMenu.Trigger>
 										<ContextMenu.Portal>
-											<ContextMenu.Content class="z-50 min-w-[180px] rounded-md border border-border-primary bg-surface p-1 shadow-lg">
+											<ContextMenu.Content
+												class="z-50 min-w-[180px] rounded-md border border-border-primary bg-surface p-1 shadow-lg"
+											>
 												{#if channelNum % 2 === 1}
 													<!-- Odd channel: can link with next -->
 													{@const isCurrentlyLinked = stereoLinkSet.has(channelNum)}
@@ -563,11 +576,23 @@
 														class="flex cursor-pointer items-center rounded px-2 py-1.5 text-xs outline-none hover:bg-muted"
 														onSelect={() => toggleStereoLink(channelNum)}
 													>
-														<svg class="w-3.5 h-3.5 mr-2 opacity-70" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-															<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
-															<path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+														<svg
+															class="mr-2 h-3.5 w-3.5 opacity-70"
+															viewBox="0 0 24 24"
+															fill="none"
+															stroke="currentColor"
+															stroke-width="2"
+														>
+															<path
+																d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"
+															/>
+															<path
+																d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"
+															/>
 														</svg>
-														{isCurrentlyLinked ? `Unlink Ch ${channelNum}-${channelNum + 1}` : `Stereo Link Ch ${channelNum}-${channelNum + 1}`}
+														{isCurrentlyLinked
+															? `Unlink Ch ${channelNum}-${channelNum + 1}`
+															: `Stereo Link Ch ${channelNum}-${channelNum + 1}`}
 													</ContextMenu.Item>
 												{:else}
 													<!-- Even channel -->
@@ -577,9 +602,19 @@
 															class="flex cursor-pointer items-center rounded px-2 py-1.5 text-xs outline-none hover:bg-muted"
 															onSelect={() => toggleStereoLink(channelNum - 1)}
 														>
-															<svg class="w-3.5 h-3.5 mr-2 opacity-70" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-																<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
-																<path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+															<svg
+																class="mr-2 h-3.5 w-3.5 opacity-70"
+																viewBox="0 0 24 24"
+																fill="none"
+																stroke="currentColor"
+																stroke-width="2"
+															>
+																<path
+																	d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"
+																/>
+																<path
+																	d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"
+																/>
 															</svg>
 															Unlink Ch {channelNum - 1}-{channelNum}
 														</ContextMenu.Item>
@@ -588,9 +623,19 @@
 															class="flex cursor-pointer items-center rounded px-2 py-1.5 text-xs text-yellow-600 outline-none hover:bg-muted"
 															onSelect={() => toggleStereoLink(channelNum)}
 														>
-															<svg class="w-3.5 h-3.5 mr-2 opacity-70" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-																<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
-																<path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+															<svg
+																class="mr-2 h-3.5 w-3.5 opacity-70"
+																viewBox="0 0 24 24"
+																fill="none"
+																stroke="currentColor"
+																stroke-width="2"
+															>
+																<path
+																	d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"
+																/>
+																<path
+																	d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"
+																/>
 															</svg>
 															Link Ch {channelNum}-{channelNum + 1} (not recommended)
 														</ContextMenu.Item>
@@ -633,7 +678,7 @@
 					<div class="py-8 text-center text-text-secondary">
 						<div class="flex flex-col items-center gap-2">
 							<div
-								class="animate-spin h-6 w-6 border-2 border-text-secondary border-t-transparent rounded-full"
+								class="h-6 w-6 animate-spin rounded-full border-2 border-text-secondary border-t-transparent"
 							></div>
 							<div>Loading items...</div>
 						</div>
@@ -650,30 +695,64 @@
 									{@const linked = isOutputLinked(channelNum)}
 									{@const linkedTop = isOutputLinkedTop(channelNum)}
 									{@const linkedBottom = isOutputLinkedBottom(channelNum)}
-									<ContextMenu.Root onOpenChange={(open) => { if (open) contextMenuChannel = channelNum; }}>
+									<ContextMenu.Root
+										onOpenChange={(open) => {
+											if (open) contextMenuChannel = channelNum;
+										}}
+									>
 										<ContextMenu.Trigger>
 											<div
-												class="border-b border-border-primary last:border-b-0 flex items-center {linkedTop ? 'h-10 border-b-0' : linkedBottom ? 'h-10 border-b border-border-primary' : 'h-10'}"
+												class="flex items-center border-b border-border-primary last:border-b-0 {linkedTop
+													? 'h-10 border-b-0'
+													: linkedBottom
+														? 'h-10 border-b border-border-primary'
+														: 'h-10'}"
 											>
 												<!-- Channel number cell -->
-												<div class="w-10 h-full flex-shrink-0 flex items-center justify-center border-r border-border-primary">
+												<div
+													class="flex h-full w-10 flex-shrink-0 items-center justify-center border-r border-border-primary"
+												>
 													<div
-														class="w-full h-full flex items-center justify-center text-xs font-semibold cursor-pointer transition-colors {linked ? 'ring-1 ring-inset ring-yellow-400/50' : ''} {!selectedOutputItemsByChannel[channelNum] ? 'bg-muted/50 text-text-secondary' : ''}"
+														class="flex h-full w-full cursor-pointer items-center justify-center text-xs font-semibold transition-colors {linked
+															? 'ring-1 ring-yellow-400/50 ring-inset'
+															: ''} {!selectedOutputItemsByChannel[channelNum]
+															? 'bg-muted/50 text-text-secondary'
+															: ''}"
 														style={getOutputChannelBadgeStyle(channelNum)}
 													>
 														{#if linkedTop}
 															<span class="flex flex-col items-center leading-none">
 																<span>{channelNum}</span>
-																<svg class="w-3 h-3 opacity-60 -mb-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-																	<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
-																	<path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+																<svg
+																	class="-mb-0.5 h-3 w-3 opacity-60"
+																	viewBox="0 0 24 24"
+																	fill="none"
+																	stroke="currentColor"
+																	stroke-width="2"
+																>
+																	<path
+																		d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"
+																	/>
+																	<path
+																		d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"
+																	/>
 																</svg>
 															</span>
 														{:else if linkedBottom}
 															<span class="flex flex-col items-center leading-none">
-																<svg class="w-3 h-3 opacity-60 -mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-																	<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
-																	<path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+																<svg
+																	class="-mt-0.5 h-3 w-3 opacity-60"
+																	viewBox="0 0 24 24"
+																	fill="none"
+																	stroke="currentColor"
+																	stroke-width="2"
+																>
+																	<path
+																		d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"
+																	/>
+																	<path
+																		d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"
+																	/>
 																</svg>
 																<span>{channelNum}</span>
 															</span>
@@ -686,25 +765,18 @@
 												<!-- Combobox cell -->
 												<div class="flex-1 px-1">
 													<Combobox.Root
-														value={selectedOutputItemsByChannel[channelNum]?.id ??
-															undefined}
+														value={selectedOutputItemsByChannel[channelNum]?.id ?? undefined}
 														type="single"
 														name="output-{channelNum}"
-														inputValue={selectedOutputItemsByChannel[channelNum]
-															?.name ?? ''}
+														inputValue={selectedOutputItemsByChannel[channelNum]?.name ?? ''}
 														onValueChange={(value) => {
-															const selected = allAvailableItems.find(
-																(item) => item.id === value
-															);
-															handleOutputItemSelect(
-																channelNum,
-																selected || null
-															);
+															const selected = allAvailableItems.find((item) => item.id === value);
+															handleOutputItemSelect(channelNum, selected || null);
 														}}
 													>
 														<div class="relative">
 															<Combobox.Input
-																class="w-full h-8 px-2 text-xs bg-transparent border-0 outline-none placeholder:text-text-secondary/50 focus:ring-1 focus:ring-foreground/20 rounded"
+																class="focus:ring-foreground/20 h-8 w-full rounded border-0 bg-transparent px-2 text-xs outline-none placeholder:text-text-secondary/50 focus:ring-1"
 																placeholder="Select item..."
 																oninput={(e) => {
 																	outputSearchValues[channelNum] = (
@@ -713,7 +785,7 @@
 																}}
 															/>
 															<Combobox.Trigger
-																class="absolute right-1 top-1/2 -translate-y-1/2 w-4 h-4 opacity-50 hover:opacity-100"
+																class="absolute top-1/2 right-1 h-4 w-4 -translate-y-1/2 opacity-50 hover:opacity-100"
 															>
 																<svg
 																	xmlns="http://www.w3.org/2000/svg"
@@ -721,7 +793,7 @@
 																	fill="none"
 																	stroke="currentColor"
 																	stroke-width="2"
-																	class="w-full h-full"
+																	class="h-full w-full"
 																>
 																	<path d="M6 9l6 6 6-6" />
 																</svg>
@@ -738,12 +810,10 @@
 																		<Combobox.Item
 																			value={item.id}
 																			label={item.name}
-																			class="relative flex cursor-pointer select-none items-center rounded px-2 py-1.5 text-xs outline-none data-[highlighted]:bg-muted"
+																			class="relative flex cursor-pointer items-center rounded px-2 py-1.5 text-xs outline-none select-none data-[highlighted]:bg-muted"
 																		>
 																			{#snippet children({ selected })}
-																				<span class="truncate"
-																					>{item.name}</span
-																				>
+																				<span class="truncate">{item.name}</span>
 																				{#if selected}
 																					<svg
 																						class="ml-auto h-3 w-3"
@@ -752,17 +822,13 @@
 																						stroke="currentColor"
 																						stroke-width="2"
 																					>
-																						<path
-																							d="M20 6L9 17l-5-5"
-																						/>
+																						<path d="M20 6L9 17l-5-5" />
 																					</svg>
 																				{/if}
 																			{/snippet}
 																		</Combobox.Item>
 																	{:else}
-																		<div
-																			class="px-2 py-1.5 text-xs text-text-secondary"
-																		>
+																		<div class="px-2 py-1.5 text-xs text-text-secondary">
 																			No items found
 																		</div>
 																	{/each}
@@ -774,18 +840,32 @@
 											</div>
 										</ContextMenu.Trigger>
 										<ContextMenu.Portal>
-											<ContextMenu.Content class="z-50 min-w-[180px] rounded-md border border-border-primary bg-surface p-1 shadow-lg">
+											<ContextMenu.Content
+												class="z-50 min-w-[180px] rounded-md border border-border-primary bg-surface p-1 shadow-lg"
+											>
 												{#if channelNum % 2 === 1}
 													{@const isCurrentlyLinked = outputStereoLinkSet.has(channelNum)}
 													<ContextMenu.Item
 														class="flex cursor-pointer items-center rounded px-2 py-1.5 text-xs outline-none hover:bg-muted"
 														onSelect={() => toggleOutputStereoLink(channelNum)}
 													>
-														<svg class="w-3.5 h-3.5 mr-2 opacity-70" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-															<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
-															<path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+														<svg
+															class="mr-2 h-3.5 w-3.5 opacity-70"
+															viewBox="0 0 24 24"
+															fill="none"
+															stroke="currentColor"
+															stroke-width="2"
+														>
+															<path
+																d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"
+															/>
+															<path
+																d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"
+															/>
 														</svg>
-														{isCurrentlyLinked ? `Unlink Ch ${channelNum}-${channelNum + 1}` : `Stereo Link Ch ${channelNum}-${channelNum + 1}`}
+														{isCurrentlyLinked
+															? `Unlink Ch ${channelNum}-${channelNum + 1}`
+															: `Stereo Link Ch ${channelNum}-${channelNum + 1}`}
 													</ContextMenu.Item>
 												{:else}
 													{@const isCurrentlyLinked = outputStereoLinkSet.has(channelNum - 1)}
@@ -794,9 +874,19 @@
 															class="flex cursor-pointer items-center rounded px-2 py-1.5 text-xs outline-none hover:bg-muted"
 															onSelect={() => toggleOutputStereoLink(channelNum - 1)}
 														>
-															<svg class="w-3.5 h-3.5 mr-2 opacity-70" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-																<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
-																<path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+															<svg
+																class="mr-2 h-3.5 w-3.5 opacity-70"
+																viewBox="0 0 24 24"
+																fill="none"
+																stroke="currentColor"
+																stroke-width="2"
+															>
+																<path
+																	d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"
+																/>
+																<path
+																	d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"
+																/>
 															</svg>
 															Unlink Ch {channelNum - 1}-{channelNum}
 														</ContextMenu.Item>
@@ -805,9 +895,19 @@
 															class="flex cursor-pointer items-center rounded px-2 py-1.5 text-xs text-yellow-600 outline-none hover:bg-muted"
 															onSelect={() => toggleOutputStereoLink(channelNum)}
 														>
-															<svg class="w-3.5 h-3.5 mr-2 opacity-70" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-																<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
-																<path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+															<svg
+																class="mr-2 h-3.5 w-3.5 opacity-70"
+																viewBox="0 0 24 24"
+																fill="none"
+																stroke="currentColor"
+																stroke-width="2"
+															>
+																<path
+																	d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"
+																/>
+																<path
+																	d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"
+																/>
 															</svg>
 															Link Ch {channelNum}-{channelNum + 1} (not recommended)
 														</ContextMenu.Item>
@@ -834,8 +934,6 @@
 					</div>
 				{/if}
 			</Tabs.Content>
-
-
 		</div>
 	</Tabs.Root>
 </div>

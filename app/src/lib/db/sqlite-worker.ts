@@ -1,7 +1,5 @@
 /// <reference lib="webworker" />
 
-
-
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type SqliteDb = any;
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

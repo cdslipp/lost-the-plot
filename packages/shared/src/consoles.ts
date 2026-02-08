@@ -57,22 +57,22 @@ export type ColorCategory = (typeof COLOR_CATEGORIES)[number];
 /** Map asset catalog category paths to color categories */
 export const CATALOG_TO_COLOR_CATEGORY: Record<string, ColorCategory> = {
 	// Microphones → vocals (most common use)
-	'Microphones': 'vocals',
+	Microphones: 'vocals',
 	'Microphones - Boom': 'vocals',
 	'Microphones - Hand Held': 'vocals',
 	'Microphones - Headset': 'vocals',
 	'Microphones - Straight': 'vocals',
 	// Drums
-	'Drums': 'drums',
+	Drums: 'drums',
 	'Drums - Hardware': 'drums',
 	'Drums - Individual': 'drums',
 	'Drum Kits': 'drums',
 	// Guitars
-	'Guitars': 'guitars',
+	Guitars: 'guitars',
 	// Bass amps → bass
 	'Bass Amplifiers': 'bass',
 	// General amps → guitars (most common use)
-	'Amplifiers': 'guitars',
+	Amplifiers: 'guitars',
 	// Keys
 	'Keyboards & Piano': 'keys',
 	// Strings
@@ -80,9 +80,9 @@ export const CATALOG_TO_COLOR_CATEGORY: Record<string, ColorCategory> = {
 	// Winds
 	'Wind Instruments': 'winds',
 	// Percussion
-	'Percussion': 'percussion',
+	Percussion: 'percussion',
 	// Outputs → monitors
-	'Outputs': 'monitors'
+	Outputs: 'monitors'
 };
 
 // --- X32 / M32 Console Definition ---
@@ -223,19 +223,14 @@ export function getConsoleIds(): string[] {
 }
 
 /** Get a console color by its ID within a console definition */
-export function getConsoleColor(
-	consoleId: string,
-	colorId: string
-): ConsoleColor | undefined {
+export function getConsoleColor(consoleId: string, colorId: string): ConsoleColor | undefined {
 	const def = CONSOLES[consoleId];
 	if (!def) return undefined;
 	return def.colors.find((c) => c.id === colorId);
 }
 
 /** Get default category color map for a console */
-export function getDefaultCategoryColors(
-	consoleId: string
-): Record<ColorCategory, string> {
+export function getDefaultCategoryColors(consoleId: string): Record<ColorCategory, string> {
 	// For now only X32 has defaults; future consoles will get their own
 	if (consoleId === 'x32') return { ...X32_DEFAULT_CATEGORY_COLORS };
 	if (consoleId === 'sq') return { ...SQ_DEFAULT_CATEGORY_COLORS };

@@ -26,9 +26,7 @@
 	const filteredPersons = $derived(
 		searchValue === ''
 			? persons
-			: persons.filter((p) =>
-					p.name.toLowerCase().includes(searchValue.toLowerCase())
-				)
+			: persons.filter((p) => p.name.toLowerCase().includes(searchValue.toLowerCase()))
 	);
 
 	function handleValueChange(newValue: string) {
@@ -54,19 +52,21 @@
 <Combobox.Root
 	type="single"
 	value={stringValue}
+	inputValue={inputDisplayValue}
 	bind:open
 	onValueChange={handleValueChange}
 	onOpenChange={handleOpenChange}
 >
 	<div class="relative">
 		<Combobox.Input
-			value={inputDisplayValue}
 			oninput={handleInput}
-			class="w-full px-2 py-1.5 text-sm border border-border-primary rounded-lg focus:ring-2 focus:ring-stone-500 focus:border-stone-500 bg-surface text-text-primary"
+			class="w-full rounded-lg border border-border-primary bg-surface px-2 py-1.5 text-sm text-text-primary focus:border-stone-500 focus:ring-2 focus:ring-stone-500"
 			placeholder="Select person"
 		/>
-		<Combobox.Trigger class="absolute right-2 top-1/2 -translate-y-1/2 text-text-secondary hover:text-text-primary">
-			<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+		<Combobox.Trigger
+			class="absolute top-1/2 right-2 -translate-y-1/2 text-text-secondary hover:text-text-primary"
+		>
+			<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
 			</svg>
 		</Combobox.Trigger>
@@ -80,7 +80,7 @@
 			<Combobox.Viewport class="p-1">
 				{#each filteredPersons as person (person.id)}
 					<Combobox.Item
-						class="relative flex cursor-pointer select-none items-center rounded-md px-2 py-1.5 text-sm outline-none data-[highlighted]:bg-muted text-text-primary hover:bg-muted"
+						class="relative flex cursor-pointer items-center rounded-md px-2 py-1.5 text-sm text-text-primary outline-none select-none hover:bg-muted data-[highlighted]:bg-muted"
 						value={String(person.id)}
 						label={person.name}
 					>
@@ -93,7 +93,11 @@
 							</div>
 							{#if selected}
 								<svg class="ml-2 h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
-									<path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+									<path
+										fill-rule="evenodd"
+										d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+										clip-rule="evenodd"
+									/>
 								</svg>
 							{/if}
 						{/snippet}
@@ -101,9 +105,7 @@
 				{/each}
 
 				{#if filteredPersons.length === 0}
-					<div class="px-2 py-1.5 text-sm text-text-secondary">
-						No people found
-					</div>
+					<div class="px-2 py-1.5 text-sm text-text-secondary">No people found</div>
 				{/if}
 			</Combobox.Viewport>
 		</Combobox.Content>

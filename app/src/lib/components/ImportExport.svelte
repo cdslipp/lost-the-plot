@@ -1,19 +1,12 @@
 <script lang="ts">
 	import { DropdownMenu } from 'bits-ui';
-	import { getStandardConfig, type CanvasConfig, type CanvasDimensions, type StageArea } from '$lib/utils/canvas';
-
-	type Item = {
-		id: number;
-		name: string;
-		channel: string;
-		person_id: number | null;
-		itemData: any;
-		currentVariant?: string;
-		width: number;
-		height: number;
-		x: number;
-		y: number;
-	};
+	import {
+		getStandardConfig,
+		type CanvasConfig,
+		type CanvasDimensions,
+		type StageArea
+	} from '$lib/utils/canvas';
+	import type { StagePlotItem } from '@stageplotter/shared';
 
 	type StagePlotExport = {
 		version: string;
@@ -47,11 +40,13 @@
 	let {
 		title = $bindable<string>(''),
 		lastModified = $bindable<string>(''),
-		items = $bindable<Item[]>([]),
+		items = $bindable<StagePlotItem[]>([]),
 		canvasWidth = $bindable<number>(1100),
 		canvasHeight = $bindable<number>(850),
-		getItemZone = $bindable<((item: Item) => string) | undefined>(undefined),
-		getItemPosition = $bindable<((item: Item) => { x: number; y: number }) | undefined>(undefined),
+		getItemZone = $bindable<((item: StagePlotItem) => string) | undefined>(undefined),
+		getItemPosition = $bindable<((item: StagePlotItem) => { x: number; y: number }) | undefined>(
+			undefined
+		),
 		onImportComplete = $bindable<(() => void) | undefined>(undefined),
 		onExportPdf = $bindable<(() => Promise<void>) | undefined>(undefined),
 		onExportScn = $bindable<(() => void) | undefined>(undefined),
@@ -65,7 +60,7 @@
 	function exportStagePlot() {
 		// Use standard configuration for consistent layout
 		const standardConfig = getStandardConfig();
-		
+
 		const stagePlot: StagePlotExport = {
 			version: '1.0.0',
 			type: 'stage_plot',
@@ -73,10 +68,10 @@
 			revision_date: new Date().toISOString().split('T')[0], // YYYY-MM-DD format
 			canvas: standardConfig.canvas,
 			stage: standardConfig.stage,
-			items: items.map(item => {
+			items: items.map((item) => {
 				const zone = getItemZone ? getItemZone(item) : 'DSC';
 				const relativePos = getItemPosition ? getItemPosition(item) : { x: 0, y: 0 };
-				
+
 				return {
 					id: item.id,
 					name: item.name,
@@ -84,10 +79,10 @@
 					category: item.itemData?.category || item.itemData?.type,
 					currentVariant: item.currentVariant,
 					position: {
-						x: item.x,
-						y: item.y,
-						width: item.width,
-						height: item.height,
+						x: item.position.x,
+						y: item.position.y,
+						width: item.position.width,
+						height: item.position.height,
 						zone: zone,
 						relativeX: relativePos.x,
 						relativeY: relativePos.y
@@ -106,20 +101,20 @@
 		// Create and download the file
 		const dataStr = JSON.stringify(stagePlot, null, 2);
 		const dataBlob = new Blob([dataStr], { type: 'application/json' });
-		
+
 		const link = document.createElement('a');
 		link.href = URL.createObjectURL(dataBlob);
-		
+
 		// Generate filename from plot name or use default
 		const plotName = title || 'stage-plot';
 		const safeName = plotName.replace(/[^a-z0-9]/gi, '-').toLowerCase();
 		const timestamp = new Date().toISOString().split('T')[0];
 		link.download = `${safeName}-${timestamp}.json`;
-		
+
 		document.body.appendChild(link);
 		link.click();
 		document.body.removeChild(link);
-		
+
 		// Close the menu
 		isMenuOpen = false;
 	}
@@ -145,9 +140,9 @@
 	function handleFileImport(event: Event) {
 		const target = event.target as HTMLInputElement;
 		const file = target.files?.[0];
-		
+
 		if (!file) return;
-		
+
 		if (!file.name.endsWith('.json')) {
 			alert('Please select a JSON file.');
 			return;
@@ -157,7 +152,7 @@
 		reader.onload = (e) => {
 			try {
 				const jsonData = JSON.parse(e.target?.result as string);
-				
+
 				// Basic validation
 				if (!jsonData.version || !jsonData.type || jsonData.type !== 'stage_plot') {
 					throw new Error('Invalid stage plot file format');
@@ -165,8 +160,9 @@
 
 				// Load the data
 				if (jsonData.plot_name) title = jsonData.plot_name;
-				if (jsonData.revision_date) lastModified = new Date(jsonData.revision_date).toISOString().split('T')[0];
-				
+				if (jsonData.revision_date)
+					lastModified = new Date(jsonData.revision_date).toISOString().split('T')[0];
+
 				// Load canvas dimensions (enforce standard format)
 				const standardConfig = getStandardConfig();
 				canvasWidth = standardConfig.canvas.width;
@@ -177,33 +173,35 @@
 					items = jsonData.items.map((exportedItem: any) => ({
 						id: exportedItem.id,
 						name: exportedItem.name,
+						type: exportedItem.type || 'input',
 						channel: exportedItem.channel || '',
 						person_id: exportedItem.person_id ?? null,
 						itemData: exportedItem.itemData,
 						currentVariant: exportedItem.currentVariant || 'default',
-						width: exportedItem.position.width,
-						height: exportedItem.position.height,
-						x: exportedItem.position.x,
-						y: exportedItem.position.y
+						position: {
+							width: exportedItem.position.width,
+							height: exportedItem.position.height,
+							x: exportedItem.position.x,
+							y: exportedItem.position.y
+						}
 					}));
 				}
 
 				// Update last modified to now since we just imported
 				lastModified = new Date().toISOString().split('T')[0];
-				
+
 				// Notify parent component
 				if (onImportComplete) onImportComplete();
-				
+
 				alert('Stage plot imported successfully!');
-				
 			} catch (error) {
 				console.error('Import error:', error);
 				alert('Error importing stage plot. Please check the file format.');
 			}
 		};
-		
+
 		reader.readAsText(file);
-		
+
 		// Reset file input
 		target.value = '';
 	}
@@ -259,7 +257,10 @@
 		class="z-50 min-w-[180px] rounded-lg border border-border-primary bg-surface p-1 shadow-lg"
 		sideOffset={4}
 	>
-		<DropdownMenu.Item onSelect={exportStagePlot} class="flex cursor-pointer items-center gap-3 rounded-md px-3 py-2 text-sm text-text-primary hover:bg-surface-hover">
+		<DropdownMenu.Item
+			onSelect={exportStagePlot}
+			class="flex cursor-pointer items-center gap-3 rounded-md px-3 py-2 text-sm text-text-primary hover:bg-surface-hover"
+		>
 			<svg
 				xmlns="http://www.w3.org/2000/svg"
 				class="h-4 w-4"
@@ -275,7 +276,10 @@
 			Export Plot
 		</DropdownMenu.Item>
 
-		<DropdownMenu.Item onSelect={triggerImport} class="flex cursor-pointer items-center gap-3 rounded-md px-3 py-2 text-sm text-text-primary hover:bg-surface-hover">
+		<DropdownMenu.Item
+			onSelect={triggerImport}
+			class="flex cursor-pointer items-center gap-3 rounded-md px-3 py-2 text-sm text-text-primary hover:bg-surface-hover"
+		>
 			<svg
 				xmlns="http://www.w3.org/2000/svg"
 				class="h-4 w-4"
@@ -292,7 +296,10 @@
 		</DropdownMenu.Item>
 
 		{#if onExportPdf}
-			<DropdownMenu.Item onSelect={handleExportPdf} class="flex cursor-pointer items-start gap-3 rounded-md px-3 py-2 text-sm text-text-primary hover:bg-surface-hover">
+			<DropdownMenu.Item
+				onSelect={handleExportPdf}
+				class="flex cursor-pointer items-start gap-3 rounded-md px-3 py-2 text-sm text-text-primary hover:bg-surface-hover"
+			>
 				<div>
 					<div>Export PDF</div>
 					<div class="text-xs text-text-tertiary">Stage plot + input list</div>
@@ -301,13 +308,15 @@
 		{/if}
 
 		{#if onExportScn && consoleType === 'x32'}
-			<DropdownMenu.Item onSelect={handleExportScn} class="flex cursor-pointer items-start gap-3 rounded-md px-3 py-2 text-sm text-text-primary hover:bg-surface-hover">
+			<DropdownMenu.Item
+				onSelect={handleExportScn}
+				class="flex cursor-pointer items-start gap-3 rounded-md px-3 py-2 text-sm text-text-primary hover:bg-surface-hover"
+			>
 				<div>
 					<div>Export Console Scene</div>
 					<div class="text-xs text-text-tertiary">X32 .scn file</div>
 				</div>
 			</DropdownMenu.Item>
 		{/if}
-
 	</DropdownMenu.Content>
 </DropdownMenu.Root>

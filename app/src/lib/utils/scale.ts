@@ -42,7 +42,6 @@ export function pixelsToInches(pixels: number): number {
 	return pixels * INCHES_PER_PIXEL;
 }
 
-
 /**
  * Get formatted dimensions string
  */
@@ -103,9 +102,7 @@ export function metersToFeet(meters: number): number {
 }
 
 export function displayValue(valueFeet: number, unit: string): number {
-	return unit === 'metric'
-		? Math.round(feetToMeters(valueFeet) * 100) / 100
-		: valueFeet;
+	return unit === 'metric' ? Math.round(feetToMeters(valueFeet) * 100) / 100 : valueFeet;
 }
 
 export function toFeet(displayVal: number, unit: string): number {
@@ -115,5 +112,3 @@ export function toFeet(displayVal: number, unit: string): number {
 export function unitLabel(unit: string): string {
 	return unit === 'metric' ? 'm' : 'ft';
 }
-
-

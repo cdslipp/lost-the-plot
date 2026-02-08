@@ -27,14 +27,10 @@
 	let pickerPersonName = $state('');
 
 	// People on the plot
-	const onPlot = $derived(
-		bandPersons.filter((p) => plotPersonIds.has(p.id))
-	);
+	const onPlot = $derived(bandPersons.filter((p) => plotPersonIds.has(p.id)));
 
 	// People in the band but not yet on the plot
-	const offPlot = $derived(
-		bandPersons.filter((p) => !plotPersonIds.has(p.id))
-	);
+	const offPlot = $derived(bandPersons.filter((p) => !plotPersonIds.has(p.id)));
 
 	// Items assigned to a given person
 	function getPersonItems(personId: number) {
@@ -68,7 +64,7 @@
 	}
 </script>
 
-<div class="flex h-full w-full min-h-0 flex-col gap-4">
+<div class="flex h-full min-h-0 w-full flex-col gap-4">
 	<h2 class="font-serif text-lg font-semibold text-text-primary">People</h2>
 
 	<!-- People on the plot -->
@@ -91,8 +87,17 @@
 							class="text-red-500 hover:text-red-700"
 							title="Remove from plot"
 						>
-							<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-								<path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+							<svg
+								xmlns="http://www.w3.org/2000/svg"
+								class="h-4 w-4"
+								viewBox="0 0 20 20"
+								fill="currentColor"
+							>
+								<path
+									fill-rule="evenodd"
+									d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+									clip-rule="evenodd"
+								/>
 							</svg>
 						</button>
 					</div>
@@ -111,7 +116,9 @@
 	<!-- Band people not on plot -->
 	{#if offPlot.length > 0}
 		<div class="border-t border-border-primary pt-3">
-			<h3 class="mb-2 text-[10px] font-medium uppercase tracking-wider text-text-tertiary">Band Members</h3>
+			<h3 class="mb-2 text-[10px] font-medium tracking-wider text-text-tertiary uppercase">
+				Band Members
+			</h3>
 			<div class="space-y-1">
 				{#each offPlot as person (person.id)}
 					<div class="flex items-center justify-between rounded-lg p-1.5 hover:bg-muted">
@@ -126,8 +133,17 @@
 							class="flex h-6 w-6 items-center justify-center rounded-full bg-green-600 text-white transition hover:bg-green-700"
 							title="Add to plot"
 						>
-							<svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
-								<path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
+							<svg
+								xmlns="http://www.w3.org/2000/svg"
+								class="h-3.5 w-3.5"
+								viewBox="0 0 20 20"
+								fill="currentColor"
+							>
+								<path
+									fill-rule="evenodd"
+									d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z"
+									clip-rule="evenodd"
+								/>
 							</svg>
 						</button>
 					</div>
@@ -147,7 +163,10 @@
 					placeholder="Person name"
 					onkeydown={(e) => {
 						if (e.key === 'Enter') handleCreatePerson();
-						if (e.key === 'Escape') { showNewPersonInput = false; newPersonName = ''; }
+						if (e.key === 'Escape') {
+							showNewPersonInput = false;
+							newPersonName = '';
+						}
 					}}
 				/>
 				<div class="flex gap-2">
@@ -159,7 +178,10 @@
 						Add Person
 					</button>
 					<button
-						onclick={() => { showNewPersonInput = false; newPersonName = ''; }}
+						onclick={() => {
+							showNewPersonInput = false;
+							newPersonName = '';
+						}}
 						class="rounded-lg border border-border-primary px-3 py-2 text-sm text-text-primary transition hover:bg-surface-hover"
 					>
 						Cancel
@@ -181,5 +203,8 @@
 	bind:open={pickerOpen}
 	personName={pickerPersonName}
 	onSelect={handlePickerSelect}
-	onClose={() => { pickerOpen = false; pickerPersonId = null; }}
+	onClose={() => {
+		pickerOpen = false;
+		pickerPersonId = null;
+	}}
 />

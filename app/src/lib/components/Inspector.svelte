@@ -8,31 +8,12 @@
 		buildImagePath,
 		getCurrentImageSrc
 	} from '$lib/utils/canvasUtils';
-
-	type Item = {
-		id: number;
-		type?: string;
-		name: string;
-		channel: string;
-		person_id: number | null;
-		itemData: any;
-		currentVariant?: string;
-		width: number;
-		height: number;
-		x: number;
-		y: number;
-	};
-
-	type Person = {
-		id: number;
-		name: string;
-		role?: string | null;
-	};
+	import type { StagePlotItem } from '@stageplotter/shared';
 
 	let {
 		selectedItems = $bindable<HTMLElement[]>([]),
-		items = $bindable<Item[]>([]),
-		persons = [] as Person[],
+		items = $bindable<StagePlotItem[]>([]),
+		persons = [] as { id: number; name: string; role?: string | null }[],
 		title = $bindable<string>(''),
 		lastModified = $bindable<string>(''),
 		showZones = $bindable(true),
@@ -47,8 +28,10 @@
 			((itemId: number, property: string, value: string) => void) | undefined
 		>(undefined),
 		onClose = $bindable<(() => void) | undefined>(undefined),
-		getItemZone = $bindable<((item: Item) => string) | undefined>(undefined),
-		getItemPosition = $bindable<((item: Item) => { x: number; y: number }) | undefined>(undefined),
+		getItemZone = $bindable<((item: StagePlotItem) => string) | undefined>(undefined),
+		getItemPosition = $bindable<((item: StagePlotItem) => { x: number; y: number }) | undefined>(
+			undefined
+		),
 		updateItemPosition = $bindable<((itemId: number, x: number, y: number) => void) | undefined>(
 			undefined
 		)
@@ -62,7 +45,7 @@
 				const id = parseInt(el.dataset?.id || '0');
 				return items.find((item) => item.id === id);
 			})
-			.filter(Boolean) as Item[];
+			.filter(Boolean) as StagePlotItem[];
 	});
 
 	// For bulk editing
@@ -86,7 +69,7 @@
 		}
 	}
 
-	function rotateItemLeft(item: Item) {
+	function rotateItemLeft(item: StagePlotItem) {
 		const variants = getItemVariants(item);
 		if (!variants) return;
 
@@ -101,8 +84,8 @@
 			const img = new Image();
 			img.src = buildImagePath(item, newImagePath);
 			img.onload = () => {
-				item.width = img.naturalWidth;
-				item.height = img.naturalHeight;
+				item.position.width = img.naturalWidth;
+				item.position.height = img.naturalHeight;
 			};
 		}
 
@@ -111,7 +94,7 @@
 		}
 	}
 
-	function rotateItemRight(item: Item) {
+	function rotateItemRight(item: StagePlotItem) {
 		const variants = getItemVariants(item);
 		if (!variants) return;
 
@@ -126,8 +109,8 @@
 			const img = new Image();
 			img.src = buildImagePath(item, newImagePath);
 			img.onload = () => {
-				item.width = img.naturalWidth;
-				item.height = img.naturalHeight;
+				item.position.width = img.naturalWidth;
+				item.position.height = img.naturalHeight;
 			};
 		}
 
@@ -161,20 +144,26 @@
 				</div>
 				<div class="rounded-lg bg-muted/50 px-3 py-2">
 					<div class="text-lg font-semibold text-text-primary">{persons.length}</div>
-					<div class="text-[10px] text-text-tertiary">{persons.length === 1 ? 'Person' : 'People'}</div>
+					<div class="text-[10px] text-text-tertiary">
+						{persons.length === 1 ? 'Person' : 'People'}
+					</div>
 				</div>
 				<div class="rounded-lg bg-muted/50 px-3 py-2">
-					<div class="text-lg font-semibold text-text-primary">{items.filter(i => i.channel).length}</div>
+					<div class="text-lg font-semibold text-text-primary">
+						{items.filter((i) => i.channel).length}
+					</div>
 					<div class="text-[10px] text-text-tertiary">Patched</div>
 				</div>
 				<div class="rounded-lg bg-muted/50 px-3 py-2">
-					<div class="text-lg font-semibold text-text-primary">{items.filter(i => !i.channel).length}</div>
+					<div class="text-lg font-semibold text-text-primary">
+						{items.filter((i) => !i.channel).length}
+					</div>
 					<div class="text-[10px] text-text-tertiary">Unpatched</div>
 				</div>
 			</div>
 
 			<div class="rounded-lg border border-border-primary bg-surface px-3 py-2">
-				<div class="mb-2 text-[10px] font-medium uppercase tracking-wider text-text-tertiary">
+				<div class="mb-2 text-[10px] font-medium tracking-wider text-text-tertiary uppercase">
 					PDF Paper
 				</div>
 				<div class="flex items-center justify-between">
@@ -182,14 +171,18 @@
 					<div class="flex rounded-md border border-border-primary text-xs">
 						<button
 							onclick={() => (pdfPageFormat = 'letter')}
-							class="px-2 py-0.5 transition {pdfPageFormat === 'letter' ? 'bg-stone-900 text-white dark:bg-stone-100 dark:text-stone-900' : 'text-text-secondary hover:bg-surface-hover'}"
+							class="px-2 py-0.5 transition {pdfPageFormat === 'letter'
+								? 'bg-stone-900 text-white dark:bg-stone-100 dark:text-stone-900'
+								: 'text-text-secondary hover:bg-surface-hover'}"
 							style="border-radius: 0.3rem 0 0 0.3rem;"
 						>
 							Letter
 						</button>
 						<button
 							onclick={() => (pdfPageFormat = 'a4')}
-							class="px-2 py-0.5 transition {pdfPageFormat === 'a4' ? 'bg-stone-900 text-white dark:bg-stone-100 dark:text-stone-900' : 'text-text-secondary hover:bg-surface-hover'}"
+							class="px-2 py-0.5 transition {pdfPageFormat === 'a4'
+								? 'bg-stone-900 text-white dark:bg-stone-100 dark:text-stone-900'
+								: 'text-text-secondary hover:bg-surface-hover'}"
 							style="border-radius: 0 0.3rem 0.3rem 0;"
 						>
 							A4
@@ -201,21 +194,21 @@
 			{#if persons.length > 0}
 				<!-- People list -->
 				<div>
-					<h4 class="mb-1.5 text-[10px] font-medium uppercase tracking-wider text-text-tertiary">People</h4>
+					<h4 class="mb-1.5 text-[10px] font-medium tracking-wider text-text-tertiary uppercase">
+						People
+					</h4>
 					<div class="space-y-1">
 						{#each persons as p}
 							<div class="flex items-center justify-between text-xs">
-								<span class="text-text-primary truncate">{p.name}</span>
-								<span class="text-text-tertiary truncate ml-2">{p.role || ''}</span>
+								<span class="truncate text-text-primary">{p.name}</span>
+								<span class="ml-2 truncate text-text-tertiary">{p.role || ''}</span>
 							</div>
 						{/each}
 					</div>
 				</div>
 			{/if}
 
-			<div class="text-center text-[10px] text-text-tertiary">
-				Select items to edit properties
-			</div>
+			<div class="text-center text-[10px] text-text-tertiary">Select items to edit properties</div>
 		</div>
 	{:else if selectedItemsData.length === 1}
 		<!-- Single item inspector -->
@@ -226,11 +219,15 @@
 					{#if selectedItemsData[0].type === 'riser'}
 						<div
 							class="flex items-center justify-center rounded border-2 border-gray-500 bg-gray-400/50 dark:border-gray-400 dark:bg-gray-600/50"
-							style="width: 120px; aspect-ratio: {selectedItemsData[0].itemData?.riserWidth ?? 4}/{selectedItemsData[0].itemData?.riserDepth ?? 4};"
+							style="width: 120px; aspect-ratio: {selectedItemsData[0].itemData?.riserWidth ??
+								4}/{selectedItemsData[0].itemData?.riserDepth ?? 4};"
 						>
 							<div class="text-center">
 								<div class="text-xs font-bold text-gray-700 dark:text-gray-200">RISER</div>
-								<div class="text-[10px] text-gray-600 dark:text-gray-300">{selectedItemsData[0].itemData?.riserWidth}' × {selectedItemsData[0].itemData?.riserDepth}'</div>
+								<div class="text-[10px] text-gray-600 dark:text-gray-300">
+									{selectedItemsData[0].itemData?.riserWidth}' × {selectedItemsData[0].itemData
+										?.riserDepth}'
+								</div>
 							</div>
 						</div>
 					{:else}
@@ -248,31 +245,37 @@
 						<input
 							type="text"
 							bind:value={selectedItemsData[0].name}
-							onchange={(e) => { const target = e.target as HTMLInputElement; onUpdateItem?.(selectedItemsData[0].id, 'name', target.value); }}
+							onchange={(e) => {
+								const target = e.target as HTMLInputElement;
+								onUpdateItem?.(selectedItemsData[0].id, 'name', target.value);
+							}}
 							class="w-full rounded-lg border border-border-primary bg-surface px-2 py-1.5 text-sm text-text-primary focus:border-stone-500 focus:ring-2 focus:ring-stone-500"
 							placeholder="Item name"
 						/>
 					</div>
 					{#if selectedItemsData[0].type !== 'riser'}
-					<div>
-						<label class="mb-1 block text-xs text-text-secondary">Channel</label>
-						<input
-							type="text"
-							bind:value={selectedItemsData[0].channel}
-							onchange={(e) => { const target = e.target as HTMLInputElement; onUpdateItem?.(selectedItemsData[0].id, 'channel', target.value); }}
-							class="w-full rounded-lg border border-border-primary bg-surface px-2 py-1.5 text-sm text-text-primary focus:border-stone-500 focus:ring-2 focus:ring-stone-500"
-							placeholder="Channel"
-						/>
-					</div>
-					<div>
-						<label class="mb-1 block text-xs text-text-secondary">Person</label>
-						<PersonCombobox
-							{persons}
-							value={selectedItemsData[0].person_id}
-							onValueChange={(newValue) =>
-								onUpdateItem?.(selectedItemsData[0].id, 'person_id', String(newValue ?? ''))}
-						/>
-					</div>
+						<div>
+							<label class="mb-1 block text-xs text-text-secondary">Channel</label>
+							<input
+								type="text"
+								bind:value={selectedItemsData[0].channel}
+								onchange={(e) => {
+									const target = e.target as HTMLInputElement;
+									onUpdateItem?.(selectedItemsData[0].id, 'channel', target.value);
+								}}
+								class="w-full rounded-lg border border-border-primary bg-surface px-2 py-1.5 text-sm text-text-primary focus:border-stone-500 focus:ring-2 focus:ring-stone-500"
+								placeholder="Channel"
+							/>
+						</div>
+						<div>
+							<label class="mb-1 block text-xs text-text-secondary">Person</label>
+							<PersonCombobox
+								{persons}
+								value={selectedItemsData[0].person_id}
+								onValueChange={(newValue) =>
+									onUpdateItem?.(selectedItemsData[0].id, 'person_id', String(newValue ?? ''))}
+							/>
+						</div>
 					{/if}
 					<div>
 						<label class="mb-1 block text-xs text-text-secondary">Zone</label>
@@ -310,14 +313,14 @@
 									type="number"
 									value={getItemPosition(selectedItemsData[0]).y}
 									onchange={(e) => {
-													const target = e.target as HTMLInputElement;
-													const newPosition = parseInt(target.value);
-													updateItemPosition(
-														selectedItemsData[0].id,
-														getItemPosition(selectedItemsData[0]).x,
-														newPosition
-													);
-												}}
+										const target = e.target as HTMLInputElement;
+										const newPosition = parseInt(target.value);
+										updateItemPosition(
+											selectedItemsData[0].id,
+											getItemPosition(selectedItemsData[0]).x,
+											newPosition
+										);
+									}}
 									class="w-full rounded-lg border border-border-primary bg-surface px-2 py-1.5 text-sm text-text-primary focus:border-stone-500 focus:ring-2 focus:ring-stone-500"
 								/>
 							</div>
@@ -330,7 +333,9 @@
 					<!-- Riser dimensions (when a riser is selected) -->
 					{#if selectedItemsData[0].type === 'riser'}
 						<div>
-							<label class="mb-1 block text-xs text-text-secondary">Riser Size ({unitLabel(unit)})</label>
+							<label class="mb-1 block text-xs text-text-secondary"
+								>Riser Size ({unitLabel(unit)})</label
+							>
 							<div class="grid grid-cols-3 gap-2">
 								<div>
 									<label class="block text-[10px] text-text-tertiary">Width</label>
@@ -340,7 +345,12 @@
 										onchange={(e) => {
 											const target = e.target as HTMLInputElement;
 											const val = parseFloat(target.value);
-											if (!isNaN(val) && val > 0) onUpdateItem?.(selectedItemsData[0].id, 'riserWidth', String(toFeet(val, unit)));
+											if (!isNaN(val) && val > 0)
+												onUpdateItem?.(
+													selectedItemsData[0].id,
+													'riserWidth',
+													String(toFeet(val, unit))
+												);
 										}}
 										min="1"
 										step={unit === 'metric' ? '0.5' : '1'}
@@ -355,7 +365,12 @@
 										onchange={(e) => {
 											const target = e.target as HTMLInputElement;
 											const val = parseFloat(target.value);
-											if (!isNaN(val) && val > 0) onUpdateItem?.(selectedItemsData[0].id, 'riserDepth', String(toFeet(val, unit)));
+											if (!isNaN(val) && val > 0)
+												onUpdateItem?.(
+													selectedItemsData[0].id,
+													'riserDepth',
+													String(toFeet(val, unit))
+												);
 										}}
 										min="1"
 										step={unit === 'metric' ? '0.5' : '1'}
@@ -370,7 +385,12 @@
 										onchange={(e) => {
 											const target = e.target as HTMLInputElement;
 											const val = parseFloat(target.value);
-											if (!isNaN(val) && val > 0) onUpdateItem?.(selectedItemsData[0].id, 'riserHeight', String(toFeet(val, unit)));
+											if (!isNaN(val) && val > 0)
+												onUpdateItem?.(
+													selectedItemsData[0].id,
+													'riserHeight',
+													String(toFeet(val, unit))
+												);
 										}}
 										min="0.5"
 										step="0.5"
@@ -380,7 +400,6 @@
 							</div>
 						</div>
 					{/if}
-
 				</div>
 			</div>
 		</div>
@@ -423,21 +442,25 @@
 	{/if}
 
 	<!-- Stage Settings -->
-	<div class="mt-4 border-t border-border-primary pt-4 space-y-3">
+	<div class="mt-4 space-y-3 border-t border-border-primary pt-4">
 		<!-- Unit toggle -->
 		<div class="flex items-center justify-between">
 			<span class="text-xs text-text-secondary">Units</span>
 			<div class="flex rounded-md border border-border-primary text-xs">
 				<button
 					onclick={() => (unit = 'imperial')}
-					class="px-2 py-0.5 transition {unit === 'imperial' ? 'bg-stone-900 text-white dark:bg-stone-100 dark:text-stone-900' : 'text-text-secondary hover:bg-surface-hover'}"
+					class="px-2 py-0.5 transition {unit === 'imperial'
+						? 'bg-stone-900 text-white dark:bg-stone-100 dark:text-stone-900'
+						: 'text-text-secondary hover:bg-surface-hover'}"
 					style="border-radius: 0.3rem 0 0 0.3rem;"
 				>
 					ft
 				</button>
 				<button
 					onclick={() => (unit = 'metric')}
-					class="px-2 py-0.5 transition {unit === 'metric' ? 'bg-stone-900 text-white dark:bg-stone-100 dark:text-stone-900' : 'text-text-secondary hover:bg-surface-hover'}"
+					class="px-2 py-0.5 transition {unit === 'metric'
+						? 'bg-stone-900 text-white dark:bg-stone-100 dark:text-stone-900'
+						: 'text-text-secondary hover:bg-surface-hover'}"
 					style="border-radius: 0 0.3rem 0.3rem 0;"
 				>
 					m
@@ -480,12 +503,15 @@
 
 		<!-- Add Riser -->
 		{#if showRiserForm}
-			<div class="rounded-lg border border-border-primary p-2 space-y-2">
+			<div class="space-y-2 rounded-lg border border-border-primary p-2">
 				<div class="flex items-center justify-between">
 					<span class="text-xs font-medium text-text-primary">Add Riser</span>
-					<button onclick={() => (showRiserForm = false)} class="text-xs text-text-tertiary hover:text-text-primary">&times;</button>
+					<button
+						onclick={() => (showRiserForm = false)}
+						class="text-xs text-text-tertiary hover:text-text-primary">&times;</button
+					>
 				</div>
-				<div class="text-xs text-text-secondary mb-1">Presets:</div>
+				<div class="mb-1 text-xs text-text-secondary">Presets:</div>
 				<div class="flex flex-wrap gap-1">
 					{#each riserPresets as preset}
 						<button
@@ -493,14 +519,14 @@
 								if (onPlaceRiser) onPlaceRiser(preset.w, preset.d, customRiserHeight);
 								showRiserForm = false;
 							}}
-							class="rounded bg-muted px-2 py-1 text-xs text-text-primary hover:bg-surface-hover transition"
+							class="rounded bg-muted px-2 py-1 text-xs text-text-primary transition hover:bg-surface-hover"
 						>
 							{preset.label}
 						</button>
 					{/each}
 				</div>
-				<div class="text-xs text-text-secondary mt-1">Custom ({unitLabel(unit)}):</div>
-				<div class="flex gap-1.5 items-end">
+				<div class="mt-1 text-xs text-text-secondary">Custom ({unitLabel(unit)}):</div>
+				<div class="flex items-end gap-1.5">
 					<div class="flex-1">
 						<label class="block text-[10px] text-text-tertiary">W</label>
 						<input
@@ -539,7 +565,7 @@
 						if (onPlaceRiser && w > 0 && d > 0) onPlaceRiser(w, d, customRiserHeight);
 						showRiserForm = false;
 					}}
-					class="w-full rounded bg-stone-900 px-2 py-1.5 text-xs text-white hover:bg-stone-800 dark:bg-stone-100 dark:text-stone-900 dark:hover:bg-stone-200 transition"
+					class="w-full rounded bg-stone-900 px-2 py-1.5 text-xs text-white transition hover:bg-stone-800 dark:bg-stone-100 dark:text-stone-900 dark:hover:bg-stone-200"
 				>
 					Place Custom Riser
 				</button>
@@ -547,7 +573,7 @@
 		{:else}
 			<button
 				onclick={() => (showRiserForm = true)}
-				class="w-full rounded-lg border border-dashed border-border-primary px-3 py-2 text-sm text-text-secondary hover:border-stone-400 hover:text-text-primary transition"
+				class="w-full rounded-lg border border-dashed border-border-primary px-3 py-2 text-sm text-text-secondary transition hover:border-stone-400 hover:text-text-primary"
 			>
 				+ Add Riser
 			</button>
@@ -558,12 +584,16 @@
 			<span class="text-xs text-text-secondary">Stage Zones</span>
 			<button
 				onclick={() => (showZones = !showZones)}
-				class="relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full transition-colors duration-200 {showZones ? 'bg-stone-900 dark:bg-stone-100' : 'bg-gray-300 dark:bg-gray-600'}"
+				class="relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full transition-colors duration-200 {showZones
+					? 'bg-stone-900 dark:bg-stone-100'
+					: 'bg-gray-300 dark:bg-gray-600'}"
 				role="switch"
 				aria-checked={showZones}
 			>
 				<span
-					class="pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-sm ring-0 transition-transform duration-200 dark:bg-gray-900 {showZones ? 'translate-x-4' : 'translate-x-0.5'}"
+					class="pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-sm ring-0 transition-transform duration-200 dark:bg-gray-900 {showZones
+						? 'translate-x-4'
+						: 'translate-x-0.5'}"
 					style="margin-top: 2px;"
 				></span>
 			</button>
@@ -579,7 +609,7 @@
 		>
 			<svg
 				xmlns="http://www.w3.org/2000/svg"
-				class="h-3.5 w-3.5 hidden dark:block"
+				class="hidden h-3.5 w-3.5 dark:block"
 				viewBox="0 0 20 20"
 				fill="currentColor"
 			>
@@ -591,7 +621,7 @@
 			</svg>
 			<svg
 				xmlns="http://www.w3.org/2000/svg"
-				class="h-3.5 w-3.5 block dark:hidden"
+				class="block h-3.5 w-3.5 dark:hidden"
 				viewBox="0 0 20 20"
 				fill="currentColor"
 			>
@@ -602,5 +632,3 @@
 		</button>
 	</div>
 </div>
-
-

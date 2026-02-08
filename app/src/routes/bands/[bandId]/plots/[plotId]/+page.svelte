@@ -51,6 +51,9 @@
 		CATALOG_TO_COLOR_CATEGORY,
 		getDefaultCategoryColors,
 		type ColorCategory,
+		type ChannelMode,
+		type StagePlotItem,
+		type PlotOutputItem,
 		CONSOLES,
 		getConsoleIds
 	} from '@stageplotter/shared';
@@ -60,8 +63,8 @@
 		plot_name: 'Untitled Plot',
 		revision_date: new Date().toISOString().split('T')[0],
 		canvas: { width: 1100, height: 850 },
-		items: [] as any[],
-		outputs: [] as any[],
+		items: [] as StagePlotItem[],
+		outputs: [] as PlotOutputItem[],
 		stage_width: 24,
 		stage_depth: 16
 	});
@@ -70,7 +73,10 @@
 	let plotPersonIds = $state<Set<number>>(new Set());
 	let plotPersons = $state<{ id: number; name: string; role: string | null }[]>([]);
 	const personsById = $derived(
-		Object.fromEntries(plotPersons.map((p) => [p.id, p])) as Record<number, { id: number; name: string; role: string | null }>
+		Object.fromEntries(plotPersons.map((p) => [p.id, p])) as Record<
+			number,
+			{ id: number; name: string; role: string | null }
+		>
 	);
 
 	// Console integration state — persisted to dedicated DB columns
@@ -90,13 +96,12 @@
 	let snapping = $state(true);
 
 	// Channel mode state (lifted from StagePatch for settings tab)
-	type ChannelMode = 8 | 16 | 24 | 32 | 48;
 	const CHANNEL_OPTIONS: ChannelMode[] = [8, 16, 24, 32, 48];
 	let inputChannelMode = $state<ChannelMode>(48);
 	let outputChannelMode = $state<ChannelMode>(16);
 
 	// Console-derived values for settings UI
-	const consoleDef = $derived(consoleType ? CONSOLES[consoleType] ?? null : null);
+	const consoleDef = $derived(consoleType ? (CONSOLES[consoleType] ?? null) : null);
 	const consoleOptions = $derived(
 		getConsoleIds().map((id) => ({
 			id,
@@ -132,12 +137,12 @@
 					stagePlot.canvas.width,
 					stagePlot.canvas.height,
 					JSON.stringify({
-					items: $state.snapshot(stagePlot.items),
-					outputs: $state.snapshot(stagePlot.outputs),
-					outputStereoLinks: $state.snapshot(outputStereoLinks),
-					undoLog: $state.snapshot(history.log),
-					redoStack: $state.snapshot(history.redoStack)
-				}),
+						items: $state.snapshot(stagePlot.items),
+						outputs: $state.snapshot(stagePlot.outputs),
+						outputStereoLinks: $state.snapshot(outputStereoLinks),
+						undoLog: $state.snapshot(history.log),
+						redoStack: $state.snapshot(history.redoStack)
+					}),
 					bandId,
 					stagePlot.stage_width,
 					stagePlot.stage_depth,
@@ -209,13 +214,21 @@
 				consoleType = row.console_type ?? null;
 				try {
 					channelColors = row.channel_colors ? JSON.parse(row.channel_colors) : {};
-				} catch { channelColors = {}; }
+				} catch {
+					channelColors = {};
+				}
 				try {
 					stereoLinks = row.stereo_links ? JSON.parse(row.stereo_links) : [];
-				} catch { stereoLinks = []; }
+				} catch {
+					stereoLinks = [];
+				}
 				try {
-					categoryColorDefaults = row.category_color_defaults ? JSON.parse(row.category_color_defaults) : {};
-				} catch { categoryColorDefaults = {}; }
+					categoryColorDefaults = row.category_color_defaults
+						? JSON.parse(row.category_color_defaults)
+						: {};
+				} catch {
+					categoryColorDefaults = {};
+				}
 				// If console is set but no category defaults, initialize from console defaults
 				if (consoleType && Object.keys(categoryColorDefaults).length === 0) {
 					categoryColorDefaults = getDefaultCategoryColors(consoleType) as Record<string, string>;
@@ -226,12 +239,14 @@
 				if (row.metadata) {
 					try {
 						const meta = JSON.parse(row.metadata);
-					if (meta.items) stagePlot.items = meta.items;
-					if (meta.outputs) stagePlot.outputs = meta.outputs;
-					if (meta.outputStereoLinks) outputStereoLinks = meta.outputStereoLinks;
-					if (meta.undoLog) savedUndoLog = meta.undoLog;
-					if (meta.redoStack) savedRedoStack = meta.redoStack;
-					} catch { /* ignore parse errors */ }
+						if (meta.items) stagePlot.items = meta.items;
+						if (meta.outputs) stagePlot.outputs = meta.outputs;
+						if (meta.outputStereoLinks) outputStereoLinks = meta.outputStereoLinks;
+						if (meta.undoLog) savedUndoLog = meta.undoLog;
+						if (meta.redoStack) savedRedoStack = meta.redoStack;
+					} catch {
+						/* ignore parse errors */
+					}
 				}
 				history.startRecording(savedUndoLog, savedRedoStack);
 
@@ -255,7 +270,9 @@
 			}
 
 			// Load band name
-			const bandRow = await db.queryOne<{ name: string }>('SELECT name FROM bands WHERE id = ?', [bandId]);
+			const bandRow = await db.queryOne<{ name: string }>('SELECT name FROM bands WHERE id = ?', [
+				bandId
+			]);
 			if (bandRow) bandName = bandRow.name;
 
 			// Load band persons for import
@@ -346,9 +363,9 @@
 
 	// --- Item Management State ---
 	let selectedItems = $state<any[]>([]);
-	const selectedIds = $derived(new Set(
-		selectedItems.map((el: any) => el.dataset?.id).filter(Boolean)
-	));
+	const selectedIds = $derived(
+		new Set(selectedItems.map((el: any) => el.dataset?.id).filter(Boolean))
+	);
 	let editingItem = $state<any>(null);
 	let isAddingItem = $state(false);
 	let replacingItemId = $state<number | null>(null);
@@ -357,7 +374,7 @@
 
 	// Unit preference (persisted to localStorage)
 	let unit = $state<UnitSystem>(
-		(browser && localStorage.getItem('stageplotter-units') as UnitSystem) || 'imperial'
+		(browser && (localStorage.getItem('stageplotter-units') as UnitSystem)) || 'imperial'
 	);
 
 	$effect(() => {
@@ -402,7 +419,11 @@
 	$effect(() => {
 		const newW = stagePlot.stage_width;
 		const newD = stagePlot.stage_depth;
-		if (prevStageWidth > 0 && prevStageDepth > 0 && (newW !== prevStageWidth || newD !== prevStageDepth)) {
+		if (
+			prevStageWidth > 0 &&
+			prevStageDepth > 0 &&
+			(newW !== prevStageWidth || newD !== prevStageDepth)
+		) {
 			const scaleX = newW / prevStageWidth;
 			const scaleY = newD / prevStageDepth;
 			for (const item of stagePlot.items) {
@@ -556,7 +577,9 @@
 		};
 	});
 
-	function openAddMenu() { isAddingItem = true; }
+	function openAddMenu() {
+		isAddingItem = true;
+	}
 
 	async function preparePlacingItem(item: any, channel: any = null) {
 		const img = new Image();
@@ -636,7 +659,10 @@
 	}
 
 	function handleCanvasClick(event: MouseEvent) {
-		if (justSelected) { justSelected = false; return; }
+		if (justSelected) {
+			justSelected = false;
+			return;
+		}
 		if (placingItem && canvasEl) {
 			const rect = canvasEl.getBoundingClientRect();
 			const rawX = event.clientX - rect.left - placingItem.width / 2;
@@ -673,7 +699,13 @@
 					stagePlot.items.push({
 						id: Date.now() + idx + 1,
 						type: 'input',
-						itemData: { ...inputDef, item_type: 'input', name: inputDef.name, category: 'Input', path: '' },
+						itemData: {
+							...inputDef,
+							item_type: 'input',
+							name: inputDef.name,
+							category: 'Input',
+							path: ''
+						},
 						name: inputDef.name,
 						channel: String(inputDef.ch || ''),
 						person_id: null,
@@ -688,9 +720,11 @@
 			placingItem = null;
 			commitChange();
 		} else {
-			const target = (event.target as HTMLElement);
+			const target = event.target as HTMLElement;
 			const clickedItem = target.closest('.selectable-item');
-			if (!clickedItem) { clearSelections(); }
+			if (!clickedItem) {
+				clearSelections();
+			}
 		}
 	}
 
@@ -716,7 +750,10 @@
 			history.undo();
 			return;
 		}
-		if ((event.metaKey || event.ctrlKey) && ((event.key === 'z' && event.shiftKey) || event.key === 'y')) {
+		if (
+			(event.metaKey || event.ctrlKey) &&
+			((event.key === 'z' && event.shiftKey) || event.key === 'y')
+		) {
 			event.preventDefault();
 			history.redo();
 			return;
@@ -727,7 +764,11 @@
 		}
 		if (event.key === 'Tab') {
 			const active = document.activeElement as HTMLElement | null;
-			if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.isContentEditable)) return;
+			if (
+				active &&
+				(active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.isContentEditable)
+			)
+				return;
 			if (layoutMode === 'medium') {
 				event.preventDefault();
 				mediumMainTab = mediumMainTab === 'canvas' ? 'patch' : 'canvas';
@@ -763,8 +804,14 @@
 			...overrides
 		};
 		if (!overrides.position) {
-			newItem.position.x = Math.min(sourceItem.position.x + 20, canvasWidth - sourceItem.position.width);
-			newItem.position.y = Math.min(sourceItem.position.y + 20, canvasHeight - sourceItem.position.height);
+			newItem.position.x = Math.min(
+				sourceItem.position.x + 20,
+				canvasWidth - sourceItem.position.width
+			);
+			newItem.position.y = Math.min(
+				sourceItem.position.y + 20,
+				canvasHeight - sourceItem.position.height
+			);
 		}
 		stagePlot.items.push(newItem);
 		commitChange();
@@ -789,31 +836,47 @@
 	function moveForward(itemId: number) {
 		const idx = stagePlot.items.findIndex((i: any) => i.id === itemId);
 		if (idx === -1 || idx === stagePlot.items.length - 1) return;
-		[stagePlot.items[idx], stagePlot.items[idx + 1]] = [stagePlot.items[idx + 1], stagePlot.items[idx]];
+		[stagePlot.items[idx], stagePlot.items[idx + 1]] = [
+			stagePlot.items[idx + 1],
+			stagePlot.items[idx]
+		];
 		commitChange();
 	}
 
 	function moveBackward(itemId: number) {
 		const idx = stagePlot.items.findIndex((i: any) => i.id === itemId);
 		if (idx <= 0) return;
-		[stagePlot.items[idx - 1], stagePlot.items[idx]] = [stagePlot.items[idx], stagePlot.items[idx - 1]];
+		[stagePlot.items[idx - 1], stagePlot.items[idx]] = [
+			stagePlot.items[idx],
+			stagePlot.items[idx - 1]
+		];
 		commitChange();
 	}
 
 	function openItemEditor(item: any, event: any) {
-		if (justSelected) { justSelected = false; return; }
+		if (justSelected) {
+			justSelected = false;
+			return;
+		}
 		event.stopPropagation();
 		const itemEl = document.querySelector(`[data-id="${item.id}"]`);
 		if (itemEl) {
 			selectedItems = [itemEl as HTMLElement];
 			selecto?.setSelectedTargets([itemEl]);
-			(itemEl as HTMLElement).scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'smooth' });
+			(itemEl as HTMLElement).scrollIntoView({
+				block: 'nearest',
+				inline: 'nearest',
+				behavior: 'smooth'
+			});
 		}
 	}
 
 	async function addPersonToPlot(personId: number, silhouetteItem: ProcessedItem) {
 		// Insert into plot_persons
-		await db.run('INSERT OR IGNORE INTO plot_persons (plot_id, person_id) VALUES (?, ?)', [plotId, personId]);
+		await db.run('INSERT OR IGNORE INTO plot_persons (plot_id, person_id) VALUES (?, ?)', [
+			plotId,
+			personId
+		]);
 		plotPersonIds = new Set([...plotPersonIds, personId]);
 
 		// Reload plot persons
@@ -854,7 +917,10 @@
 	}
 
 	async function removePersonFromPlot(personId: number) {
-		await db.run('DELETE FROM plot_persons WHERE plot_id = ? AND person_id = ?', [plotId, personId]);
+		await db.run('DELETE FROM plot_persons WHERE plot_id = ? AND person_id = ?', [
+			plotId,
+			personId
+		]);
 		const next = new Set(plotPersonIds);
 		next.delete(personId);
 		plotPersonIds = next;
@@ -888,11 +954,15 @@
 		const isInSelection = selectedIds.has(String(item.id));
 		let group: Array<{ item: any; startX: number; startY: number }>;
 		if (isInSelection && selectedItems.length > 1) {
-			group = selectedItems.map((el) => {
-				const id = parseInt(el.dataset?.id || '0');
-				const groupItem = stagePlot.items.find((i: any) => i.id === id);
-				return groupItem ? { item: groupItem, startX: groupItem.position.x, startY: groupItem.position.y } : null;
-			}).filter(Boolean) as Array<{ item: any; startX: number; startY: number }>;
+			group = selectedItems
+				.map((el) => {
+					const id = parseInt(el.dataset?.id || '0');
+					const groupItem = stagePlot.items.find((i: any) => i.id === id);
+					return groupItem
+						? { item: groupItem, startX: groupItem.position.x, startY: groupItem.position.y }
+						: null;
+				})
+				.filter(Boolean) as Array<{ item: any; startX: number; startY: number }>;
 		} else {
 			group = [{ item, startX: item.position.x, startY: item.position.y }];
 		}
@@ -940,8 +1010,14 @@
 			for (const entry of dragging.group) {
 				const newX = entry.startX + deltaX;
 				const newY = entry.startY + deltaY;
-				entry.item.position.x = Math.max(0, Math.min(newX, canvasWidth - entry.item.position.width));
-				entry.item.position.y = Math.max(0, Math.min(newY, canvasHeight - entry.item.position.height));
+				entry.item.position.x = Math.max(
+					0,
+					Math.min(newX, canvasWidth - entry.item.position.width)
+				);
+				entry.item.position.y = Math.max(
+					0,
+					Math.min(newY, canvasHeight - entry.item.position.height)
+				);
 			}
 		}
 	}
@@ -953,8 +1029,10 @@
 			if (isAltPressed) {
 				// Alt+drag: duplicate single item only
 				const snapped = snapToGrid(
-					dragging.ghostX, dragging.ghostY,
-					dragging.item.position.width, dragging.item.position.height
+					dragging.ghostX,
+					dragging.ghostY,
+					dragging.item.position.width,
+					dragging.item.position.height
 				);
 				const x = Math.max(0, Math.min(snapped.x, canvasWidth - dragging.item.position.width));
 				const y = Math.max(0, Math.min(snapped.y, canvasHeight - dragging.item.position.height));
@@ -963,8 +1041,10 @@
 				// Snap all items in the group
 				for (const entry of dragging.group) {
 					const snapped = snapToGrid(
-						entry.item.position.x, entry.item.position.y,
-						entry.item.position.width, entry.item.position.height
+						entry.item.position.x,
+						entry.item.position.y,
+						entry.item.position.width,
+						entry.item.position.height
 					);
 					const x = Math.max(0, Math.min(snapped.x, canvasWidth - entry.item.position.width));
 					const y = Math.max(0, Math.min(snapped.y, canvasHeight - entry.item.position.height));
@@ -997,10 +1077,12 @@
 		updateItemProperty(item.id, 'currentVariant', item.currentVariant);
 	}
 
-
 	function handlePatchItemUpdate(itemId: number, property: string, value: string) {
 		const item = stagePlot.items.find((i: any) => i.id === itemId);
-		if (item) { (item as any)[property] = value; commitChange(); }
+		if (item) {
+			(item as any)[property] = value;
+			commitChange();
+		}
 	}
 
 	function updateItemProperty(itemId: number, property: string, value: string) {
@@ -1025,14 +1107,22 @@
 
 	function handlePatchReorder(fromIndex: number, toIndex: number) {
 		if (fromIndex === toIndex) return;
-		if (fromIndex < 0 || toIndex < 0 || fromIndex >= stagePlot.items.length || toIndex >= stagePlot.items.length) return;
+		if (
+			fromIndex < 0 ||
+			toIndex < 0 ||
+			fromIndex >= stagePlot.items.length ||
+			toIndex >= stagePlot.items.length
+		)
+			return;
 		const [moved] = stagePlot.items.splice(fromIndex, 1);
 		stagePlot.items.splice(toIndex, 0, moved);
 		commitChange();
 	}
 
 	function getNextAvailableChannel() {
-		const used = new Set(stagePlot.items.filter((i: any) => i.channel).map((i: any) => parseInt(i.channel)));
+		const used = new Set(
+			stagePlot.items.filter((i: any) => i.channel).map((i: any) => parseInt(i.channel))
+		);
 		let ch = 1;
 		while (used.has(ch)) ch++;
 		return ch;
@@ -1040,9 +1130,7 @@
 
 	function getUsedOutputChannels() {
 		return new Set(
-			stagePlot.outputs
-				.filter((o: any) => o.channel)
-				.map((o: any) => parseInt(o.channel))
+			stagePlot.outputs.filter((o: any) => o.channel).map((o: any) => parseInt(o.channel))
 		);
 	}
 
@@ -1066,7 +1154,11 @@
 	function isMonitorItem(itemData: any) {
 		const category = (itemData?.category ?? '').toString().toLowerCase();
 		const path = (itemData?.path ?? '').toString().toLowerCase();
-		return category.includes('monitor') || path.startsWith('monitors/') || path.startsWith('outputs/monitors');
+		return (
+			category.includes('monitor') ||
+			path.startsWith('monitors/') ||
+			path.startsWith('outputs/monitors')
+		);
 	}
 
 	function inferOutputType(itemData: any) {
@@ -1127,7 +1219,9 @@
 						link_mode: 'stereo_pair'
 					}
 				);
-				outputStereoLinks = Array.from(new Set([...outputStereoLinks, start])).sort((a, b) => a - b);
+				outputStereoLinks = Array.from(new Set([...outputStereoLinks, start])).sort(
+					(a, b) => a - b
+				);
 			} else {
 				const ch = getNextAvailableOutputChannel();
 				if (ch == null) return;
@@ -1276,7 +1370,7 @@
 			onExportPdf={handleExportPdf}
 			backHref={'/bands/' + bandId}
 			bind:items={stagePlot.items}
-			musicians={plotPersons.map(p => ({ id: p.id, name: p.name, instrument: p.role || '' }))}
+			musicians={plotPersons.map((p) => ({ id: p.id, name: p.name, instrument: p.role || '' }))}
 			bind:canvasWidth
 			bind:canvasHeight
 			bind:lastModified={stagePlot.revision_date}
@@ -1312,7 +1406,7 @@
 			onChannelColorChange={handleChannelColorChange}
 			{stereoLinks}
 			onStereoLinksChange={handleStereoLinksChange}
-			outputStereoLinks={outputStereoLinks}
+			{outputStereoLinks}
 			onOutputStereoLinksChange={handleOutputStereoLinksChange}
 			{categoryColorDefaults}
 			{inputChannelMode}
@@ -1325,143 +1419,247 @@
 			<ContextMenu.Root>
 				<ContextMenu.Trigger>
 					{#snippet child({ props: canvasCtxProps })}
-					<div
-						{...canvasCtxProps}
-						bind:this={canvasEl}
-						class="items-container relative mx-auto w-full bg-white dark:bg-gray-800"
-						style="aspect-ratio: {stagePlot.stage_width}/{stagePlot.stage_depth}; max-width: 1100px; cursor: {placingItem ? 'copy' : 'default'}"
-						onmousemove={handleCanvasMouseMove}
-						onclick={handleCanvasClick}
-					>
-						<CanvasOverlay {showZones} {canvasWidth} {canvasHeight} itemCount={stagePlot.items.length} />
+						<div
+							{...canvasCtxProps}
+							bind:this={canvasEl}
+							class="items-container relative mx-auto w-full bg-white dark:bg-gray-800"
+							style="aspect-ratio: {stagePlot.stage_width}/{stagePlot.stage_depth}; max-width: 1100px; cursor: {placingItem
+								? 'copy'
+								: 'default'}"
+							onmousemove={handleCanvasMouseMove}
+							onclick={handleCanvasClick}
+						>
+							<CanvasOverlay
+								{showZones}
+								{canvasWidth}
+								{canvasHeight}
+								itemCount={stagePlot.items.length}
+							/>
 
-						{#each stagePlot.items as item (item.id)}
-						<ContextMenu.Root>
-							<ContextMenu.Trigger>
-								{#snippet child({ props: itemProps })}
-								<div
-									{...itemProps}
-									class="group selectable-item absolute cursor-move select-none"
-									class:ring-2={editingItem?.id === item.id || selectedIds.has(String(item.id))}
-									class:ring-blue-500={editingItem?.id === item.id || selectedIds.has(String(item.id))}
-									data-id={item.id}
-									style="left: {item.position.x}px; top: {item.position.y}px; width: {item.position.width}px; height: {item.position.height}px; touch-action: none;"
-									draggable="false"
-									ondragstart={(e) => e.preventDefault()}
-									onpointerdown={(e) => handleItemPointerDown(e, item)}
-									onpointermove={handleItemPointerMove}
-									onpointerup={handleItemPointerUp}
-									onclick={(e) => openItemEditor(item, e)}
-								>
-									{#if item.type === 'stageDeck'}
-										<StageDeck size={item.size} x={0} y={0} class="w-full h-full" />
-									{:else if item.type === 'riser'}
-										<div class="flex h-full w-full items-center justify-center rounded border-2 border-gray-500 bg-gray-400/50 dark:border-gray-400 dark:bg-gray-600/50">
-											<div class="text-center leading-tight">
-												<div class="text-[10px] font-bold text-gray-700 dark:text-gray-200">RISER</div>
-												<div class="text-[8px] text-gray-600 dark:text-gray-300">{item.itemData?.riserWidth ?? '?'}' × {item.itemData?.riserDepth ?? '?'}'</div>
-												{#if item.itemData?.riserHeight}
-													<div class="text-[7px] text-gray-500 dark:text-gray-400">h: {item.itemData.riserHeight}'</div>
+							{#each stagePlot.items as item (item.id)}
+								<ContextMenu.Root>
+									<ContextMenu.Trigger>
+										{#snippet child({ props: itemProps })}
+											<div
+												{...itemProps}
+												class="group selectable-item absolute cursor-move select-none"
+												class:ring-2={editingItem?.id === item.id ||
+													selectedIds.has(String(item.id))}
+												class:ring-blue-500={editingItem?.id === item.id ||
+													selectedIds.has(String(item.id))}
+												data-id={item.id}
+												style="left: {item.position.x}px; top: {item.position.y}px; width: {item
+													.position.width}px; height: {item.position.height}px; touch-action: none;"
+												draggable="false"
+												ondragstart={(e) => e.preventDefault()}
+												onpointerdown={(e) => handleItemPointerDown(e, item)}
+												onpointermove={handleItemPointerMove}
+												onpointerup={handleItemPointerUp}
+												onclick={(e) => openItemEditor(item, e)}
+											>
+												{#if item.type === 'stageDeck'}
+													<StageDeck size={item.size} x={0} y={0} class="h-full w-full" />
+												{:else if item.type === 'riser'}
+													<div
+														class="flex h-full w-full items-center justify-center rounded border-2 border-gray-500 bg-gray-400/50 dark:border-gray-400 dark:bg-gray-600/50"
+													>
+														<div class="text-center leading-tight">
+															<div class="text-[10px] font-bold text-gray-700 dark:text-gray-200">
+																RISER
+															</div>
+															<div class="text-[8px] text-gray-600 dark:text-gray-300">
+																{item.itemData?.riserWidth ?? '?'}' × {item.itemData?.riserDepth ??
+																	'?'}'
+															</div>
+															{#if item.itemData?.riserHeight}
+																<div class="text-[7px] text-gray-500 dark:text-gray-400">
+																	h: {item.itemData.riserHeight}'
+																</div>
+															{/if}
+														</div>
+													</div>
+												{:else}
+													<img
+														src={getCurrentImageSrc(item)}
+														alt={item.itemData?.name || item.name || 'Stage Item'}
+														draggable="false"
+														style="width: {item.position.width}px; height: {item.position
+															.height}px; pointer-events: none;"
+													/>
 												{/if}
-											</div>
-										</div>
-									{:else}
-										<img src={getCurrentImageSrc(item)} alt={item.itemData?.name || item.name || 'Stage Item'} draggable="false" style="width: {item.position.width}px; height: {item.position.height}px; pointer-events: none;" />
-									{/if}
 
-									{#if item.person_id && item.itemData?.item_type === 'person'}
-										{@const person = personsById[item.person_id]}
-										{#if person}
-											<div class="absolute -top-5 left-1/2 -translate-x-1/2 whitespace-nowrap rounded bg-white/90 px-1.5 py-0.5 text-[10px] font-semibold text-gray-800 shadow-sm pointer-events-none dark:bg-gray-800/90 dark:text-gray-200">
-												{person.name}
-											</div>
-										{/if}
-									{/if}
+												{#if item.person_id && item.itemData?.item_type === 'person'}
+													{@const person = personsById[item.person_id]}
+													{#if person}
+														<div
+															class="pointer-events-none absolute -top-5 left-1/2 -translate-x-1/2 rounded bg-white/90 px-1.5 py-0.5 text-[10px] font-semibold whitespace-nowrap text-gray-800 shadow-sm dark:bg-gray-800/90 dark:text-gray-200"
+														>
+															{person.name}
+														</div>
+													{/if}
+												{/if}
 
-									{#if selectedItems.some((el) => el.dataset?.id === String(item.id))}
-										{#if getVariantKeys(item).length > 1}
-											<div class="absolute -bottom-8 left-1/2 z-20 flex -translate-x-1/2 transform gap-1">
+												{#if selectedItems.some((el) => el.dataset?.id === String(item.id))}
+													{#if getVariantKeys(item).length > 1}
+														<div
+															class="absolute -bottom-8 left-1/2 z-20 flex -translate-x-1/2 transform gap-1"
+														>
+															<button
+																onclick={(e) => {
+																	e.stopPropagation();
+																	rotateItemRight(item);
+																}}
+																class="flex h-6 w-6 items-center justify-center rounded-full bg-blue-500 text-sm text-white shadow-md transition-colors hover:bg-blue-600"
+																title="Rotate Right"
+															>
+																<svg
+																	xmlns="http://www.w3.org/2000/svg"
+																	class="h-4 w-4"
+																	viewBox="0 0 20 20"
+																	fill="currentColor"
+																>
+																	<path
+																		fill-rule="evenodd"
+																		d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z"
+																		clip-rule="evenodd"
+																	/>
+																</svg>
+															</button>
+														</div>
+													{/if}
+												{/if}
+
 												<button
-													onclick={(e) => { e.stopPropagation(); rotateItemRight(item); }}
-													class="flex h-6 w-6 items-center justify-center rounded-full bg-blue-500 text-sm text-white shadow-md transition-colors hover:bg-blue-600"
-													title="Rotate Right"
+													onclick={(e) => {
+														e.stopPropagation();
+														deleteItem(item.id);
+													}}
+													class="absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs text-white opacity-0 transition-opacity group-hover:opacity-100"
 												>
-													<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-														<path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd" />
-													</svg>
+													&times;
 												</button>
 											</div>
-										{/if}
+										{/snippet}
+									</ContextMenu.Trigger>
+									<ContextMenu.Portal>
+										<ContextMenu.Content
+											class="z-50 w-[200px] rounded-xl border border-gray-300 bg-white px-1 py-1.5 shadow-lg dark:border-gray-600 dark:bg-gray-800"
+										>
+											<ContextMenu.Item
+												onSelect={() => openReplaceMenu(item.id)}
+												class="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700"
+												>Replace...</ContextMenu.Item
+											>
+											<ContextMenu.Item
+												onSelect={() => duplicateItem(item)}
+												class="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700"
+												>Duplicate</ContextMenu.Item
+											>
+											<ContextMenu.Separator class="-mx-1 my-1 block h-px bg-muted" />
+											<ContextMenu.Item
+												onSelect={() => moveToFront(item.id)}
+												class="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700"
+												>Bring to Front</ContextMenu.Item
+											>
+											<ContextMenu.Item
+												onSelect={() => moveForward(item.id)}
+												class="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700"
+												>Bring Forward</ContextMenu.Item
+											>
+											<ContextMenu.Item
+												onSelect={() => moveBackward(item.id)}
+												class="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700"
+												>Send Backward</ContextMenu.Item
+											>
+											<ContextMenu.Item
+												onSelect={() => moveToBack(item.id)}
+												class="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700"
+												>Send to Back</ContextMenu.Item
+											>
+											<ContextMenu.Separator class="-mx-1 my-1 block h-px bg-muted" />
+											<ContextMenu.Item
+												onSelect={() => deleteItem(item.id)}
+												class="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-red-50 dark:hover:bg-red-600/30"
+												>Delete</ContextMenu.Item
+											>
+										</ContextMenu.Content>
+									</ContextMenu.Portal>
+								</ContextMenu.Root>
+							{/each}
+
+							{#if dragging?.moved && isAltPressed}
+								<div
+									class="ring-dashed pointer-events-none absolute opacity-50 ring-2 ring-blue-400"
+									style="left: {dragging.ghostX}px; top: {dragging.ghostY}px; width: {dragging.item
+										.position.width}px; height: {dragging.item.position.height}px;"
+								>
+									{#if dragging.item.type === 'stageDeck'}
+										<StageDeck size={dragging.item.size} x={0} y={0} class="h-full w-full" />
+									{:else if dragging.item.type === 'riser'}
+										<div
+											class="flex h-full w-full items-center justify-center rounded border-2 border-dashed border-gray-500 bg-gray-400/40 text-[10px] font-bold text-gray-700"
+										>
+											RISER
+										</div>
+									{:else}
+										<img
+											src={getCurrentImageSrc(dragging.item)}
+											alt="Duplicate preview"
+											draggable="false"
+											style="width: {dragging.item.position.width}px; height: {dragging.item
+												.position.height}px; pointer-events: none;"
+										/>
 									{/if}
-
-									<button
-										onclick={(e) => { e.stopPropagation(); deleteItem(item.id); }}
-										class="absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs text-white opacity-0 transition-opacity group-hover:opacity-100"
-									>
-										&times;
-									</button>
 								</div>
-								{/snippet}
-							</ContextMenu.Trigger>
-							<ContextMenu.Portal>
-								<ContextMenu.Content class="z-50 w-[200px] rounded-xl border border-gray-300 bg-white px-1 py-1.5 shadow-lg dark:border-gray-600 dark:bg-gray-800">
-									<ContextMenu.Item onSelect={() => openReplaceMenu(item.id)} class="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700">Replace...</ContextMenu.Item>
-									<ContextMenu.Item onSelect={() => duplicateItem(item)} class="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700">Duplicate</ContextMenu.Item>
-									<ContextMenu.Separator class="bg-muted -mx-1 my-1 block h-px" />
-									<ContextMenu.Item onSelect={() => moveToFront(item.id)} class="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700">Bring to Front</ContextMenu.Item>
-									<ContextMenu.Item onSelect={() => moveForward(item.id)} class="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700">Bring Forward</ContextMenu.Item>
-									<ContextMenu.Item onSelect={() => moveBackward(item.id)} class="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700">Send Backward</ContextMenu.Item>
-									<ContextMenu.Item onSelect={() => moveToBack(item.id)} class="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700">Send to Back</ContextMenu.Item>
-									<ContextMenu.Separator class="bg-muted -mx-1 my-1 block h-px" />
-									<ContextMenu.Item onSelect={() => deleteItem(item.id)} class="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-red-50 dark:hover:bg-red-600/30">Delete</ContextMenu.Item>
-								</ContextMenu.Content>
-							</ContextMenu.Portal>
-						</ContextMenu.Root>
-						{/each}
+							{/if}
 
-						{#if dragging?.moved && isAltPressed}
-							<div
-								class="pointer-events-none absolute opacity-50 ring-2 ring-blue-400 ring-dashed"
-								style="left: {dragging.ghostX}px; top: {dragging.ghostY}px; width: {dragging.item.position.width}px; height: {dragging.item.position.height}px;"
-							>
-								{#if dragging.item.type === 'stageDeck'}
-									<StageDeck size={dragging.item.size} x={0} y={0} class="w-full h-full" />
-								{:else if dragging.item.type === 'riser'}
-									<div class="flex h-full w-full items-center justify-center rounded border-2 border-dashed border-gray-500 bg-gray-400/40 text-[10px] font-bold text-gray-700">RISER</div>
-								{:else}
-									<img src={getCurrentImageSrc(dragging.item)} alt="Duplicate preview" draggable="false" style="width: {dragging.item.position.width}px; height: {dragging.item.position.height}px; pointer-events: none;" />
-								{/if}
-							</div>
-						{/if}
-
-						{#if placingItem}
-							<div
-								class="pointer-events-none absolute opacity-60"
-								style="left: {placingItem.x}px; top: {placingItem.y}px; width: {placingItem.width}px; height: {placingItem.height}px;"
-							>
-								{#if placingItem.type === 'riser'}
-									<div class="flex h-full w-full items-center justify-center rounded border-2 border-dashed border-gray-500 bg-gray-400/40 text-[10px] font-bold text-gray-700">RISER</div>
-								{:else}
-									<img src={placingItem.itemData?.image || ''} alt={placingItem.itemData?.name || 'Item Preview'} style="width: {placingItem.width}px; height: {placingItem.height}px;" />
-								{/if}
-							</div>
-						{/if}
-					</div>
+							{#if placingItem}
+								<div
+									class="pointer-events-none absolute opacity-60"
+									style="left: {placingItem.x}px; top: {placingItem.y}px; width: {placingItem.width}px; height: {placingItem.height}px;"
+								>
+									{#if placingItem.type === 'riser'}
+										<div
+											class="flex h-full w-full items-center justify-center rounded border-2 border-dashed border-gray-500 bg-gray-400/40 text-[10px] font-bold text-gray-700"
+										>
+											RISER
+										</div>
+									{:else}
+										<img
+											src={placingItem.itemData?.image || ''}
+											alt={placingItem.itemData?.name || 'Item Preview'}
+											style="width: {placingItem.width}px; height: {placingItem.height}px;"
+										/>
+									{/if}
+								</div>
+							{/if}
+						</div>
 					{/snippet}
 				</ContextMenu.Trigger>
 				<ContextMenu.Portal>
-					<ContextMenu.Content class="z-50 w-[200px] rounded-xl border border-gray-300 bg-white px-1 py-1.5 shadow-lg dark:border-gray-600 dark:bg-gray-800">
-						<ContextMenu.Item onSelect={() => openAddMenu()} class="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700">Add Item</ContextMenu.Item>
-						<ContextMenu.Item onSelect={() => (snapping = !snapping)} class="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700">Snapping: {snapping ? 'On' : 'Off'}</ContextMenu.Item>
+					<ContextMenu.Content
+						class="z-50 w-[200px] rounded-xl border border-gray-300 bg-white px-1 py-1.5 shadow-lg dark:border-gray-600 dark:bg-gray-800"
+					>
+						<ContextMenu.Item
+							onSelect={() => openAddMenu()}
+							class="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700"
+							>Add Item</ContextMenu.Item
+						>
+						<ContextMenu.Item
+							onSelect={() => (snapping = !snapping)}
+							class="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700"
+							>Snapping: {snapping ? 'On' : 'Off'}</ContextMenu.Item
+						>
 					</ContextMenu.Content>
 				</ContextMenu.Portal>
 			</ContextMenu.Root>
 		</div>
 
 		<div class="mt-1.5 flex justify-between text-xs text-text-tertiary">
-			<div class="flex items-center gap-3">Items: {stagePlot.items.length} | People: {plotPersonIds.size}
+			<div class="flex items-center gap-3">
+				Items: {stagePlot.items.length} | People: {plotPersonIds.size}
 				{#if isAltPressed}
-					<span class="text-blue-600 font-semibold animate-bounce">(Duplicate)</span>
+					<span class="animate-bounce font-semibold text-blue-600">(Duplicate)</span>
 				{/if}
 			</div>
 			<div>
@@ -1471,8 +1669,11 @@
 	{/snippet}
 
 	{#if layoutMode === 'desktop'}
-		<div class="flex flex-1 min-h-0 gap-5 overflow-hidden">
-			<div class="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden" bind:this={stagePlotContainer}>
+		<div class="flex min-h-0 flex-1 gap-5 overflow-hidden">
+			<div
+				class="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden"
+				bind:this={stagePlotContainer}
+			>
 				<div class="flex min-h-0 flex-1 flex-col overflow-hidden">
 					{@render canvasContent()}
 				</div>
@@ -1521,37 +1722,42 @@
 			</div>
 		</div>
 	{:else if layoutMode === 'medium'}
-		<div class="flex flex-1 min-h-0 gap-5 overflow-hidden">
-			<div class="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden" bind:this={stagePlotContainer}>
-			<div class="flex min-h-0 flex-1 flex-col rounded-xl border border-border-primary bg-surface shadow-sm overflow-hidden">
-			<div class="border-b border-border-primary bg-muted/30 px-0 pt-0">
-				<div class="flex w-full">
-					<button
-						type="button"
-						onclick={() => (mediumMainTab = 'canvas')}
-						class={`flex-1 px-4 py-3 text-sm font-medium text-center transition-colors border-b-2 ${mediumMainTab === 'canvas' ? 'bg-surface text-text-primary border-text-primary' : 'text-text-secondary border-transparent hover:text-text-primary'}`}
-					>
-						Canvas
-					</button>
-					<button
-						type="button"
-						onclick={() => (mediumMainTab = 'patch')}
-						class={`flex-1 px-4 py-3 text-sm font-medium text-center transition-colors border-b-2 ${mediumMainTab === 'patch' ? 'bg-surface text-text-primary border-text-primary' : 'text-text-secondary border-transparent hover:text-text-primary'}`}
-					>
-						Patch List
-					</button>
+		<div class="flex min-h-0 flex-1 gap-5 overflow-hidden">
+			<div
+				class="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden"
+				bind:this={stagePlotContainer}
+			>
+				<div
+					class="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-border-primary bg-surface shadow-sm"
+				>
+					<div class="border-b border-border-primary bg-muted/30 px-0 pt-0">
+						<div class="flex w-full">
+							<button
+								type="button"
+								onclick={() => (mediumMainTab = 'canvas')}
+								class={`flex-1 border-b-2 px-4 py-3 text-center text-sm font-medium transition-colors ${mediumMainTab === 'canvas' ? 'border-text-primary bg-surface text-text-primary' : 'border-transparent text-text-secondary hover:text-text-primary'}`}
+							>
+								Canvas
+							</button>
+							<button
+								type="button"
+								onclick={() => (mediumMainTab = 'patch')}
+								class={`flex-1 border-b-2 px-4 py-3 text-center text-sm font-medium transition-colors ${mediumMainTab === 'patch' ? 'border-text-primary bg-surface text-text-primary' : 'border-transparent text-text-secondary hover:text-text-primary'}`}
+							>
+								Patch List
+							</button>
+						</div>
+					</div>
+					{#if mediumMainTab === 'canvas'}
+						<div class="min-h-0 flex-1 overflow-hidden p-4">
+							{@render canvasContent()}
+						</div>
+					{:else}
+						<div class="min-h-0 flex-1 overflow-hidden p-4">
+							{@render patchContent(4)}
+						</div>
+					{/if}
 				</div>
-			</div>
-				{#if mediumMainTab === 'canvas'}
-					<div class="flex-1 min-h-0 overflow-hidden p-4">
-						{@render canvasContent()}
-				</div>
-			{:else}
-				<div class="flex-1 min-h-0 overflow-hidden p-4">
-					{@render patchContent(4)}
-				</div>
-			{/if}
-		</div>
 			</div>
 
 			<div class="flex w-80 shrink-0 flex-col">
@@ -1593,84 +1799,85 @@
 			</div>
 		</div>
 	{:else}
-		<div class="flex flex-1 min-h-0 flex-col gap-3 overflow-hidden">
-		<div class="flex min-h-0 flex-1 flex-col rounded-xl border border-border-primary bg-surface shadow-sm overflow-hidden">
-		<div class="border-b border-border-primary bg-muted/30 px-0 pt-0">
-			<div class="flex w-full">
-				<button
-					type="button"
-					onclick={() => (mobileMainTab = 'canvas')}
-					class={`flex-1 px-4 py-3 text-sm font-medium text-center transition-colors border-b-2 ${mobileMainTab === 'canvas' ? 'bg-surface text-text-primary border-text-primary' : 'text-text-secondary border-transparent hover:text-text-primary'}`}
-				>
-					Canvas
-				</button>
-				<button
-					type="button"
-					onclick={() => (mobileMainTab = 'patch')}
-					class={`flex-1 px-4 py-3 text-sm font-medium text-center transition-colors border-b-2 ${mobileMainTab === 'patch' ? 'bg-surface text-text-primary border-text-primary' : 'text-text-secondary border-transparent hover:text-text-primary'}`}
-				>
-					Patch List
-				</button>
-				<button
-					type="button"
-					onclick={() => (mobileMainTab = 'panel')}
-					class={`flex-1 px-4 py-3 text-sm font-medium text-center transition-colors border-b-2 ${mobileMainTab === 'panel' ? 'bg-surface text-text-primary border-text-primary' : 'text-text-secondary border-transparent hover:text-text-primary'}`}
-				>
-					Panel
-				</button>
+		<div class="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden">
+			<div
+				class="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-border-primary bg-surface shadow-sm"
+			>
+				<div class="border-b border-border-primary bg-muted/30 px-0 pt-0">
+					<div class="flex w-full">
+						<button
+							type="button"
+							onclick={() => (mobileMainTab = 'canvas')}
+							class={`flex-1 border-b-2 px-4 py-3 text-center text-sm font-medium transition-colors ${mobileMainTab === 'canvas' ? 'border-text-primary bg-surface text-text-primary' : 'border-transparent text-text-secondary hover:text-text-primary'}`}
+						>
+							Canvas
+						</button>
+						<button
+							type="button"
+							onclick={() => (mobileMainTab = 'patch')}
+							class={`flex-1 border-b-2 px-4 py-3 text-center text-sm font-medium transition-colors ${mobileMainTab === 'patch' ? 'border-text-primary bg-surface text-text-primary' : 'border-transparent text-text-secondary hover:text-text-primary'}`}
+						>
+							Patch List
+						</button>
+						<button
+							type="button"
+							onclick={() => (mobileMainTab = 'panel')}
+							class={`flex-1 border-b-2 px-4 py-3 text-center text-sm font-medium transition-colors ${mobileMainTab === 'panel' ? 'border-text-primary bg-surface text-text-primary' : 'border-transparent text-text-secondary hover:text-text-primary'}`}
+						>
+							Panel
+						</button>
+					</div>
+				</div>
+				{#if mobileMainTab === 'canvas'}
+					<div class="min-h-0 flex-1 overflow-hidden p-4">
+						{@render canvasContent()}
+					</div>
+				{:else if mobileMainTab === 'patch'}
+					<div class="min-h-0 flex-1 overflow-hidden p-4">
+						{@render patchContent(4)}
+					</div>
+				{:else}
+					<div class="min-h-0 flex-1 overflow-hidden p-4">
+						<EditorSidePanel
+							bind:activeTab={mobilePanelTab}
+							bind:selectedItems
+							bind:items={stagePlot.items}
+							persons={plotPersons}
+							bind:title={stagePlot.plot_name}
+							bind:lastModified={stagePlot.revision_date}
+							bind:showZones
+							bind:stageWidth={stagePlot.stage_width}
+							bind:stageDepth={stagePlot.stage_depth}
+							bind:unit
+							bind:pdfPageFormat
+							onPlaceRiser={placeRiser}
+							onUpdateItem={updateItemProperty}
+							{getItemZone}
+							{getItemPosition}
+							{updateItemPosition}
+							{bandPersons}
+							{plotPersonIds}
+							onAddPersonToPlot={addPersonToPlot}
+							onCreatePerson={createPerson}
+							onRemovePersonFromPlot={removePersonFromPlot}
+							{consoleType}
+							{consoleDef}
+							{consoleOptions}
+							{categoryColorDefaults}
+							{inputChannelMode}
+							{outputChannelMode}
+							channelOptions={consoleDef?.channelOptions ?? CHANNEL_OPTIONS}
+							outputOptions={consoleDef?.outputOptions ?? CHANNEL_OPTIONS}
+							onConsoleTypeChange={handleConsoleTypeChange}
+							onCategoryColorDefaultsChange={handleCategoryColorDefaultsChange}
+							onInputChannelModeChange={(m) => (inputChannelMode = m as ChannelMode)}
+							onOutputChannelModeChange={(m) => (outputChannelMode = m as ChannelMode)}
+						/>
+					</div>
+				{/if}
 			</div>
 		</div>
-			{#if mobileMainTab === 'canvas'}
-				<div class="flex-1 min-h-0 overflow-hidden p-4">
-					{@render canvasContent()}
-				</div>
-			{:else if mobileMainTab === 'patch'}
-				<div class="flex-1 min-h-0 overflow-hidden p-4">
-					{@render patchContent(4)}
-				</div>
-			{:else}
-				<div class="flex-1 min-h-0 overflow-hidden p-4">
-					<EditorSidePanel
-						bind:activeTab={mobilePanelTab}
-						bind:selectedItems
-						bind:items={stagePlot.items}
-						persons={plotPersons}
-						bind:title={stagePlot.plot_name}
-						bind:lastModified={stagePlot.revision_date}
-						bind:showZones
-						bind:stageWidth={stagePlot.stage_width}
-						bind:stageDepth={stagePlot.stage_depth}
-						bind:unit
-						bind:pdfPageFormat
-						onPlaceRiser={placeRiser}
-						onUpdateItem={updateItemProperty}
-						{getItemZone}
-						{getItemPosition}
-						{updateItemPosition}
-						{bandPersons}
-						{plotPersonIds}
-						onAddPersonToPlot={addPersonToPlot}
-						onCreatePerson={createPerson}
-						onRemovePersonFromPlot={removePersonFromPlot}
-						{consoleType}
-						{consoleDef}
-						{consoleOptions}
-						{categoryColorDefaults}
-						{inputChannelMode}
-						{outputChannelMode}
-						channelOptions={consoleDef?.channelOptions ?? CHANNEL_OPTIONS}
-						outputOptions={consoleDef?.outputOptions ?? CHANNEL_OPTIONS}
-						onConsoleTypeChange={handleConsoleTypeChange}
-						onCategoryColorDefaultsChange={handleCategoryColorDefaultsChange}
-						onInputChannelModeChange={(m) => (inputChannelMode = m as ChannelMode)}
-						onOutputChannelModeChange={(m) => (outputChannelMode = m as ChannelMode)}
-					/>
-				</div>
-			{/if}
-		</div>
-		</div>
 	{/if}
-
 </div>
 
 <!-- Command Palette for Adding Items -->
@@ -1678,7 +1885,10 @@
 	<ItemCommandPalette
 		bind:open={isAddingItem}
 		onselect={handleItemSelect}
-		onclose={() => { isAddingItem = false; replacingItemId = null; }}
+		onclose={() => {
+			isAddingItem = false;
+			replacingItemId = null;
+		}}
 	/>
 </div>
 

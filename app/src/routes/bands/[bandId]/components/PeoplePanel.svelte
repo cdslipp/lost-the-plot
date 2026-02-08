@@ -182,7 +182,12 @@
 			onclick={() => (showAddPerson = true)}
 			class="flex w-full items-center gap-2 rounded-xl border border-dashed border-border-primary bg-surface px-3 py-2.5 text-sm text-text-secondary transition hover:border-stone-400 hover:text-text-primary"
 		>
-			<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+			<svg
+				xmlns="http://www.w3.org/2000/svg"
+				class="h-4 w-4"
+				viewBox="0 0 20 20"
+				fill="currentColor"
+			>
 				<path
 					fill-rule="evenodd"
 					d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z"
@@ -202,33 +207,21 @@
 							<input
 								value={person.name}
 								onchange={(e) =>
-									updatePerson(
-										person.id,
-										'name',
-										(e.target as HTMLInputElement).value
-									)}
+									updatePerson(person.id, 'name', (e.target as HTMLInputElement).value)}
 								class="rounded border border-border-primary bg-surface px-2 py-1 text-sm"
 								placeholder="Name"
 							/>
 							<input
 								value={person.role || ''}
 								onchange={(e) =>
-									updatePerson(
-										person.id,
-										'role',
-										(e.target as HTMLInputElement).value
-									)}
+									updatePerson(person.id, 'role', (e.target as HTMLInputElement).value)}
 								class="rounded border border-border-primary bg-surface px-2 py-1 text-sm"
 								placeholder="Role"
 							/>
 							<select
 								value={person.member_type || 'performer'}
 								onchange={(e) =>
-									updatePerson(
-										person.id,
-										'member_type',
-										(e.target as HTMLSelectElement).value
-									)}
+									updatePerson(person.id, 'member_type', (e.target as HTMLSelectElement).value)}
 								class="rounded border border-border-primary bg-surface px-2 py-1 text-sm"
 							>
 								<option value="performer">Performer</option>
@@ -239,11 +232,7 @@
 							<select
 								value={person.status || 'permanent'}
 								onchange={(e) =>
-									updatePerson(
-										person.id,
-										'status',
-										(e.target as HTMLSelectElement).value
-									)}
+									updatePerson(person.id, 'status', (e.target as HTMLSelectElement).value)}
 								class="rounded border border-border-primary bg-surface px-2 py-1 text-sm"
 							>
 								<option value="permanent">Permanent</option>
@@ -254,22 +243,14 @@
 							<input
 								value={person.phone || ''}
 								onchange={(e) =>
-									updatePerson(
-										person.id,
-										'phone',
-										(e.target as HTMLInputElement).value
-									)}
+									updatePerson(person.id, 'phone', (e.target as HTMLInputElement).value)}
 								class="rounded border border-border-primary bg-surface px-2 py-1 text-sm"
 								placeholder="Phone"
 							/>
 							<input
 								value={person.email || ''}
 								onchange={(e) =>
-									updatePerson(
-										person.id,
-										'email',
-										(e.target as HTMLInputElement).value
-									)}
+									updatePerson(person.id, 'email', (e.target as HTMLInputElement).value)}
 								class="rounded border border-border-primary bg-surface px-2 py-1 text-sm"
 								placeholder="Email"
 							/>
@@ -283,30 +264,22 @@
 					{:else}
 						<div class="flex flex-1 items-center gap-4">
 							<div class="flex items-center gap-2">
-								<span class="font-medium text-text-primary"
-									>{person.name}</span
-								>
+								<span class="font-medium text-text-primary">{person.name}</span>
 								{#if person.role}
-									<span class="text-sm text-text-secondary"
-										>{person.role}</span
-									>
+									<span class="text-sm text-text-secondary">{person.role}</span>
 								{/if}
 								{#if person.member_type && person.member_type !== 'performer'}
-									<span
-										class="rounded-full bg-muted px-2 py-0.5 text-xs text-text-secondary"
+									<span class="rounded-full bg-muted px-2 py-0.5 text-xs text-text-secondary"
 										>{person.member_type}</span
 									>
 								{/if}
 								{#if person.status && person.status !== 'permanent'}
-									<span
-										class="rounded-full bg-muted px-2 py-0.5 text-xs text-text-secondary"
+									<span class="rounded-full bg-muted px-2 py-0.5 text-xs text-text-secondary"
 										>{person.status}</span
 									>
 								{/if}
 							</div>
-							<div
-								class="hidden text-sm text-text-tertiary sm:flex sm:gap-4"
-							>
+							<div class="hidden text-sm text-text-tertiary sm:flex sm:gap-4">
 								{#if person.phone}
 									<span>{person.phone}</span>
 								{/if}
@@ -315,9 +288,7 @@
 								{/if}
 							</div>
 						</div>
-						<div
-							class="flex items-center gap-1 opacity-0 transition group-hover:opacity-100"
-						>
+						<div class="flex items-center gap-1 opacity-0 transition group-hover:opacity-100">
 							<button
 								onclick={() => (editingPersonId = person.id)}
 								class="rounded p-1 text-text-tertiary hover:bg-surface-hover hover:text-text-primary"
@@ -361,7 +332,12 @@
 			onclick={() => (showAddPerson = true)}
 			class="mt-1.5 flex w-full items-center gap-2 rounded-xl border border-dashed border-border-primary bg-surface px-3 py-2 text-sm text-text-secondary transition hover:border-stone-400 hover:text-text-primary"
 		>
-			<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+			<svg
+				xmlns="http://www.w3.org/2000/svg"
+				class="h-4 w-4"
+				viewBox="0 0 20 20"
+				fill="currentColor"
+			>
 				<path
 					fill-rule="evenodd"
 					d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z"

@@ -60,17 +60,17 @@
 		songFilter === 'all'
 			? sortedSongs
 			: sortedSongs.filter((song) => {
-				if (songFilter === 'starred') return !!song.starred;
-				if (songFilter === 'ballad') return tempoBucket(song.starting_tempo) === 'ballad';
-				if (songFilter === 'midtempo') return tempoBucket(song.starting_tempo) === 'midtempo';
-				if (songFilter === 'uptempo') return tempoBucket(song.starting_tempo) === 'uptempo';
-				if (songFilter === 'major') return keyType(song.starting_key) === 'major';
-				if (songFilter === 'minor') return keyType(song.starting_key) === 'minor';
-				return (
-					tempoBucket(song.starting_tempo) === 'unknown' &&
-					keyType(song.starting_key) === 'unknown'
-				);
-			})
+					if (songFilter === 'starred') return !!song.starred;
+					if (songFilter === 'ballad') return tempoBucket(song.starting_tempo) === 'ballad';
+					if (songFilter === 'midtempo') return tempoBucket(song.starting_tempo) === 'midtempo';
+					if (songFilter === 'uptempo') return tempoBucket(song.starting_tempo) === 'uptempo';
+					if (songFilter === 'major') return keyType(song.starting_key) === 'major';
+					if (songFilter === 'minor') return keyType(song.starting_key) === 'minor';
+					return (
+						tempoBucket(song.starting_tempo) === 'unknown' &&
+						keyType(song.starting_key) === 'unknown'
+					);
+				})
 	);
 
 	async function addSong() {
@@ -147,16 +147,7 @@
 
 	{#if songs.length > 0}
 		<div class="mb-2 flex gap-1">
-			{#each [
-				{ key: 'all', label: 'All' },
-				{ key: 'starred', label: 'Starred' },
-				{ key: 'ballad', label: 'Ballad' },
-				{ key: 'midtempo', label: 'Midtempo' },
-				{ key: 'uptempo', label: 'Uptempo' },
-				{ key: 'major', label: 'Major' },
-				{ key: 'minor', label: 'Minor' },
-				{ key: 'unknown', label: 'Unknown' }
-			] as filter}
+			{#each [{ key: 'all', label: 'All' }, { key: 'starred', label: 'Starred' }, { key: 'ballad', label: 'Ballad' }, { key: 'midtempo', label: 'Midtempo' }, { key: 'uptempo', label: 'Uptempo' }, { key: 'major', label: 'Major' }, { key: 'minor', label: 'Minor' }, { key: 'unknown', label: 'Unknown' }] as filter}
 				<button
 					onclick={() => (songFilter = filter.key as typeof songFilter)}
 					class="rounded-full px-3 py-1 text-xs transition {songFilter === filter.key
@@ -234,7 +225,12 @@
 			onclick={() => (showAddSong = true)}
 			class="flex w-full items-center gap-2 rounded-xl border border-dashed border-border-primary bg-surface px-3 py-2.5 text-sm text-text-secondary transition hover:border-stone-400 hover:text-text-primary"
 		>
-			<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+			<svg
+				xmlns="http://www.w3.org/2000/svg"
+				class="h-4 w-4"
+				viewBox="0 0 20 20"
+				fill="currentColor"
+			>
 				<path
 					fill-rule="evenodd"
 					d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z"
@@ -247,18 +243,15 @@
 		<div class="space-y-1">
 			{#each filteredSongs as song (song.id)}
 				<div
-					class="group rounded-xl border border-border-primary bg-surface p-2 shadow-sm {song.starred ? 'border-amber-200 dark:border-amber-800/40' : ''}"
+					class="group rounded-xl border border-border-primary bg-surface p-2 shadow-sm {song.starred
+						? 'border-amber-200 dark:border-amber-800/40'
+						: ''}"
 				>
 					{#if editingSongId === song.id}
 						<div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
 							<input
 								value={song.title}
-								onchange={(e) =>
-									updateSong(
-										song.id,
-										'title',
-										(e.target as HTMLInputElement).value
-									)}
+								onchange={(e) => updateSong(song.id, 'title', (e.target as HTMLInputElement).value)}
 								class="rounded border border-border-primary bg-surface px-2 py-1 text-sm"
 								placeholder="Title"
 							/>
@@ -266,22 +259,14 @@
 								<input
 									value={song.starting_key || ''}
 									onchange={(e) =>
-										updateSong(
-											song.id,
-											'starting_key',
-											(e.target as HTMLInputElement).value
-										)}
+										updateSong(song.id, 'starting_key', (e.target as HTMLInputElement).value)}
 									class="w-1/2 rounded border border-border-primary bg-surface px-2 py-1 text-sm"
 									placeholder="Key"
 								/>
 								<input
 									value={song.starting_tempo ?? ''}
 									onchange={(e) =>
-										updateSong(
-											song.id,
-											'starting_tempo',
-											(e.target as HTMLInputElement).value
-										)}
+										updateSong(song.id, 'starting_tempo', (e.target as HTMLInputElement).value)}
 									type="number"
 									class="w-1/2 rounded border border-border-primary bg-surface px-2 py-1 text-sm"
 									placeholder="BPM"
@@ -290,22 +275,14 @@
 							<input
 								value={song.instruments || ''}
 								onchange={(e) =>
-									updateSong(
-										song.id,
-										'instruments',
-										(e.target as HTMLInputElement).value
-									)}
+									updateSong(song.id, 'instruments', (e.target as HTMLInputElement).value)}
 								class="rounded border border-border-primary bg-surface px-2 py-1 text-sm sm:col-span-2"
 								placeholder="Instruments/gear"
 							/>
 							<textarea
 								value={song.notes || ''}
 								onchange={(e) =>
-									updateSong(
-										song.id,
-										'notes',
-										(e.target as HTMLTextAreaElement).value
-									)}
+									updateSong(song.id, 'notes', (e.target as HTMLTextAreaElement).value)}
 								class="rounded border border-border-primary bg-surface px-2 py-1 text-sm sm:col-span-2"
 								placeholder="Notes"
 								rows="2"
@@ -324,16 +301,36 @@
 							<div class="flex flex-1 items-center gap-2">
 								<button
 									onclick={() => toggleStar(song.id)}
-									class="shrink-0 rounded p-0.5 transition hover:scale-110 {song.starred ? 'text-amber-500' : 'text-text-tertiary opacity-0 group-hover:opacity-100'}"
+									class="shrink-0 rounded p-0.5 transition hover:scale-110 {song.starred
+										? 'text-amber-500'
+										: 'text-text-tertiary opacity-0 group-hover:opacity-100'}"
 									title={song.starred ? 'Unstar' : 'Star'}
 								>
 									{#if song.starred}
-										<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-											<path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+										<svg
+											xmlns="http://www.w3.org/2000/svg"
+											class="h-4 w-4"
+											viewBox="0 0 20 20"
+											fill="currentColor"
+										>
+											<path
+												d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"
+											/>
 										</svg>
 									{:else}
-										<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-											<path stroke-linecap="round" stroke-linejoin="round" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+										<svg
+											xmlns="http://www.w3.org/2000/svg"
+											class="h-4 w-4"
+											fill="none"
+											viewBox="0 0 24 24"
+											stroke="currentColor"
+											stroke-width="1.5"
+										>
+											<path
+												stroke-linecap="round"
+												stroke-linejoin="round"
+												d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"
+											/>
 										</svg>
 									{/if}
 								</button>
@@ -345,15 +342,15 @@
 									>
 								{/if}
 								{#if song.starting_tempo}
-									<span class="text-xs text-text-secondary"
-										>{song.starting_tempo} BPM</span
-									>
+									<span class="text-xs text-text-secondary">{song.starting_tempo} BPM</span>
 								{/if}
 								{#if song.instruments}
 									<div class="hidden items-center gap-1 sm:flex">
-										{#each song.instruments.split(',').map((s) => s.trim()).filter(Boolean) as inst}
-											<span
-												class="rounded bg-muted px-1.5 py-0.5 text-xs text-text-secondary"
+										{#each song.instruments
+											.split(',')
+											.map((s) => s.trim())
+											.filter(Boolean) as inst}
+											<span class="rounded bg-muted px-1.5 py-0.5 text-xs text-text-secondary"
 												>{inst}</span
 											>
 										{/each}
@@ -363,9 +360,7 @@
 							<div class="flex items-center gap-1">
 								{#if song.notes}
 									<button
-										onclick={() =>
-											(expandedNoteId =
-												expandedNoteId === song.id ? null : song.id)}
+										onclick={() => (expandedNoteId = expandedNoteId === song.id ? null : song.id)}
 										class="rounded p-1 text-text-tertiary hover:bg-surface-hover hover:text-text-primary"
 										title="Toggle notes"
 									>
@@ -422,9 +417,7 @@
 							</div>
 						</div>
 						{#if expandedNoteId === song.id && song.notes}
-							<div
-								class="mt-1 rounded-lg bg-muted px-3 py-2 text-sm text-text-secondary"
-							>
+							<div class="mt-1 rounded-lg bg-muted px-3 py-2 text-sm text-text-secondary">
 								{song.notes}
 							</div>
 						{/if}
@@ -436,7 +429,12 @@
 			onclick={() => (showAddSong = true)}
 			class="mt-1.5 flex w-full items-center gap-2 rounded-xl border border-dashed border-border-primary bg-surface px-3 py-2 text-sm text-text-secondary transition hover:border-stone-400 hover:text-text-primary"
 		>
-			<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+			<svg
+				xmlns="http://www.w3.org/2000/svg"
+				class="h-4 w-4"
+				viewBox="0 0 20 20"
+				fill="currentColor"
+			>
 				<path
 					fill-rule="evenodd"
 					d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z"

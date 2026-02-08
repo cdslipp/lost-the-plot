@@ -53,10 +53,9 @@
 			)`,
 			[bandId]
 		);
-		await db.run(
-			`DELETE FROM setlists WHERE gig_id IN (SELECT id FROM gigs WHERE band_id = ?)`,
-			[bandId]
-		);
+		await db.run(`DELETE FROM setlists WHERE gig_id IN (SELECT id FROM gigs WHERE band_id = ?)`, [
+			bandId
+		]);
 		await db.run('DELETE FROM gigs WHERE band_id = ?', [bandId]);
 		await db.run('DELETE FROM songs WHERE band_id = ?', [bandId]);
 		await db.run('DELETE FROM persons WHERE band_id = ?', [bandId]);
@@ -260,10 +259,11 @@
 			for (const musician of musicians) {
 				const newPlotId = plotIdMap.get(musician.plot_id);
 				if (!newPlotId) continue;
-				await db.run(
-					'INSERT INTO musicians (plot_id, name, instrument) VALUES (?, ?, ?)',
-					[newPlotId, musician.name, musician.instrument]
-				);
+				await db.run('INSERT INTO musicians (plot_id, name, instrument) VALUES (?, ?, ?)', [
+					newPlotId,
+					musician.name,
+					musician.instrument
+				]);
 			}
 		}
 
@@ -283,7 +283,7 @@
 		);
 		const gigIdMap = new Map<number, number>();
 		for (const gig of gigs) {
-			const newPlotId = gig.plot_id ? plotIdMap.get(gig.plot_id) ?? null : null;
+			const newPlotId = gig.plot_id ? (plotIdMap.get(gig.plot_id) ?? null) : null;
 			const result = await db.run(
 				'INSERT INTO gigs (band_id, name, venue, date, time, set_time, changeover_minutes, plot_id, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
 				[
@@ -308,18 +308,15 @@
 				id: number;
 				gig_id: number;
 				name: string;
-			}>(
-				`SELECT id, gig_id, name FROM setlists WHERE gig_id IN (${gigPlaceholders})`,
-				gigIds
-			);
+			}>(`SELECT id, gig_id, name FROM setlists WHERE gig_id IN (${gigPlaceholders})`, gigIds);
 			const setlistIdMap = new Map<number, number>();
 			for (const setlist of setlists) {
 				const newGigId = gigIdMap.get(setlist.gig_id);
 				if (!newGigId) continue;
-				const result = await db.run(
-					'INSERT INTO setlists (gig_id, name) VALUES (?, ?)',
-					[newGigId, setlist.name]
-				);
+				const result = await db.run('INSERT INTO setlists (gig_id, name) VALUES (?, ?)', [
+					newGigId,
+					setlist.name
+				]);
 				setlistIdMap.set(setlist.id, result.lastInsertRowid);
 			}
 
@@ -351,14 +348,19 @@
 	}
 
 	function safeSlug(value: string) {
-		return value
-			.trim()
-			.toLowerCase()
-			.replace(/[^a-z0-9]+/g, '-')
-			.replace(/(^-|-$)+/g, '') || 'stageplotter';
+		return (
+			value
+				.trim()
+				.toLowerCase()
+				.replace(/[^a-z0-9]+/g, '-')
+				.replace(/(^-|-$)+/g, '') || 'stageplotter'
+		);
 	}
 
-	function buildCanvasConfig(width?: number, height?: number): CanvasConfig & { width: number; height: number } {
+	function buildCanvasConfig(
+		width?: number,
+		height?: number
+	): CanvasConfig & { width: number; height: number } {
 		const safeWidth = width && width > 0 ? width : 1100;
 		const safeHeight = height && height > 0 ? height : 850;
 		const orientation = safeWidth >= safeHeight ? 'landscape' : 'portrait';
@@ -397,7 +399,11 @@
 		}));
 	}
 
-	function buildItemsFromPlaced(placedItems: any[], itemCatalog: Map<string, any>, playerById: Map<string, string>) {
+	function buildItemsFromPlaced(
+		placedItems: any[],
+		itemCatalog: Map<string, any>,
+		playerById: Map<string, string>
+	) {
 		const baseId = Date.now();
 		return placedItems.map((placed: any, index: number) => {
 			const catalogItem = itemCatalog.get(placed.item_id);
@@ -679,14 +685,15 @@
 				canvas: canvasConfig,
 				stage,
 				placed_items,
-				event: plot.event_name || plot.event_date || plot.event_time || plot.venue
-					? {
-							name: plot.event_name ?? undefined,
-							date: plot.event_date ?? undefined,
-							time: plot.event_time ?? undefined,
-							venue: plot.venue ?? undefined
-						}
-					: undefined,
+				event:
+					plot.event_name || plot.event_date || plot.event_time || plot.venue
+						? {
+								name: plot.event_name ?? undefined,
+								date: plot.event_date ?? undefined,
+								time: plot.event_time ?? undefined,
+								venue: plot.venue ?? undefined
+							}
+						: undefined,
 				metadata: {}
 			};
 		});
@@ -769,9 +776,12 @@
 		try {
 			await db.init();
 
-			const allBands = await db.query<{ id: string; name: string; created_at: string; updated_at: string }>(
-				'SELECT id, name, created_at, updated_at FROM bands ORDER BY updated_at DESC'
-			);
+			const allBands = await db.query<{
+				id: string;
+				name: string;
+				created_at: string;
+				updated_at: string;
+			}>('SELECT id, name, created_at, updated_at FROM bands ORDER BY updated_at DESC');
 
 			const allPersons = await db.query<{
 				id: number;
@@ -850,7 +860,7 @@
 	}}
 />
 
-<div class="flex h-[calc(100dvh-1.25rem)] max-w-md mx-auto flex-col gap-6 py-6">
+<div class="mx-auto flex h-[calc(100dvh-1.25rem)] max-w-md flex-col gap-6 py-6">
 	<div class="flex items-center justify-between">
 		<h1 class="font-serif text-3xl font-bold text-text-primary">Your Bands</h1>
 	</div>
@@ -870,7 +880,7 @@
 			</button>
 		</div>
 	{:else}
-		<div class="band-list-scroll min-h-0 flex-1 flex flex-col gap-3 overflow-y-auto">
+		<div class="band-list-scroll flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto">
 			{#each bands as band (band.id)}
 				<div
 					class="group relative flex items-start justify-between gap-3 rounded-xl border border-border-primary bg-surface p-6 shadow-sm transition hover:border-stone-400 hover:shadow-md"
@@ -904,7 +914,11 @@
 						</form>
 					{:else}
 						<a href="/bands/{band.id}" class="flex-1">
-							<h2 class="font-serif text-xl font-semibold text-text-primary group-hover:text-stone-600">{band.name}</h2>
+							<h2
+								class="font-serif text-xl font-semibold text-text-primary group-hover:text-stone-600"
+							>
+								{band.name}
+							</h2>
 							<div class="mt-2 flex items-center gap-4 text-sm text-text-secondary">
 								<span>{band.plot_count} {band.plot_count === 1 ? 'plot' : 'plots'}</span>
 								{#if band.created_at}
@@ -917,7 +931,7 @@
 								event.stopPropagation();
 								openMenuBandId = openMenuBandId === band.id ? null : band.id;
 							}}
-							class="rounded p-1.5 text-text-tertiary opacity-0 transition hover:bg-surface-hover hover:text-text-primary group-hover:opacity-100"
+							class="rounded p-1.5 text-text-tertiary opacity-0 transition group-hover:opacity-100 hover:bg-surface-hover hover:text-text-primary"
 							aria-label="Open band menu"
 						>
 							<svg
@@ -926,13 +940,15 @@
 								viewBox="0 0 20 20"
 								fill="currentColor"
 							>
-								<path d="M6 10a2 2 0 11-4 0 2 2 0 014 0zm6 0a2 2 0 11-4 0 2 2 0 014 0zm6 0a2 2 0 11-4 0 2 2 0 014 0z" />
+								<path
+									d="M6 10a2 2 0 11-4 0 2 2 0 014 0zm6 0a2 2 0 11-4 0 2 2 0 014 0zm6 0a2 2 0 11-4 0 2 2 0 014 0z"
+								/>
 							</svg>
 						</button>
 						{#if openMenuBandId === band.id}
 							<div
 								onclick={(event) => event.stopPropagation()}
-								class="absolute right-4 top-12 z-10 w-44 rounded-lg border border-border-primary bg-surface p-1 shadow-lg"
+								class="absolute top-12 right-4 z-10 w-44 rounded-lg border border-border-primary bg-surface p-1 shadow-lg"
 							>
 								<button
 									onclick={() => duplicateBand(band.id)}
@@ -981,8 +997,17 @@
 				class="flex items-center gap-2 rounded-lg border border-border-primary px-4 py-2 text-sm text-text-primary transition hover:bg-surface-hover disabled:cursor-not-allowed disabled:opacity-60"
 				title="Import bands and plots"
 			>
-				<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-					<path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM6.293 6.707a1 1 0 010-1.414l3-3a1 1 0 011.414 0l3 3a1 1 0 01-1.414 1.414L11 5.414V13a1 1 0 11-2 0V5.414L7.707 6.707a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+				<svg
+					xmlns="http://www.w3.org/2000/svg"
+					class="h-4 w-4"
+					viewBox="0 0 20 20"
+					fill="currentColor"
+				>
+					<path
+						fill-rule="evenodd"
+						d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM6.293 6.707a1 1 0 010-1.414l3-3a1 1 0 011.414 0l3 3a1 1 0 01-1.414 1.414L11 5.414V13a1 1 0 11-2 0V5.414L7.707 6.707a1 1 0 01-1.414 0z"
+						clip-rule="evenodd"
+					/>
 				</svg>
 				{importing ? 'Importing...' : 'Import'}
 			</button>
@@ -992,8 +1017,17 @@
 				class="flex items-center gap-2 rounded-lg border border-border-primary px-4 py-2 text-sm text-text-primary transition hover:bg-surface-hover disabled:cursor-not-allowed disabled:opacity-60"
 				title="Export all bands and plots"
 			>
-				<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-					<path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd" />
+				<svg
+					xmlns="http://www.w3.org/2000/svg"
+					class="h-4 w-4"
+					viewBox="0 0 20 20"
+					fill="currentColor"
+				>
+					<path
+						fill-rule="evenodd"
+						d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z"
+						clip-rule="evenodd"
+					/>
 				</svg>
 				{exporting ? 'Exporting...' : 'Export All'}
 			</button>
@@ -1002,8 +1036,17 @@
 			onclick={createBand}
 			class="flex items-center gap-2 rounded-lg bg-stone-900 px-4 py-2 text-sm text-white transition hover:bg-stone-800 dark:bg-stone-100 dark:text-stone-900 dark:hover:bg-stone-200"
 		>
-			<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-				<path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" />
+			<svg
+				xmlns="http://www.w3.org/2000/svg"
+				class="h-4 w-4"
+				viewBox="0 0 20 20"
+				fill="currentColor"
+			>
+				<path
+					fill-rule="evenodd"
+					d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z"
+					clip-rule="evenodd"
+				/>
 			</svg>
 			New Band
 		</button>
@@ -1032,12 +1075,7 @@
 
 	/* Feathered fade at bottom edge */
 	.band-list-scroll {
-		mask-image: linear-gradient(
-			to bottom,
-			black 0%,
-			black calc(100% - 32px),
-			transparent 100%
-		);
+		mask-image: linear-gradient(to bottom, black 0%, black calc(100% - 32px), transparent 100%);
 		-webkit-mask-image: linear-gradient(
 			to bottom,
 			black 0%,

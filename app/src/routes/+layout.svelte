@@ -33,10 +33,14 @@
 
 	const { needRefresh, offlineReady, updateServiceWorker } = browser
 		? useRegisterSW({
-			onRegistered(_registration: ServiceWorkerRegistration | undefined) {},
-			onRegisterError(_error: Error) {}
+				onRegistered(_registration: ServiceWorkerRegistration | undefined) {},
+				onRegisterError(_error: Error) {}
 			})
-		: { needRefresh: { subscribe: () => () => {} }, offlineReady: { subscribe: () => () => {} }, updateServiceWorker: async () => {} };
+		: {
+				needRefresh: { subscribe: () => () => {} },
+				offlineReady: { subscribe: () => () => {} },
+				updateServiceWorker: async () => {}
+			};
 
 	let showRefresh = $state(false);
 	let showOffline = $state(false);
@@ -115,12 +119,12 @@
 <div class="relative min-h-screen bg-bg-secondary font-sans text-text-primary">
 	<!-- Sideways wordmark — decorative, sits behind all content -->
 	<div
-		class="pointer-events-none fixed left-0 top-0 z-0 flex h-screen items-end select-none"
+		class="pointer-events-none fixed top-0 left-0 z-0 flex h-screen items-end select-none"
 		aria-hidden="true"
 	>
 		<div class="flex flex-col items-center pb-8">
 			<span
-				class="whitespace-nowrap font-serif text-[clamp(5rem,12vh,10rem)] font-bold leading-none text-stone-300 dark:text-stone-700"
+				class="font-serif text-[clamp(5rem,12vh,10rem)] leading-none font-bold whitespace-nowrap text-stone-300 dark:text-stone-700"
 				style="writing-mode: vertical-lr; transform: rotate(180deg); letter-spacing: 0.05em;"
 			>
 				Lost the Plot
@@ -128,9 +132,7 @@
 		</div>
 	</div>
 	<!-- Clickable instrument — own stacking context above content -->
-	<div
-		class="pointer-events-none fixed left-0 top-0 z-20 flex h-screen items-end select-none"
-	>
+	<div class="pointer-events-none fixed top-0 left-0 z-20 flex h-screen items-end select-none">
 		<div class="flex flex-col items-center pb-8">
 			<button
 				class="pointer-events-auto mb-16 h-20 w-16 cursor-pointer border-none bg-transparent p-0 outline-none"
@@ -144,13 +146,13 @@
 					class="h-full w-full object-contain"
 					class:instrument-spin={instrumentSpin}
 					class:instrument-idle={!instrumentSpin}
-					style:opacity={instrumentSpin ? undefined : (instrumentVisible ? '0.2' : '0')}
+					style:opacity={instrumentSpin ? undefined : instrumentVisible ? '0.2' : '0'}
 					style:transition={instrumentSpin ? 'none' : 'opacity 300ms'}
 				/>
 			</button>
 			<!-- Invisible spacer matching wordmark text height -->
 			<span
-				class="invisible whitespace-nowrap font-serif text-[clamp(5rem,12vh,10rem)] font-bold leading-none"
+				class="invisible font-serif text-[clamp(5rem,12vh,10rem)] leading-none font-bold whitespace-nowrap"
 				style="writing-mode: vertical-lr;"
 				aria-hidden="true"
 			>
@@ -158,18 +160,30 @@
 			</span>
 		</div>
 	</div>
-	<div class="relative z-10 container mx-auto max-w-[1600px] pl-28 pr-4 sm:pl-32 sm:pr-6 lg:pl-36 lg:pr-8">
+	<div
+		class="relative z-10 container mx-auto max-w-[1600px] pr-4 pl-28 sm:pr-6 sm:pl-32 lg:pr-8 lg:pl-36"
+	>
 		{@render children()}
 	</div>
-	<footer class="fixed bottom-0 left-0 right-0 z-10 flex items-center justify-center py-1 text-[10px] text-text-tertiary/50 pointer-events-none select-none">
+	<footer
+		class="pointer-events-none fixed right-0 bottom-0 left-0 z-10 flex items-center justify-center py-1 text-[10px] text-text-tertiary/50 select-none"
+	>
 		<span>Made in Kitchener, Ontario</span>
 		<span class="mx-1.5">|</span>
-		<a href="https://github.com/cdslipp/lost-the-plot" target="_blank" rel="noopener noreferrer" class="pointer-events-auto underline decoration-text-tertiary/30 hover:text-text-tertiary transition">GitHub</a>
+		<a
+			href="https://github.com/cdslipp/lost-the-plot"
+			target="_blank"
+			rel="noopener noreferrer"
+			class="pointer-events-auto underline decoration-text-tertiary/30 transition hover:text-text-tertiary"
+			>GitHub</a
+		>
 	</footer>
 </div>
 
 {#if showRefresh || showOffline}
-	<div class="fixed bottom-4 right-4 z-50 flex flex-col gap-2 rounded-lg bg-surface p-4 shadow-lg border border-border-primary">
+	<div
+		class="fixed right-4 bottom-4 z-50 flex flex-col gap-2 rounded-lg border border-border-primary bg-surface p-4 shadow-lg"
+	>
 		{#if showOffline}
 			<p class="text-sm text-text-secondary">App ready to work offline</p>
 		{/if}
@@ -182,7 +196,8 @@
 				Reload
 			</button>
 		{/if}
-		<button onclick={close} class="text-xs text-text-tertiary hover:text-text-primary">Close</button>
+		<button onclick={close} class="text-xs text-text-tertiary hover:text-text-primary">Close</button
+		>
 	</div>
 {/if}
 

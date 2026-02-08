@@ -224,15 +224,15 @@ This separation allows for:
 
 ```typescript
 type ImportExportProps = {
-  title: string;
-  lastModified: string;
-  items: Item[];
-  musicians: Musician[];
-  canvasWidth: number;
-  canvasHeight: number;
-  getItemZone: (item: Item) => string;
-  getItemPosition: (item: Item) => { x: number; y: number };
-  onImportComplete?: () => void;
+	title: string;
+	lastModified: string;
+	items: Item[];
+	musicians: Musician[];
+	canvasWidth: number;
+	canvasHeight: number;
+	getItemZone: (item: Item) => string;
+	getItemPosition: (item: Item) => { x: number; y: number };
+	onImportComplete?: () => void;
 };
 ```
 

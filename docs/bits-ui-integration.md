@@ -37,18 +37,24 @@ The main command palette component that wraps Bits UI's Command component:
 
 ```svelte
 <Command.Root>
-  <Command.Input />        <!-- Search input -->
-  <Command.List>          <!-- Scrollable list container -->
-    <Command.Viewport>    <!-- Handles dynamic sizing -->
-      <Command.Empty />   <!-- "No results" state -->
-      <Command.Group>     <!-- Category groups -->
-        <Command.GroupHeading />
-        <Command.GroupItems>
-          <Command.Item />  <!-- Individual items -->
-        </Command.GroupItems>
-      </Command.Group>
-    </Command.Viewport>
-  </Command.List>
+	<Command.Input />
+	<!-- Search input -->
+	<Command.List>
+		<!-- Scrollable list container -->
+		<Command.Viewport>
+			<!-- Handles dynamic sizing -->
+			<Command.Empty />
+			<!-- "No results" state -->
+			<Command.Group>
+				<!-- Category groups -->
+				<Command.GroupHeading />
+				<Command.GroupItems>
+					<Command.Item />
+					<!-- Individual items -->
+				</Command.GroupItems>
+			</Command.Group>
+		</Command.Viewport>
+	</Command.List>
 </Command.Root>
 ```
 
@@ -58,13 +64,13 @@ Each stage item is defined with the following structure:
 
 ```typescript
 type Item = {
-  id: string;           // Unique identifier
-  name: string;         // Display name
-  type: string;         // Item type (mic, amp, keyboard, etc.)
-  category: string;     // Group category
-  image: string;        // Path to preview image
-  keywords: string[];   // Search keywords
-  description?: string; // Optional description
+	id: string; // Unique identifier
+	name: string; // Display name
+	type: string; // Item type (mic, amp, keyboard, etc.)
+	category: string; // Group category
+	image: string; // Path to preview image
+	keywords: string[]; // Search keywords
+	description?: string; // Optional description
 };
 ```
 
@@ -77,15 +83,12 @@ The command palette is integrated into the main stage plot interface:
 ```svelte
 <!-- Add Item button with keyboard shortcut indicator -->
 <button onclick={openAddMenu} title="Add Item (⌘K)">
-  Add Item
-  <span class="shortcut">⌘K</span>
+	Add Item
+	<span class="shortcut">⌘K</span>
 </button>
 
 <!-- Command palette component -->
-<ItemCommandPalette
-  bind:open={isAddingItem}
-  on:select={handleItemSelect}
-/>
+<ItemCommandPalette bind:open={isAddingItem} on:select={handleItemSelect} />
 ```
 
 ### 2. Item Selection Flow
@@ -103,10 +106,10 @@ Items on the canvas now render dynamically based on their data:
 
 ```svelte
 <img
-  src={item.itemData?.image || "/img/egt/FenderAmp.png"}
-  alt={item.itemData?.name || "Stage Item"}
-  class="h-full w-full object-contain"
->
+	src={item.itemData?.image || '/img/egt/FenderAmp.png'}
+	alt={item.itemData?.name || 'Stage Item'}
+	class="h-full w-full object-contain"
+/>
 ```
 
 ## Available Items

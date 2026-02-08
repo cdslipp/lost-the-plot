@@ -4,12 +4,13 @@
 	import SettingsPanel from './SettingsPanel.svelte';
 	import type { UnitSystem } from '$lib/utils/scale';
 	import type { ProcessedItem } from '$lib/utils/finalAssetsLoader';
+	import type { StagePlotItem } from '@stageplotter/shared';
 
 	type Props = {
 		activeTab: 'inspector' | 'people' | 'settings';
 		// Inspector props (forwarded with $bindable)
 		selectedItems: HTMLElement[];
-		items: any[];
+		items: StagePlotItem[];
 		persons: { id: number; name: string; role?: string | null }[];
 		title: string;
 		lastModified: string;
@@ -20,8 +21,8 @@
 		pdfPageFormat: 'letter' | 'a4';
 		onPlaceRiser: (w: number, d: number, h: number) => void;
 		onUpdateItem: (id: number, prop: string, val: string) => void;
-		getItemZone: (item: any) => string;
-		getItemPosition: (item: any) => { x: number; y: number };
+		getItemZone: (item: StagePlotItem) => string;
+		getItemPosition: (item: StagePlotItem) => { x: number; y: number };
 		updateItemPosition: (id: number, x: number, y: number) => void;
 		// People panel props
 		bandPersons: { id: number; name: string; role: string | null; member_type: string | null }[];
@@ -81,34 +82,36 @@
 	}: Props = $props();
 </script>
 
-<div class="inspector-panel flex h-full flex-col overflow-hidden rounded-xl border border-border-primary bg-surface shadow-sm">
+<div
+	class="inspector-panel flex h-full flex-col overflow-hidden rounded-xl border border-border-primary bg-surface shadow-sm"
+>
 	<div class="border-b border-border-primary bg-muted/30 px-3 pt-3">
 		<div class="flex gap-1">
 			<button
 				type="button"
 				onclick={() => (activeTab = 'inspector')}
-				class={`px-3 py-2 text-sm font-medium rounded-t-lg transition-colors ${activeTab === 'inspector' ? 'bg-surface text-text-primary' : 'text-text-secondary hover:text-text-primary'}`}
+				class={`rounded-t-lg px-3 py-2 text-sm font-medium transition-colors ${activeTab === 'inspector' ? 'bg-surface text-text-primary' : 'text-text-secondary hover:text-text-primary'}`}
 			>
 				Inspector
 			</button>
 			<button
 				type="button"
 				onclick={() => (activeTab = 'people')}
-				class={`px-3 py-2 text-sm font-medium rounded-t-lg transition-colors ${activeTab === 'people' ? 'bg-surface text-text-primary' : 'text-text-secondary hover:text-text-primary'}`}
+				class={`rounded-t-lg px-3 py-2 text-sm font-medium transition-colors ${activeTab === 'people' ? 'bg-surface text-text-primary' : 'text-text-secondary hover:text-text-primary'}`}
 			>
 				People
 			</button>
 			<button
 				type="button"
 				onclick={() => (activeTab = 'settings')}
-				class={`px-3 py-2 text-sm font-medium rounded-t-lg transition-colors ${activeTab === 'settings' ? 'bg-surface text-text-primary' : 'text-text-secondary hover:text-text-primary'}`}
+				class={`rounded-t-lg px-3 py-2 text-sm font-medium transition-colors ${activeTab === 'settings' ? 'bg-surface text-text-primary' : 'text-text-secondary hover:text-text-primary'}`}
 			>
 				Settings
 			</button>
 		</div>
 	</div>
 	{#if activeTab === 'inspector'}
-		<div class="flex-1 min-h-0 overflow-hidden p-4">
+		<div class="min-h-0 flex-1 overflow-hidden p-4">
 			<Inspector
 				bind:selectedItems
 				bind:items
@@ -121,14 +124,14 @@
 				bind:unit
 				bind:pdfPageFormat
 				{onPlaceRiser}
-				onUpdateItem={onUpdateItem}
+				{onUpdateItem}
 				{getItemZone}
 				{getItemPosition}
 				{updateItemPosition}
 			/>
 		</div>
 	{:else if activeTab === 'people'}
-		<div class="flex-1 min-h-0 overflow-auto p-4">
+		<div class="min-h-0 flex-1 overflow-auto p-4">
 			<PlotPeoplePanel
 				{bandPersons}
 				{plotPersonIds}
@@ -139,7 +142,7 @@
 			/>
 		</div>
 	{:else}
-		<div class="flex-1 min-h-0 overflow-auto p-4">
+		<div class="min-h-0 flex-1 overflow-auto p-4">
 			<SettingsPanel
 				{consoleType}
 				{consoleDef}

@@ -31,7 +31,9 @@
 	}
 </script>
 
-<div class="bg-grid-pattern pointer-events-none absolute inset-0 bg-[length:20px_20px] opacity-20 dark:opacity-10"></div>
+<div
+	class="bg-grid-pattern pointer-events-none absolute inset-0 bg-[length:20px_20px] opacity-20 dark:opacity-10"
+></div>
 
 <!-- Zone guidelines -->
 {#if showZones}
@@ -44,8 +46,10 @@
 		{/each}
 		{#each getZones(canvasWidth, canvasHeight) as z}
 			<div
-				class="absolute text-[10px] tracking-wide uppercase text-black/25 dark:text-white/25"
-				style="left:{z.x + z.w / 2 - 12}px; top:{z.key.startsWith('DS') ? z.y + z.h - 18 : z.y + 4}px;"
+				class="absolute text-[10px] tracking-wide text-black/25 uppercase dark:text-white/25"
+				style="left:{z.x + z.w / 2 - 12}px; top:{z.key.startsWith('DS')
+					? z.y + z.h - 18
+					: z.y + 4}px;"
 			>
 				{z.key}
 			</div>
@@ -55,6 +59,11 @@
 
 {#if itemCount === 0}
 	<div class="pointer-events-auto absolute inset-0 flex flex-col items-center justify-center gap-4">
-		<p class="text-lg text-text-secondary">Press <kbd class="rounded border border-border-primary bg-muted px-1.5 py-0.5 text-sm font-mono">{modKey}K</kbd> to add your first item</p>
+		<p class="text-lg text-text-secondary">
+			Press <kbd
+				class="rounded border border-border-primary bg-muted px-1.5 py-0.5 font-mono text-sm"
+				>{modKey}K</kbd
+			> to add your first item
+		</p>
 	</div>
 {/if}

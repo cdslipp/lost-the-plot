@@ -9,7 +9,9 @@ import type { DbAdapter } from './types.js';
  * This module is only imported in Tauri builds via dynamic import(),
  * so the `@tauri-apps/plugin-sql` dependency is tree-shaken in PWA builds.
  */
-export async function createTauriAdapter(dbPath: string = 'sqlite:stageplotter.db'): Promise<DbAdapter> {
+export async function createTauriAdapter(
+	dbPath: string = 'sqlite:stageplotter.db'
+): Promise<DbAdapter> {
 	const Database = (await import('@tauri-apps/plugin-sql')).default;
 	const db = await Database.load(dbPath);
 

@@ -104,10 +104,9 @@
 		const gigId = result.lastInsertRowid;
 
 		// Auto-create "Set 1"
-		const setlistResult = await db.run(
-			"INSERT INTO setlists (gig_id, name) VALUES (?, 'Set 1')",
-			[gigId]
-		);
+		const setlistResult = await db.run("INSERT INTO setlists (gig_id, name) VALUES (?, 'Set 1')", [
+			gigId
+		]);
 
 		const newGigRow: GigRow = {
 			id: gigId,
@@ -123,12 +122,19 @@
 		gigs = [...gigs, newGigRow];
 
 		// Store the auto-created setlist
-		gigSetlists[gigId] = [
-			{ id: setlistResult.lastInsertRowid, gig_id: gigId, name: 'Set 1' }
-		];
+		gigSetlists[gigId] = [{ id: setlistResult.lastInsertRowid, gig_id: gigId, name: 'Set 1' }];
 		gigSetlistSongs[gigId] = { [setlistResult.lastInsertRowid]: [] };
 
-		newGig = { name: '', venue: '', date: new Date().toISOString().slice(0, 10), time: '20:00', set_time: '', changeover_minutes: '', plot_id: '', notes: '' };
+		newGig = {
+			name: '',
+			venue: '',
+			date: new Date().toISOString().slice(0, 10),
+			time: '20:00',
+			set_time: '',
+			changeover_minutes: '',
+			plot_id: '',
+			notes: ''
+		};
 		showAddGig = false;
 	}
 
@@ -273,7 +279,9 @@
 						/>
 					</div>
 					<div>
-						<label class="mb-1 block text-xs font-medium text-text-secondary">Changeover (min)</label>
+						<label class="mb-1 block text-xs font-medium text-text-secondary"
+							>Changeover (min)</label
+						>
 						<input
 							bind:value={newGig.changeover_minutes}
 							type="number"
@@ -330,7 +338,12 @@
 			onclick={() => (showAddGig = true)}
 			class="flex w-full items-center gap-2 rounded-xl border border-dashed border-border-primary bg-surface px-3 py-2.5 text-sm text-text-secondary transition hover:border-stone-400 hover:text-text-primary"
 		>
-			<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+			<svg
+				xmlns="http://www.w3.org/2000/svg"
+				class="h-4 w-4"
+				viewBox="0 0 20 20"
+				fill="currentColor"
+			>
 				<path
 					fill-rule="evenodd"
 					d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z"
@@ -367,7 +380,12 @@
 			onclick={() => (showAddGig = true)}
 			class="mt-1.5 flex w-full items-center gap-2 rounded-xl border border-dashed border-border-primary bg-surface px-3 py-2 text-sm text-text-secondary transition hover:border-stone-400 hover:text-text-primary"
 		>
-			<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+			<svg
+				xmlns="http://www.w3.org/2000/svg"
+				class="h-4 w-4"
+				viewBox="0 0 20 20"
+				fill="currentColor"
+			>
 				<path
 					fill-rule="evenodd"
 					d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z"
@@ -386,10 +404,7 @@
 			: ''}"
 	>
 		<div class="flex items-center justify-between p-3">
-			<button
-				onclick={() => toggleExpand(gig.id)}
-				class="flex flex-1 items-center gap-3 text-left"
-			>
+			<button onclick={() => toggleExpand(gig.id)} class="flex flex-1 items-center gap-3 text-left">
 				<svg
 					xmlns="http://www.w3.org/2000/svg"
 					class="h-4 w-4 text-text-tertiary transition {expandedGigId === gig.id
@@ -435,7 +450,10 @@
 							<span>Set {formatTime(gig.set_time)}</span>
 						{/if}
 						{#if gig.changeover_minutes}
-							<span class="rounded-full bg-stone-100 px-1.5 py-0.5 text-xs text-stone-600 dark:bg-stone-800 dark:text-stone-400">{gig.changeover_minutes} min changeover</span>
+							<span
+								class="rounded-full bg-stone-100 px-1.5 py-0.5 text-xs text-stone-600 dark:bg-stone-800 dark:text-stone-400"
+								>{gig.changeover_minutes} min changeover</span
+							>
 						{/if}
 						{#if gig.venue}
 							<span class="text-text-tertiary">{gig.venue}</span>
@@ -445,8 +463,7 @@
 			</button>
 			<div class="flex items-center gap-1 opacity-0 transition group-hover:opacity-100">
 				<button
-					onclick={() =>
-						(editingGigId = editingGigId === gig.id ? null : gig.id)}
+					onclick={() => (editingGigId = editingGigId === gig.id ? null : gig.id)}
 					class="rounded p-1 text-text-tertiary hover:bg-surface-hover hover:text-text-primary"
 					title="Edit gig"
 				>
@@ -489,8 +506,7 @@
 						<label class="mb-1 block text-xs font-medium text-text-secondary">Name</label>
 						<input
 							value={gig.name}
-							onchange={(e) =>
-								updateGig(gig.id, 'name', (e.target as HTMLInputElement).value)}
+							onchange={(e) => updateGig(gig.id, 'name', (e.target as HTMLInputElement).value)}
 							class="w-full rounded-lg border border-border-primary bg-surface px-2 py-1.5 text-sm"
 						/>
 					</div>
@@ -498,8 +514,7 @@
 						<label class="mb-1 block text-xs font-medium text-text-secondary">Venue</label>
 						<input
 							value={gig.venue || ''}
-							onchange={(e) =>
-								updateGig(gig.id, 'venue', (e.target as HTMLInputElement).value)}
+							onchange={(e) => updateGig(gig.id, 'venue', (e.target as HTMLInputElement).value)}
 							class="w-full rounded-lg border border-border-primary bg-surface px-2 py-1.5 text-sm"
 						/>
 					</div>
@@ -509,8 +524,7 @@
 							<input
 								value={gig.date || ''}
 								type="date"
-								onchange={(e) =>
-									updateGig(gig.id, 'date', (e.target as HTMLInputElement).value)}
+								onchange={(e) => updateGig(gig.id, 'date', (e.target as HTMLInputElement).value)}
 								class="w-full rounded-lg border border-border-primary bg-surface px-2 py-1.5 text-sm"
 							/>
 						</div>
@@ -519,8 +533,7 @@
 							<input
 								value={gig.time || ''}
 								type="time"
-								onchange={(e) =>
-									updateGig(gig.id, 'time', (e.target as HTMLInputElement).value)}
+								onchange={(e) => updateGig(gig.id, 'time', (e.target as HTMLInputElement).value)}
 								class="w-full rounded-lg border border-border-primary bg-surface px-2 py-1.5 text-sm"
 							/>
 						</div>
@@ -537,7 +550,9 @@
 							/>
 						</div>
 						<div>
-							<label class="mb-1 block text-xs font-medium text-text-secondary">Changeover (min)</label>
+							<label class="mb-1 block text-xs font-medium text-text-secondary"
+								>Changeover (min)</label
+							>
 							<input
 								value={gig.changeover_minutes ?? ''}
 								type="number"
@@ -554,11 +569,7 @@
 							<select
 								value={gig.plot_id || ''}
 								onchange={(e) =>
-									updateGig(
-										gig.id,
-										'plot_id',
-										(e.target as HTMLSelectElement).value
-									)}
+									updateGig(gig.id, 'plot_id', (e.target as HTMLSelectElement).value)}
 								class="w-full rounded-lg border border-border-primary bg-surface px-2 py-1.5 text-sm"
 							>
 								<option value="">None</option>

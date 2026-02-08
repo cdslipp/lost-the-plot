@@ -70,7 +70,9 @@ export async function exportToPdf({
 	doc.setFontSize(10);
 	doc.setFont('helvetica', 'normal');
 	doc.text('Stage Plot', margin, margin + 34);
-	doc.text(new Date().toISOString().split('T')[0], pageWidth - margin, margin + 18, { align: 'right' });
+	doc.text(new Date().toISOString().split('T')[0], pageWidth - margin, margin + 18, {
+		align: 'right'
+	});
 	doc.setDrawColor(200);
 	doc.line(margin, margin + headerHeight - 6, pageWidth - margin, margin + headerHeight - 6);
 
