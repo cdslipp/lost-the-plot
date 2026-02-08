@@ -21,7 +21,15 @@
 		onRemoveItem?: (channel: number) => void;
 	};
 
-	let { items, onUpdateItem, onReorderPatch, onSelectItem, onAddItem, onRemoveItem }: Props = $props();
+	let {
+		items,
+		onUpdateItem,
+		onReorderPatch,
+		onSelectItem,
+		onAddItem,
+		onRemoveItem,
+		columnCount = 6
+	}: Props & { columnCount?: number } = $props();
 
 	// Channel mode options
 	type ChannelMode = 8 | 16 | 24 | 32 | 48;
@@ -30,7 +38,7 @@
 	// Separate channel modes for inputs and outputs
 	let inputChannelMode = $state<ChannelMode>(48);
 	let outputChannelMode = $state<ChannelMode>(16);
-	const NUM_COLUMNS = 6;
+	const NUM_COLUMNS = $derived(columnCount);
 	
 	// Dynamic calculations for inputs
 	const TOTAL_INPUT_CHANNELS = $derived(inputChannelMode);
@@ -169,7 +177,7 @@ $effect(() => {
 	});
 </script>
 
-<div class="border border-border-primary bg-surface rounded-xl shadow-sm overflow-hidden">
+<div class="h-full border border-border-primary bg-surface rounded-xl shadow-sm overflow-hidden">
 	<Tabs.Root value="inputs" class="w-full">
 		<!-- Tab Headers -->
 		<div class="border-b border-border-primary bg-muted/30 px-4 pt-4">
@@ -214,8 +222,11 @@ $effect(() => {
 						</div>
 					</div>
 				{:else}
-					<!-- Excel-like 4-column grid -->
-					<div class="grid grid-cols-6 gap-0 border border-border-primary">
+					<!-- Excel-like grid -->
+					<div
+						class="grid gap-0 border border-border-primary"
+						style="grid-template-columns: repeat({NUM_COLUMNS}, minmax(0, 1fr));"
+					>
 			{#each inputColumns as col, colIndex}
 				<div class="border-r border-border-primary last:border-r-0">
 					{#each col as channelNum}
@@ -301,8 +312,11 @@ $effect(() => {
 						</div>
 					</div>
 				{:else}
-					<!-- Excel-like 4-column grid for outputs -->
-					<div class="grid grid-cols-6 gap-0 border border-border-primary">
+					<!-- Excel-like grid for outputs -->
+					<div
+						class="grid gap-0 border border-border-primary"
+						style="grid-template-columns: repeat({NUM_COLUMNS}, minmax(0, 1fr));"
+					>
 			{#each outputColumns as col}
 				<div class="border-r border-border-primary last:border-r-0">
 					{#each col as channelNum}

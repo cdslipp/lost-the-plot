@@ -223,26 +223,8 @@
 </script>
 
 <div>
-	<div class="mb-4 flex items-center justify-between">
+	<div class="mb-2.5">
 		<h2 class="font-serif text-xl font-semibold text-text-primary">Gigs</h2>
-		<button
-			onclick={() => (showAddGig = !showAddGig)}
-			class="flex items-center gap-2 rounded-lg border border-border-primary px-3 py-2 text-sm text-text-primary transition hover:bg-surface-hover"
-		>
-			<svg
-				xmlns="http://www.w3.org/2000/svg"
-				class="h-4 w-4"
-				viewBox="0 0 20 20"
-				fill="currentColor"
-			>
-				<path
-					fill-rule="evenodd"
-					d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z"
-					clip-rule="evenodd"
-				/>
-			</svg>
-			Add Gig
-		</button>
 	</div>
 
 	{#if showAddGig}
@@ -251,9 +233,9 @@
 				e.preventDefault();
 				addGig();
 			}}
-			class="mb-4 rounded-xl border border-border-primary bg-surface p-4 shadow-sm"
+			class="mb-3 rounded-xl border border-border-primary bg-surface p-4 shadow-sm"
 		>
-			<div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+			<div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
 				<div>
 					<label class="mb-1 block text-xs font-medium text-text-secondary">Gig Name</label>
 					<input
@@ -333,7 +315,7 @@
 					></textarea>
 				</div>
 			</div>
-			<div class="mt-4 flex gap-2">
+			<div class="mt-3 flex gap-2">
 				<button
 					type="submit"
 					class="rounded-lg bg-stone-900 px-4 py-2 text-sm text-white hover:bg-stone-800 dark:bg-stone-100 dark:text-stone-900 dark:hover:bg-stone-200"
@@ -352,21 +334,23 @@
 	{/if}
 
 	{#if gigs.length === 0 && !showAddGig}
-		<div
-			class="rounded-xl border border-dashed border-border-primary bg-surface p-8 text-center"
+		<button
+			onclick={() => (showAddGig = true)}
+			class="flex w-full items-center gap-2 rounded-xl border border-dashed border-border-primary bg-surface px-3 py-2.5 text-sm text-text-secondary transition hover:border-stone-400 hover:text-text-primary"
 		>
-			<p class="text-text-secondary">No gigs yet</p>
-			<button
-				onclick={() => (showAddGig = true)}
-				class="mt-3 text-sm text-stone-600 hover:text-stone-800 dark:text-stone-400 dark:hover:text-stone-200"
-			>
-				Add your first gig
-			</button>
-		</div>
+			<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+				<path
+					fill-rule="evenodd"
+					d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z"
+					clip-rule="evenodd"
+				/>
+			</svg>
+			Add Gig
+		</button>
 	{:else}
 		{@const sorted = sortedGigs()}
 		{#if sorted.upcoming.length > 0}
-			<div class="space-y-2">
+			<div class="space-y-1">
 				{#each sorted.upcoming as gig (gig.id)}
 					{@render gigCard(gig, false)}
 				{/each}
@@ -375,18 +359,31 @@
 
 		{#if sorted.past.length > 0}
 			{#if sorted.upcoming.length > 0}
-				<div class="my-4 flex items-center gap-3">
+				<div class="my-2.5 flex items-center gap-3">
 					<div class="h-px flex-1 bg-border-primary"></div>
 					<span class="text-xs text-text-tertiary">Past</span>
 					<div class="h-px flex-1 bg-border-primary"></div>
 				</div>
 			{/if}
-			<div class="space-y-2">
+			<div class="space-y-1">
 				{#each sorted.past as gig (gig.id)}
 					{@render gigCard(gig, true)}
 				{/each}
 			</div>
 		{/if}
+		<button
+			onclick={() => (showAddGig = true)}
+			class="mt-1.5 flex w-full items-center gap-2 rounded-xl border border-dashed border-border-primary bg-surface px-3 py-2 text-sm text-text-secondary transition hover:border-stone-400 hover:text-text-primary"
+		>
+			<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+				<path
+					fill-rule="evenodd"
+					d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z"
+					clip-rule="evenodd"
+				/>
+			</svg>
+			Add Gig
+		</button>
 	{/if}
 </div>
 
@@ -396,7 +393,7 @@
 			? 'opacity-60'
 			: ''}"
 	>
-		<div class="flex items-center justify-between p-4">
+		<div class="flex items-center justify-between p-3">
 			<button
 				onclick={() => toggleExpand(gig.id)}
 				class="flex flex-1 items-center gap-3 text-left"

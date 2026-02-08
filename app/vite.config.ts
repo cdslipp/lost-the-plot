@@ -9,6 +9,9 @@ import fs from 'fs';
 import path from 'path';
 
 const require = createRequire(import.meta.url);
+const appPackage = JSON.parse(
+	fs.readFileSync(new URL('./package.json', import.meta.url), 'utf-8')
+);
 
 /**
  * Vite plugin to serve sqlite3-opfs-async-proxy.js without ES module transformation.
@@ -39,6 +42,9 @@ function sqliteOpfsProxyPlugin(): Plugin {
 }
 
 export default defineConfig({
+	define: {
+		__APP_VERSION__: JSON.stringify(appPackage.version)
+	},
 	server: {
 		headers: {
 			'Cross-Origin-Opener-Policy': 'same-origin',

@@ -2,8 +2,15 @@
 	// SPDX-License-Identifier: AGPL-3.0-only
 	import { toggleMode } from 'mode-watcher';
 	import { ImportExport } from '$lib';
+	import {
+		encodePayload,
+		buildShareUrl,
+		buildCatalogIndex
+	} from '@stageplotter/shared/share-codec';
 
 	let exporting = $state(false);
+	let sharing = $state(false);
+	let shareCopied = $state(false);
 
 	let {
 		title = $bindable(''),
@@ -19,7 +26,11 @@
 		canvasHeight = $bindable(850),
 		lastModified = $bindable(''),
 		getItemZone,
-		getItemPosition
+		getItemPosition,
+		bandName = '',
+		persons = [],
+		stageWidth = 24,
+		stageDepth = 16
 	}: {
 		title: string;
 		revisionDate: string;
@@ -35,6 +46,18 @@
 		lastModified: string;
 		getItemZone: (item: any) => string;
 		getItemPosition: (item: any) => { x: number; y: number };
+		bandName?: string;
+		persons?: Array<{
+			name: string;
+			role?: string | null;
+			pronouns?: string | null;
+			phone?: string | null;
+			email?: string | null;
+			member_type?: string | null;
+			status?: string | null;
+		}>;
+		stageWidth?: number;
+		stageDepth?: number;
 	} = $props();
 
 	async function handleExportPdf() {
@@ -46,32 +69,108 @@
 			exporting = false;
 		}
 	}
+
+	async function handleShare() {
+		if (sharing) return;
+		sharing = true;
+		try {
+			// Load the catalog to build the index
+			const resp = await fetch('/final_assets/items.json');
+			const catalog: { path: string }[] = await resp.json();
+			const catalogIndex = buildCatalogIndex(catalog);
+
+			const payload = await encodePayload(
+				{
+					stageWidth,
+					stageDepth,
+					items,
+					musicians,
+					persons: persons.map((p) => ({
+						name: p.name,
+						role: p.role ?? undefined,
+						pronouns: p.pronouns ?? undefined,
+						phone: p.phone ?? undefined,
+						email: p.email ?? undefined,
+						member_type: p.member_type ?? undefined,
+						status: p.status ?? undefined
+					}))
+				},
+				catalogIndex
+			);
+
+			const url = buildShareUrl(window.location.origin, bandName, title, payload);
+
+			await navigator.clipboard.writeText(url);
+			shareCopied = true;
+			setTimeout(() => (shareCopied = false), 3000);
+		} catch (e) {
+			console.error('Share failed:', e);
+			alert('Failed to generate share link. Please try again.');
+		} finally {
+			sharing = false;
+		}
+	}
 </script>
 
-<div class="mb-4 flex items-center justify-between gap-4">
-	<div class="flex min-w-0 flex-1 items-center gap-3">
+<div class="mb-2 flex items-start justify-between gap-4">
+	<div class="flex min-w-0 flex-1 items-start gap-3">
 		{#if backHref}
 			<a
 				href={backHref}
 				class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-border-primary text-text-secondary transition hover:bg-surface-hover hover:text-text-primary"
 				aria-label="Back"
 			>
-				<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-					<path fill-rule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clip-rule="evenodd" />
+				<svg
+					xmlns="http://www.w3.org/2000/svg"
+					class="h-5 w-5"
+					viewBox="0 0 20 20"
+					fill="currentColor"
+				>
+					<path
+						fill-rule="evenodd"
+						d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z"
+						clip-rule="evenodd"
+					/>
 				</svg>
 			</a>
 		{/if}
-		<input
-			bind:value={title}
-			oninput={() => onTitleChange()}
-			class="min-w-0 flex-1 border-b-2 border-dashed border-border-secondary bg-transparent px-2 py-1 font-serif text-3xl font-bold text-text-primary transition-all placeholder:font-normal placeholder:text-text-tertiary hover:border-border-primary focus:border-solid focus:border-stone-500 focus:outline-none"
-			placeholder="Plot Name"
-		/>
+		<div class="min-w-0 flex-1">
+			<input
+				bind:value={title}
+				oninput={() => onTitleChange()}
+				class="min-w-0 w-full border-b-2 border-dashed border-border-secondary bg-transparent px-2 py-1 font-serif text-3xl font-bold text-text-primary transition-all placeholder:font-normal placeholder:text-text-tertiary hover:border-border-primary focus:border-solid focus:border-stone-500 focus:outline-none"
+				placeholder="Plot Name"
+			/>
+			<div class="mt-0.5 px-2 text-[11px] font-medium text-text-tertiary">
+				{new Date(revisionDate).toLocaleDateString()}
+			</div>
+		</div>
 	</div>
 	<div class="flex shrink-0 items-center gap-2">
-		<div class="hidden text-sm text-text-secondary sm:block">
-			{new Date(revisionDate).toLocaleDateString()}
-		</div>
+		<button
+			onclick={handleShare}
+			disabled={sharing}
+			class="flex items-center gap-2 rounded-lg border border-border-primary px-3 py-2 text-sm text-text-primary transition hover:bg-surface-hover disabled:opacity-50"
+			title={shareCopied ? 'Link copied to clipboard!' : 'Copy share link'}
+		>
+			{#if sharing}
+				<div
+					class="h-4 w-4 animate-spin rounded-full border-2 border-text-secondary border-t-transparent"
+				></div>
+			{:else}
+				<svg
+					xmlns="http://www.w3.org/2000/svg"
+					class="h-4 w-4"
+					viewBox="0 0 20 20"
+					fill="currentColor"
+				>
+					<path
+						d="M15 8a3 3 0 10-2.977-2.63l-4.94 2.47a3 3 0 100 4.319l4.94 2.47a3 3 0 10.895-1.789l-4.94-2.47a3.027 3.027 0 000-.74l4.94-2.47C13.456 7.68 14.19 8 15 8z"
+					/>
+				</svg>
+			{/if}
+			{shareCopied ? 'Copied!' : 'Share'}
+		</button>
 		<ImportExport
 			bind:title
 			bind:lastModified
@@ -91,10 +190,21 @@
 				title="Export PDF"
 			>
 				{#if exporting}
-					<div class="h-4 w-4 animate-spin rounded-full border-2 border-text-secondary border-t-transparent"></div>
+					<div
+						class="h-4 w-4 animate-spin rounded-full border-2 border-text-secondary border-t-transparent"
+					></div>
 				{:else}
-					<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-						<path fill-rule="evenodd" d="M6 2a2 2 0 00-2 2v12a2 2 0 002 2h8a2 2 0 002-2V7.414A2 2 0 0015.414 6L12 2.586A2 2 0 0010.586 2H6zm5 6a1 1 0 10-2 0v3.586l-1.293-1.293a1 1 0 10-1.414 1.414l3 3a1 1 0 001.414 0l3-3a1 1 0 00-1.414-1.414L11 11.586V8z" clip-rule="evenodd" />
+					<svg
+						xmlns="http://www.w3.org/2000/svg"
+						class="h-5 w-5"
+						viewBox="0 0 20 20"
+						fill="currentColor"
+					>
+						<path
+							fill-rule="evenodd"
+							d="M6 2a2 2 0 00-2 2v12a2 2 0 002 2h8a2 2 0 002-2V7.414A2 2 0 0015.414 6L12 2.586A2 2 0 0010.586 2H6zm5 6a1 1 0 10-2 0v3.586l-1.293-1.293a1 1 0 10-1.414 1.414l3 3a1 1 0 001.414 0l3-3a1 1 0 00-1.414-1.414L11 11.586V8z"
+							clip-rule="evenodd"
+						/>
 					</svg>
 				{/if}
 			</button>
@@ -104,10 +214,24 @@
 			class="flex h-9 w-9 items-center justify-center rounded-full text-text-secondary transition hover:bg-surface-hover hover:text-text-primary"
 			title="Toggle dark mode"
 		>
-			<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 block dark:hidden" viewBox="0 0 20 20" fill="currentColor">
-				<path fill-rule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" clip-rule="evenodd" />
+			<svg
+				xmlns="http://www.w3.org/2000/svg"
+				class="h-5 w-5 block dark:hidden"
+				viewBox="0 0 20 20"
+				fill="currentColor"
+			>
+				<path
+					fill-rule="evenodd"
+					d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z"
+					clip-rule="evenodd"
+				/>
 			</svg>
-			<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 hidden dark:block" viewBox="0 0 20 20" fill="currentColor">
+			<svg
+				xmlns="http://www.w3.org/2000/svg"
+				class="h-5 w-5 hidden dark:block"
+				viewBox="0 0 20 20"
+				fill="currentColor"
+			>
 				<path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z" />
 			</svg>
 		</button>
@@ -116,11 +240,23 @@
 			class="flex items-center gap-2 rounded-lg bg-stone-900 px-4 py-2 text-sm text-white transition hover:bg-stone-800 dark:bg-stone-100 dark:text-stone-900 dark:hover:bg-stone-200"
 			title="Add Item (⌘K)"
 		>
-			<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-				<path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" />
+			<svg
+				xmlns="http://www.w3.org/2000/svg"
+				class="h-4 w-4"
+				viewBox="0 0 20 20"
+				fill="currentColor"
+			>
+				<path
+					fill-rule="evenodd"
+					d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z"
+					clip-rule="evenodd"
+				/>
 			</svg>
 			Add Item
-			<span class="rounded bg-stone-700 px-1.5 py-0.5 text-xs text-stone-200 dark:bg-stone-300 dark:text-stone-800">⌘K</span>
+			<span
+				class="rounded bg-stone-700 px-1.5 py-0.5 text-xs text-stone-200 dark:bg-stone-300 dark:text-stone-800"
+				>⌘K</span
+			>
 		</button>
 	</div>
 </div>

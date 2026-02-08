@@ -21,8 +21,21 @@
 	let plotId = $derived($page.params.plotId);
 	let bandId = $derived($page.params.bandId);
 
+	let bandName = $state('');
 	let bandPersons = $state<
 		{ id: number; name: string; role: string | null; member_type: string | null }[]
+	>([]);
+	let bandPersonsFull = $state<
+		{
+			id: number;
+			name: string;
+			role: string | null;
+			pronouns: string | null;
+			phone: string | null;
+			email: string | null;
+			member_type: string | null;
+			status: string | null;
+		}[]
 	>([]);
 
 	// Reactive stage plot state — initialized in-memory, persisted to SQLite
@@ -35,6 +48,12 @@
 		stage_width: 24,
 		stage_depth: 16
 	});
+
+	let layoutMode = $state<'mobile' | 'medium' | 'desktop'>('desktop');
+	let sidePanelTab = $state<'inspector' | 'musicians'>('inspector');
+	let mediumMainTab = $state<'canvas' | 'patch'>('canvas');
+	let mobileMainTab = $state<'canvas' | 'patch' | 'panel'>('canvas');
+	let mobilePanelTab = $state<'inspector' | 'musicians'>('inspector');
 
 	// Persist reactive state to SQLite
 	async function write() {
@@ -130,6 +149,10 @@
 				goto(`/bands/${bandId}`, { replaceState: true });
 			}
 
+			// Load band name
+			const bandRow = await db.queryOne<{ name: string }>('SELECT name FROM bands WHERE id = ?', [bandId]);
+			if (bandRow) bandName = bandRow.name;
+
 			// Load band persons for import
 			bandPersons = await db.query<{
 				id: number;
@@ -139,6 +162,21 @@
 			}>(
 				'SELECT id, name, role, member_type FROM persons WHERE band_id = ? AND status != ? ORDER BY name',
 				[bandId, 'inactive']
+			);
+
+			// Load full person details for sharing
+			bandPersonsFull = await db.query<{
+				id: number;
+				name: string;
+				role: string | null;
+				pronouns: string | null;
+				phone: string | null;
+				email: string | null;
+				member_type: string | null;
+				status: string | null;
+			}>(
+				'SELECT id, name, role, pronouns, phone, email, member_type, status FROM persons WHERE band_id = ? ORDER BY name',
+				[bandId]
 			);
 		} catch (e) {
 			console.error('Failed to load from DB:', e);
@@ -214,6 +252,7 @@
 	let canvasEl = $state<HTMLElement | null>(null);
 	let canvasWidth = $state(stagePlot.canvas.width);
 	let canvasHeight = $state(stagePlot.canvas.height);
+	let canvasResizeObserver: ResizeObserver | null = null;
 	let stagePlotContainer = $state<HTMLElement | null>(null);
 
 	// Track pressed keys (Alt/Option for duplication)
@@ -416,23 +455,6 @@
 			e.removed.forEach((el: any) => { el.classList.remove('!ring-2', '!ring-blue-500'); });
 		});
 
-		let resizeObserver: ResizeObserver | undefined;
-		if (canvasEl) {
-			resizeObserver = new ResizeObserver((entries) => {
-				for (const entry of entries) {
-					const { width, height } = entry.contentRect;
-					canvasWidth = width;
-					canvasHeight = height;
-					stagePlot.canvas.width = width;
-					stagePlot.canvas.height = height;
-				}
-			});
-			resizeObserver.observe(canvasEl);
-			const rect = canvasEl.getBoundingClientRect();
-			canvasWidth = rect.width || 1100;
-			canvasHeight = rect.height || 850;
-		}
-
 		onClickOutside(
 			() => canvasEl,
 			(event: any) => {
@@ -446,8 +468,65 @@
 		);
 
 		return () => {
-			resizeObserver?.disconnect();
 			window.removeEventListener('beforeunload', handleBeforeUnload);
+		};
+	});
+
+	$effect(() => {
+		if (!browser || !canvasEl) return;
+		canvasResizeObserver?.disconnect();
+		canvasResizeObserver = new ResizeObserver((entries) => {
+			for (const entry of entries) {
+				const { width, height } = entry.contentRect;
+				if (!width || !height) return;
+				if (width === canvasWidth && height === canvasHeight) return;
+				canvasWidth = width;
+				canvasHeight = height;
+				stagePlot.canvas.width = width;
+				stagePlot.canvas.height = height;
+			}
+		});
+		canvasResizeObserver.observe(canvasEl);
+		const rect = canvasEl.getBoundingClientRect();
+		const initialWidth = rect.width || 1100;
+		const initialHeight = rect.height || 850;
+		if (initialWidth !== canvasWidth || initialHeight !== canvasHeight) {
+			canvasWidth = initialWidth;
+			canvasHeight = initialHeight;
+			stagePlot.canvas.width = initialWidth;
+			stagePlot.canvas.height = initialHeight;
+		}
+
+		return () => {
+			canvasResizeObserver?.disconnect();
+		};
+	});
+
+	onMount(() => {
+		if (!browser) return;
+		const mobileQuery = window.matchMedia('(max-width: 767px)');
+		const mediumQuery = window.matchMedia('(min-width: 768px) and (max-width: 1499px)');
+		const desktopQuery = window.matchMedia('(min-width: 1500px)');
+
+		const updateLayout = () => {
+			if (desktopQuery.matches) {
+				layoutMode = 'desktop';
+			} else if (mediumQuery.matches) {
+				layoutMode = 'medium';
+			} else {
+				layoutMode = 'mobile';
+			}
+		};
+
+		updateLayout();
+		mobileQuery.addEventListener('change', updateLayout);
+		mediumQuery.addEventListener('change', updateLayout);
+		desktopQuery.addEventListener('change', updateLayout);
+
+		return () => {
+			mobileQuery.removeEventListener('change', updateLayout);
+			mediumQuery.removeEventListener('change', updateLayout);
+			desktopQuery.removeEventListener('change', updateLayout);
 		};
 	});
 
@@ -571,18 +650,23 @@
 			placingItem = null;
 			clearSelections();
 		}
-		if (event.key === 'Tab' && stagePlot.items.length > 0) {
+		if (event.key === 'Tab') {
 			const active = document.activeElement as HTMLElement | null;
 			if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.isContentEditable)) return;
-			event.preventDefault();
-			let currentIndex = -1;
-			if (selectedItems.length === 1) {
-				const selectedId = parseInt(selectedItems[0].dataset?.id || '0');
-				currentIndex = stagePlot.items.findIndex((i: any) => i.id === selectedId);
+			if (layoutMode === 'medium') {
+				event.preventDefault();
+				mediumMainTab = mediumMainTab === 'canvas' ? 'patch' : 'canvas';
+				return;
 			}
-			const delta = event.shiftKey ? -1 : 1;
-			const nextIndex = currentIndex === -1 ? 0 : (currentIndex + delta + stagePlot.items.length) % stagePlot.items.length;
-			selectItemByIndex(nextIndex);
+			if (layoutMode === 'mobile') {
+				event.preventDefault();
+				const order: Array<'canvas' | 'patch' | 'panel'> = ['canvas', 'patch', 'panel'];
+				const currentIndex = order.indexOf(mobileMainTab);
+				const delta = event.shiftKey ? -1 : 1;
+				const nextIndex = (currentIndex + delta + order.length) % order.length;
+				mobileMainTab = order[nextIndex];
+				return;
+			}
 		}
 	}
 
@@ -857,225 +941,714 @@
 
 <svelte:window onkeydown={handleGlobalKeydown} />
 
-<div class="flex flex-col gap-6">
-	<!-- Main content area with sidebars -->
-	<div class="flex flex-col gap-6 lg:flex-row lg:items-start">
-		<!-- Left Sidebar: Musicians -->
-		<MusicianPanel
-			musicians={stagePlot.musicians}
-			onAdd={(name, instrument) => {
-				newMusician.name = name;
-				newMusician.instrument = instrument || '';
-				addMusician();
-			}}
-			onDelete={deleteMusician}
-			{bandPersons}
-			onImportFromBand={importMusiciansFromBand}
+<div class="flex h-[100dvh] flex-col gap-3 overflow-hidden">
+	<div class="shrink-0">
+		<EditorToolbar
+			bind:title={stagePlot.plot_name}
+			revisionDate={stagePlot.revision_date}
+			onAddItem={openAddMenu}
+			onImportComplete={handleImportComplete}
+			onExportPdf={handleExportPdf}
+			backHref={'/bands/' + bandId}
+			bind:items={stagePlot.items}
+			bind:musicians={stagePlot.musicians}
+			bind:canvasWidth
+			bind:canvasHeight
+			bind:lastModified={stagePlot.revision_date}
+			{getItemZone}
+			{getItemPosition}
+			onTitleChange={() => debouncedWrite()}
+			{bandName}
+			persons={bandPersonsFull}
+			stageWidth={stagePlot.stage_width}
+			stageDepth={stagePlot.stage_depth}
 		/>
+	</div>
 
-		<!-- Main Content -->
-		<div class="flex-1" bind:this={stagePlotContainer}>
-			<!-- Title + Actions -->
-			<EditorToolbar
-				bind:title={stagePlot.plot_name}
-				revisionDate={stagePlot.revision_date}
-				onAddItem={openAddMenu}
-				onImportComplete={handleImportComplete}
-				onExportPdf={handleExportPdf}
-				backHref={'/bands/' + bandId}
-				bind:items={stagePlot.items}
-				bind:musicians={stagePlot.musicians}
-				bind:canvasWidth
-				bind:canvasHeight
-				bind:lastModified={stagePlot.revision_date}
-				{getItemZone}
-				{getItemPosition}
-				onTitleChange={() => debouncedWrite()}
-			/>
-
-			<!-- Canvas Card -->
-			<div class="border border-border-primary bg-surface p-4 shadow-sm">
-				<div
-					bind:this={canvasEl}
-					class="items-container relative mx-auto w-full bg-white dark:bg-gray-800"
-					style="aspect-ratio: {stagePlot.stage_width}/{stagePlot.stage_depth}; max-width: 1100px; cursor: {placingItem ? 'copy' : 'default'}"
-					onmousemove={handleCanvasMouseMove}
-					onclick={handleCanvasClick}
-					ondragover={handleDragOver}
-					ondrop={handleDrop}
-				>
-					<CanvasOverlay {showZones} {canvasWidth} {canvasHeight} itemCount={stagePlot.items.length} />
-
-					{#each stagePlot.items as item (item.id)}
-					<ContextMenu.Root>
-						<ContextMenu.Trigger>
+	{#if layoutMode === 'desktop'}
+		<div class="flex flex-1 min-h-0 gap-5 overflow-hidden">
+			<div class="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden" bind:this={stagePlotContainer}>
+				<div class="flex min-h-0 flex-1 flex-col overflow-hidden">
+					<div class="border border-border-primary bg-surface p-2.5 shadow-sm">
 						<div
-							class="group selectable-item absolute transition-all cursor-move {editingItem?.id === item.id ? 'ring-2 ring-blue-500' : ''}"
-							class:selected={selectedItems.includes(item)}
-							data-id={item.id}
-							style="left: {item.position.x}px; top: {item.position.y}px; width: {item.position.width}px; height: {item.position.height}px;"
-							draggable="true"
-							ondragstart={(e) => handleDragStart(e, item)}
-							ondragend={handleDragEnd}
-							onclick={(e) => openItemEditor(item, e)}
+							bind:this={canvasEl}
+							class="items-container relative mx-auto w-full bg-white dark:bg-gray-800"
+							style="aspect-ratio: {stagePlot.stage_width}/{stagePlot.stage_depth}; max-width: 1100px; cursor: {placingItem ? 'copy' : 'default'}"
+							onmousemove={handleCanvasMouseMove}
+							onclick={handleCanvasClick}
+							ondragover={handleDragOver}
+							ondrop={handleDrop}
 						>
-							{#if item.type === 'stageDeck'}
-								<StageDeck size={item.size} x={0} y={0} class="w-full h-full" />
-							{:else if item.type === 'riser'}
-								<div class="flex h-full w-full items-center justify-center rounded border-2 border-gray-500 bg-gray-400/50 dark:border-gray-400 dark:bg-gray-600/50">
-									<div class="text-center leading-tight">
-										<div class="text-[10px] font-bold text-gray-700 dark:text-gray-200">RISER</div>
-										<div class="text-[8px] text-gray-600 dark:text-gray-300">{item.itemData?.riserWidth ?? '?'}' × {item.itemData?.riserDepth ?? '?'}'</div>
-										{#if item.itemData?.riserHeight}
-											<div class="text-[7px] text-gray-500 dark:text-gray-400">h: {item.itemData.riserHeight}'</div>
+							<CanvasOverlay {showZones} {canvasWidth} {canvasHeight} itemCount={stagePlot.items.length} />
+
+							{#each stagePlot.items as item (item.id)}
+							<ContextMenu.Root>
+								<ContextMenu.Trigger>
+								<div
+									class="group selectable-item absolute transition-all cursor-move {editingItem?.id === item.id ? 'ring-2 ring-blue-500' : ''}"
+									class:selected={selectedItems.includes(item)}
+									data-id={item.id}
+									style="left: {item.position.x}px; top: {item.position.y}px; width: {item.position.width}px; height: {item.position.height}px;"
+									draggable="true"
+									ondragstart={(e) => handleDragStart(e, item)}
+									ondragend={handleDragEnd}
+									onclick={(e) => openItemEditor(item, e)}
+								>
+									{#if item.type === 'stageDeck'}
+										<StageDeck size={item.size} x={0} y={0} class="w-full h-full" />
+									{:else if item.type === 'riser'}
+										<div class="flex h-full w-full items-center justify-center rounded border-2 border-gray-500 bg-gray-400/50 dark:border-gray-400 dark:bg-gray-600/50">
+											<div class="text-center leading-tight">
+												<div class="text-[10px] font-bold text-gray-700 dark:text-gray-200">RISER</div>
+												<div class="text-[8px] text-gray-600 dark:text-gray-300">{item.itemData?.riserWidth ?? '?'}' × {item.itemData?.riserDepth ?? '?'}'</div>
+												{#if item.itemData?.riserHeight}
+													<div class="text-[7px] text-gray-500 dark:text-gray-400">h: {item.itemData.riserHeight}'</div>
+												{/if}
+											</div>
+										</div>
+									{:else}
+										<img src={getCurrentImageSrc(item)} alt={item.itemData?.name || item.name || 'Stage Item'} style="width: {item.position.width}px; height: {item.position.height}px;" />
+									{/if}
+
+									{#if selectedItems.some((el) => el.dataset?.id === String(item.id))}
+										{#if getVariantKeys(item).length > 1}
+											<div class="absolute -bottom-8 left-1/2 z-20 flex -translate-x-1/2 transform gap-1">
+												<button
+													onclick={(e) => { e.stopPropagation(); rotateItemRight(item); }}
+													class="flex h-6 w-6 items-center justify-center rounded-full bg-blue-500 text-sm text-white shadow-md transition-colors hover:bg-blue-600"
+													title="Rotate Right"
+												>
+													<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+														<path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd" />
+													</svg>
+												</button>
+											</div>
 										{/if}
-									</div>
+									{/if}
+
+									<button
+										onclick={(e) => { e.stopPropagation(); deleteItem(item.id); }}
+										class="absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs text-white opacity-0 transition-opacity group-hover:opacity-100"
+									>
+										&times;
+									</button>
 								</div>
-							{:else}
-								<img src={getCurrentImageSrc(item)} alt={item.itemData?.name || item.name || 'Stage Item'} style="width: {item.position.width}px; height: {item.position.height}px;" />
-							{/if}
+							</ContextMenu.Trigger>
+							<ContextMenu.Portal>
+								<ContextMenu.Content class="z-50 w-[200px] rounded-xl border border-gray-300 bg-white px-1 py-1.5 shadow-lg dark:border-gray-600 dark:bg-gray-800">
+									<ContextMenu.Item onSelect={(e) => openItemEditor(item, e)} class="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700">
+										Edit
+									</ContextMenu.Item>
+									<ContextMenu.Item onSelect={() => duplicateItem(item)} class="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700">
+										Duplicate
+									</ContextMenu.Item>
+									<ContextMenu.Separator class="bg-muted -mx-1 my-1 block h-px" />
+									<ContextMenu.Item onSelect={() => moveToFront(item.id)} class="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700">
+										Bring to Front
+									</ContextMenu.Item>
+									<ContextMenu.Item onSelect={() => moveForward(item.id)} class="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700">
+										Bring Forward
+									</ContextMenu.Item>
+									<ContextMenu.Item onSelect={() => moveBackward(item.id)} class="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700">
+										Send Backward
+									</ContextMenu.Item>
+									<ContextMenu.Item onSelect={() => moveToBack(item.id)} class="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700">
+										Send to Back
+									</ContextMenu.Item>
+									<ContextMenu.Separator class="bg-muted -mx-1 my-1 block h-px" />
+									<ContextMenu.Item onSelect={() => deleteItem(item.id)} class="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-red-50 dark:hover:bg-red-600/30">
+										Delete
+									</ContextMenu.Item>
+								</ContextMenu.Content>
+							</ContextMenu.Portal>
+							</ContextMenu.Root>
+							{/each}
 
-							<!-- Rotate buttons -->
-							{#if selectedItems.some((el) => el.dataset?.id === String(item.id))}
-								{#if getVariantKeys(item).length > 1}
-									<div class="absolute -bottom-8 left-1/2 z-20 flex -translate-x-1/2 transform gap-1">
-										<button
-											onclick={(e) => { e.stopPropagation(); rotateItemRight(item); }}
-											class="flex h-6 w-6 items-center justify-center rounded-full bg-blue-500 text-sm text-white shadow-md transition-colors hover:bg-blue-600"
-											title="Rotate Right"
-										>
-											<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-												<path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd" />
-											</svg>
-										</button>
-									</div>
-								{/if}
+							{#if placingItem}
+								<div
+									class="pointer-events-none absolute opacity-60"
+									style="left: {placingItem.x}px; top: {placingItem.y}px; width: {placingItem.width}px; height: {placingItem.height}px;"
+								>
+									{#if placingItem.type === 'riser'}
+										<div class="flex h-full w-full items-center justify-center rounded border-2 border-dashed border-gray-500 bg-gray-400/40 text-[10px] font-bold text-gray-700">
+											RISER
+										</div>
+									{:else}
+										<img
+											src={placingItem.itemData?.image || ''}
+											alt={placingItem.itemData?.name || 'Item Preview'}
+											style="width: {placingItem.width}px; height: {placingItem.height}px;"
+										/>
+									{/if}
+								</div>
 							{/if}
+						</div>
+					</div>
 
+					<div class="mt-1.5 flex justify-between text-xs text-text-tertiary">
+						<div class="flex items-center gap-3">Items: {stagePlot.items.length} | Musicians: {stagePlot.musicians.length}
+							{#if isAltPressed}
+								<span class="text-blue-600 font-semibold animate-bounce">(Duplicate)</span>
+							{/if}
+						</div>
+						<div>
+							{#if placingItem}Click on canvas to place item. Press 'Escape' to cancel.{/if}
+						</div>
+					</div>
+				</div>
+
+				<div class="min-h-0 flex-1 overflow-hidden">
+					<StagePatch
+						items={stagePlot.items}
+						columnCount={6}
+						onUpdateItem={handlePatchItemUpdate}
+						onReorderPatch={handlePatchReorder}
+						onSelectItem={openItemEditor}
+						onAddItem={handlePatchAddItem}
+						onRemoveItem={handlePatchRemoveItem}
+					/>
+				</div>
+			</div>
+
+			<div class="flex w-80 shrink-0 flex-col overflow-hidden">
+				<div class="inspector-panel flex h-full flex-col overflow-hidden rounded-xl border border-border-primary bg-surface shadow-sm">
+					<div class="border-b border-border-primary bg-muted/30 px-3 pt-3">
+						<div class="flex gap-1">
 							<button
-								onclick={(e) => { e.stopPropagation(); deleteItem(item.id); }}
-								class="absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs text-white opacity-0 transition-opacity group-hover:opacity-100"
+								type="button"
+								onclick={() => (sidePanelTab = 'inspector')}
+								class={`px-3 py-2 text-sm font-medium rounded-t-lg transition-colors ${sidePanelTab === 'inspector' ? 'bg-surface text-text-primary' : 'text-text-secondary hover:text-text-primary'}`}
 							>
-								&times;
+								Inspector
+							</button>
+							<button
+								type="button"
+								onclick={() => (sidePanelTab = 'musicians')}
+								class={`px-3 py-2 text-sm font-medium rounded-t-lg transition-colors ${sidePanelTab === 'musicians' ? 'bg-surface text-text-primary' : 'text-text-secondary hover:text-text-primary'}`}
+							>
+								Musicians
 							</button>
 						</div>
-					</ContextMenu.Trigger>
-					<ContextMenu.Portal>
-						<ContextMenu.Content class="z-50 w-[200px] rounded-xl border border-gray-300 bg-white px-1 py-1.5 shadow-lg dark:border-gray-600 dark:bg-gray-800">
-							<ContextMenu.Item onSelect={(e) => openItemEditor(item, e)} class="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700">
-								Edit
-							</ContextMenu.Item>
-							<ContextMenu.Item onSelect={() => duplicateItem(item)} class="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700">
-								Duplicate
-							</ContextMenu.Item>
-							<ContextMenu.Separator class="bg-muted -mx-1 my-1 block h-px" />
-							<ContextMenu.Item onSelect={() => moveToFront(item.id)} class="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700">
-								Bring to Front
-							</ContextMenu.Item>
-							<ContextMenu.Item onSelect={() => moveForward(item.id)} class="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700">
-								Bring Forward
-							</ContextMenu.Item>
-							<ContextMenu.Item onSelect={() => moveBackward(item.id)} class="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700">
-								Send Backward
-							</ContextMenu.Item>
-							<ContextMenu.Item onSelect={() => moveToBack(item.id)} class="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700">
-								Send to Back
-							</ContextMenu.Item>
-							<ContextMenu.Separator class="bg-muted -mx-1 my-1 block h-px" />
-							<ContextMenu.Item onSelect={() => deleteItem(item.id)} class="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-red-50 dark:hover:bg-red-600/30">
-								Delete
-							</ContextMenu.Item>
-						</ContextMenu.Content>
-					</ContextMenu.Portal>
-					</ContextMenu.Root>
-					{/each}
-
-					{#if placingItem}
-						<div
-							class="pointer-events-none absolute opacity-60"
-							style="left: {placingItem.x}px; top: {placingItem.y}px; width: {placingItem.width}px; height: {placingItem.height}px;"
-						>
-							{#if placingItem.type === 'riser'}
-								<div class="flex h-full w-full items-center justify-center rounded border-2 border-dashed border-gray-500 bg-gray-400/40 text-[10px] font-bold text-gray-700">
-									RISER
-								</div>
-							{:else}
-								<img
-									src={placingItem.itemData?.image || ''}
-									alt={placingItem.itemData?.name || 'Item Preview'}
-									style="width: {placingItem.width}px; height: {placingItem.height}px;"
-								/>
-							{/if}
+					</div>
+					{#if sidePanelTab === 'inspector'}
+						<div class="flex-1 min-h-0 overflow-hidden p-4">
+							<Inspector
+								bind:selectedItems
+								bind:items={stagePlot.items}
+								bind:musicians={stagePlot.musicians}
+								bind:title={stagePlot.plot_name}
+								bind:lastModified={stagePlot.revision_date}
+								bind:showZones
+								bind:stageWidth={stagePlot.stage_width}
+								bind:stageDepth={stagePlot.stage_depth}
+								bind:unit
+								onPlaceRiser={placeRiser}
+								onUpdateItem={updateItemProperty}
+								onAddMusician={(name: string, instrument: string) => {
+									newMusician.name = name;
+									newMusician.instrument = instrument;
+									addMusician();
+								}}
+								{getItemZone}
+								{getItemPosition}
+								{updateItemPosition}
+							/>
+						</div>
+					{:else}
+						<div class="flex-1 min-h-0 overflow-hidden p-4">
+							<MusicianPanel
+								musicians={stagePlot.musicians}
+								onAdd={(name, instrument) => {
+									newMusician.name = name;
+									newMusician.instrument = instrument || '';
+									addMusician();
+								}}
+								onDelete={deleteMusician}
+								{bandPersons}
+								onImportFromBand={importMusiciansFromBand}
+							/>
 						</div>
 					{/if}
 				</div>
 			</div>
+		</div>
+	{:else if layoutMode === 'medium'}
+		<div class="flex flex-1 min-h-0 gap-5 overflow-hidden">
+			<div class="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden" bind:this={stagePlotContainer}>
+			<div class="flex min-h-0 flex-1 flex-col rounded-xl border border-border-primary bg-surface shadow-sm overflow-hidden">
+			<div class="border-b border-border-primary bg-muted/30 px-0 pt-0">
+				<div class="flex w-full">
+					<button
+						type="button"
+						onclick={() => (mediumMainTab = 'canvas')}
+						class={`flex-1 px-4 py-3 text-sm font-medium text-center transition-colors border-b-2 ${mediumMainTab === 'canvas' ? 'bg-surface text-text-primary border-text-primary' : 'text-text-secondary border-transparent hover:text-text-primary'}`}
+					>
+						Canvas
+					</button>
+					<button
+						type="button"
+						onclick={() => (mediumMainTab = 'patch')}
+						class={`flex-1 px-4 py-3 text-sm font-medium text-center transition-colors border-b-2 ${mediumMainTab === 'patch' ? 'bg-surface text-text-primary border-text-primary' : 'text-text-secondary border-transparent hover:text-text-primary'}`}
+					>
+						Patch List
+					</button>
+				</div>
+			</div>
+				{#if mediumMainTab === 'canvas'}
+					<div class="flex-1 min-h-0 overflow-hidden p-4">
+						<div class="border border-border-primary bg-surface p-3 shadow-sm">
+							<div
+								bind:this={canvasEl}
+								class="items-container relative mx-auto w-full bg-white dark:bg-gray-800"
+								style="aspect-ratio: {stagePlot.stage_width}/{stagePlot.stage_depth}; max-width: 1100px; cursor: {placingItem ? 'copy' : 'default'}"
+								onmousemove={handleCanvasMouseMove}
+								onclick={handleCanvasClick}
+								ondragover={handleDragOver}
+								ondrop={handleDrop}
+							>
+								<CanvasOverlay {showZones} {canvasWidth} {canvasHeight} itemCount={stagePlot.items.length} />
 
-			<div class="mt-2 flex justify-between text-xs text-text-tertiary">
-				<div class="flex items-center gap-3">Items: {stagePlot.items.length} | Musicians: {stagePlot.musicians.length}
-					{#if isAltPressed}
-						<span class="text-blue-600 font-semibold animate-bounce">(Duplicate)</span>
+								{#each stagePlot.items as item (item.id)}
+								<ContextMenu.Root>
+									<ContextMenu.Trigger>
+									<div
+										class="group selectable-item absolute transition-all cursor-move {editingItem?.id === item.id ? 'ring-2 ring-blue-500' : ''}"
+										class:selected={selectedItems.includes(item)}
+										data-id={item.id}
+										style="left: {item.position.x}px; top: {item.position.y}px; width: {item.position.width}px; height: {item.position.height}px;"
+										draggable="true"
+										ondragstart={(e) => handleDragStart(e, item)}
+										ondragend={handleDragEnd}
+										onclick={(e) => openItemEditor(item, e)}
+									>
+										{#if item.type === 'stageDeck'}
+											<StageDeck size={item.size} x={0} y={0} class="w-full h-full" />
+										{:else if item.type === 'riser'}
+											<div class="flex h-full w-full items-center justify-center rounded border-2 border-gray-500 bg-gray-400/50 dark:border-gray-400 dark:bg-gray-600/50">
+												<div class="text-center leading-tight">
+													<div class="text-[10px] font-bold text-gray-700 dark:text-gray-200">RISER</div>
+													<div class="text-[8px] text-gray-600 dark:text-gray-300">{item.itemData?.riserWidth ?? '?'}' × {item.itemData?.riserDepth ?? '?'}'</div>
+													{#if item.itemData?.riserHeight}
+														<div class="text-[7px] text-gray-500 dark:text-gray-400">h: {item.itemData.riserHeight}'</div>
+													{/if}
+												</div>
+											</div>
+										{:else}
+											<img src={getCurrentImageSrc(item)} alt={item.itemData?.name || item.name || 'Stage Item'} style="width: {item.position.width}px; height: {item.position.height}px;" />
+										{/if}
+
+										{#if selectedItems.some((el) => el.dataset?.id === String(item.id))}
+											{#if getVariantKeys(item).length > 1}
+												<div class="absolute -bottom-8 left-1/2 z-20 flex -translate-x-1/2 transform gap-1">
+													<button
+													onclick={(e) => { e.stopPropagation(); rotateItemRight(item); }}
+													class="flex h-6 w-6 items-center justify-center rounded-full bg-blue-500 text-sm text-white shadow-md transition-colors hover:bg-blue-600"
+													title="Rotate Right"
+												>
+													<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+														<path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd" />
+													</svg>
+												</button>
+											</div>
+										{/if}
+									{/if}
+
+									<button
+										onclick={(e) => { e.stopPropagation(); deleteItem(item.id); }}
+										class="absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs text-white opacity-0 transition-opacity group-hover:opacity-100"
+									>
+										&times;
+									</button>
+								</div>
+							</ContextMenu.Trigger>
+							<ContextMenu.Portal>
+								<ContextMenu.Content class="z-50 w-[200px] rounded-xl border border-gray-300 bg-white px-1 py-1.5 shadow-lg dark:border-gray-600 dark:bg-gray-800">
+									<ContextMenu.Item onSelect={(e) => openItemEditor(item, e)} class="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700">
+										Edit
+									</ContextMenu.Item>
+									<ContextMenu.Item onSelect={() => duplicateItem(item)} class="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700">
+										Duplicate
+									</ContextMenu.Item>
+									<ContextMenu.Separator class="bg-muted -mx-1 my-1 block h-px" />
+									<ContextMenu.Item onSelect={() => moveToFront(item.id)} class="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700">
+										Bring to Front
+									</ContextMenu.Item>
+									<ContextMenu.Item onSelect={() => moveForward(item.id)} class="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700">
+										Bring Forward
+									</ContextMenu.Item>
+									<ContextMenu.Item onSelect={() => moveBackward(item.id)} class="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700">
+										Send Backward
+									</ContextMenu.Item>
+									<ContextMenu.Item onSelect={() => moveToBack(item.id)} class="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700">
+										Send to Back
+									</ContextMenu.Item>
+									<ContextMenu.Separator class="bg-muted -mx-1 my-1 block h-px" />
+									<ContextMenu.Item onSelect={() => deleteItem(item.id)} class="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-red-50 dark:hover:bg-red-600/30">
+										Delete
+									</ContextMenu.Item>
+								</ContextMenu.Content>
+							</ContextMenu.Portal>
+							</ContextMenu.Root>
+							{/each}
+
+							{#if placingItem}
+								<div
+									class="pointer-events-none absolute opacity-60"
+									style="left: {placingItem.x}px; top: {placingItem.y}px; width: {placingItem.width}px; height: {placingItem.height}px;"
+								>
+									{#if placingItem.type === 'riser'}
+										<div class="flex h-full w-full items-center justify-center rounded border-2 border-dashed border-gray-500 bg-gray-400/40 text-[10px] font-bold text-gray-700">
+											RISER
+										</div>
+									{:else}
+										<img
+											src={placingItem.itemData?.image || ''}
+											alt={placingItem.itemData?.name || 'Item Preview'}
+											style="width: {placingItem.width}px; height: {placingItem.height}px;"
+										/>
+									{/if}
+								</div>
+							{/if}
+						</div>
+					</div>
+
+						<div class="mt-1.5 flex justify-between text-xs text-text-tertiary">
+						<div class="flex items-center gap-3">Items: {stagePlot.items.length} | Musicians: {stagePlot.musicians.length}
+							{#if isAltPressed}
+								<span class="text-blue-600 font-semibold animate-bounce">(Duplicate)</span>
+							{/if}
+						</div>
+						<div>
+							{#if placingItem}Click on canvas to place item. Press 'Escape' to cancel.{/if}
+						</div>
+					</div>
+				</div>
+			{:else}
+				<div class="flex-1 min-h-0 overflow-hidden p-4">
+					<StagePatch
+						items={stagePlot.items}
+						columnCount={4}
+						onUpdateItem={handlePatchItemUpdate}
+						onReorderPatch={handlePatchReorder}
+						onSelectItem={openItemEditor}
+						onAddItem={handlePatchAddItem}
+						onRemoveItem={handlePatchRemoveItem}
+					/>
+				</div>
+			{/if}
+		</div>
+			</div>
+
+			<div class="flex w-80 shrink-0 flex-col">
+				<div class="inspector-panel flex h-full flex-col overflow-hidden rounded-xl border border-border-primary bg-surface shadow-sm">
+					<div class="border-b border-border-primary bg-muted/30 px-3 pt-3">
+						<div class="flex gap-1">
+							<button
+								type="button"
+								onclick={() => (sidePanelTab = 'inspector')}
+								class={`px-3 py-2 text-sm font-medium rounded-t-lg transition-colors ${sidePanelTab === 'inspector' ? 'bg-surface text-text-primary' : 'text-text-secondary hover:text-text-primary'}`}
+							>
+								Inspector
+							</button>
+							<button
+								type="button"
+								onclick={() => (sidePanelTab = 'musicians')}
+								class={`px-3 py-2 text-sm font-medium rounded-t-lg transition-colors ${sidePanelTab === 'musicians' ? 'bg-surface text-text-primary' : 'text-text-secondary hover:text-text-primary'}`}
+							>
+								Musicians
+							</button>
+						</div>
+					</div>
+					{#if sidePanelTab === 'inspector'}
+						<div class="flex-1 min-h-0 overflow-hidden p-4">
+							<Inspector
+								bind:selectedItems
+								bind:items={stagePlot.items}
+								bind:musicians={stagePlot.musicians}
+								bind:title={stagePlot.plot_name}
+								bind:lastModified={stagePlot.revision_date}
+								bind:showZones
+								bind:stageWidth={stagePlot.stage_width}
+								bind:stageDepth={stagePlot.stage_depth}
+								bind:unit
+								onPlaceRiser={placeRiser}
+								onUpdateItem={updateItemProperty}
+								onAddMusician={(name: string, instrument: string) => {
+									newMusician.name = name;
+									newMusician.instrument = instrument;
+									addMusician();
+								}}
+								{getItemZone}
+								{getItemPosition}
+								{updateItemPosition}
+							/>
+						</div>
+					{:else}
+						<div class="flex-1 min-h-0 overflow-auto p-4">
+							<MusicianPanel
+								musicians={stagePlot.musicians}
+								onAdd={(name, instrument) => {
+									newMusician.name = name;
+									newMusician.instrument = instrument || '';
+									addMusician();
+								}}
+								onDelete={deleteMusician}
+								{bandPersons}
+								onImportFromBand={importMusiciansFromBand}
+							/>
+						</div>
 					{/if}
 				</div>
-				<div>
-					{#if placingItem}Click on canvas to place item. Press 'Escape' to cancel.{/if}
+			</div>
+		</div>
+	{:else}
+		<div class="flex flex-1 min-h-0 flex-col gap-3 overflow-hidden">
+		<div class="flex min-h-0 flex-1 flex-col rounded-xl border border-border-primary bg-surface shadow-sm overflow-hidden">
+		<div class="border-b border-border-primary bg-muted/30 px-0 pt-0">
+			<div class="flex w-full">
+				<button
+					type="button"
+					onclick={() => (mobileMainTab = 'canvas')}
+					class={`flex-1 px-4 py-3 text-sm font-medium text-center transition-colors border-b-2 ${mobileMainTab === 'canvas' ? 'bg-surface text-text-primary border-text-primary' : 'text-text-secondary border-transparent hover:text-text-primary'}`}
+				>
+					Canvas
+				</button>
+				<button
+					type="button"
+					onclick={() => (mobileMainTab = 'patch')}
+					class={`flex-1 px-4 py-3 text-sm font-medium text-center transition-colors border-b-2 ${mobileMainTab === 'patch' ? 'bg-surface text-text-primary border-text-primary' : 'text-text-secondary border-transparent hover:text-text-primary'}`}
+				>
+					Patch List
+				</button>
+				<button
+					type="button"
+					onclick={() => (mobileMainTab = 'panel')}
+					class={`flex-1 px-4 py-3 text-sm font-medium text-center transition-colors border-b-2 ${mobileMainTab === 'panel' ? 'bg-surface text-text-primary border-text-primary' : 'text-text-secondary border-transparent hover:text-text-primary'}`}
+				>
+					Panel
+				</button>
+			</div>
+		</div>
+			{#if mobileMainTab === 'canvas'}
+				<div class="flex-1 min-h-0 overflow-hidden p-4">
+					<div class="border border-border-primary bg-surface p-2.5 shadow-sm">
+						<div
+							bind:this={canvasEl}
+							class="items-container relative mx-auto w-full bg-white dark:bg-gray-800"
+							style="aspect-ratio: {stagePlot.stage_width}/{stagePlot.stage_depth}; max-width: 1100px; cursor: {placingItem ? 'copy' : 'default'}"
+							onmousemove={handleCanvasMouseMove}
+							onclick={handleCanvasClick}
+							ondragover={handleDragOver}
+							ondrop={handleDrop}
+						>
+							<CanvasOverlay {showZones} {canvasWidth} {canvasHeight} itemCount={stagePlot.items.length} />
+
+							{#each stagePlot.items as item (item.id)}
+							<ContextMenu.Root>
+								<ContextMenu.Trigger>
+								<div
+									class="group selectable-item absolute transition-all cursor-move {editingItem?.id === item.id ? 'ring-2 ring-blue-500' : ''}"
+									class:selected={selectedItems.includes(item)}
+									data-id={item.id}
+									style="left: {item.position.x}px; top: {item.position.y}px; width: {item.position.width}px; height: {item.position.height}px;"
+									draggable="true"
+									ondragstart={(e) => handleDragStart(e, item)}
+									ondragend={handleDragEnd}
+									onclick={(e) => openItemEditor(item, e)}
+								>
+									{#if item.type === 'stageDeck'}
+										<StageDeck size={item.size} x={0} y={0} class="w-full h-full" />
+									{:else if item.type === 'riser'}
+										<div class="flex h-full w-full items-center justify-center rounded border-2 border-gray-500 bg-gray-400/50 dark:border-gray-400 dark:bg-gray-600/50">
+											<div class="text-center leading-tight">
+												<div class="text-[10px] font-bold text-gray-700 dark:text-gray-200">RISER</div>
+												<div class="text-[8px] text-gray-600 dark:text-gray-300">{item.itemData?.riserWidth ?? '?'}' × {item.itemData?.riserDepth ?? '?'}'</div>
+												{#if item.itemData?.riserHeight}
+													<div class="text-[7px] text-gray-500 dark:text-gray-400">h: {item.itemData.riserHeight}'</div>
+												{/if}
+											</div>
+										</div>
+									{:else}
+										<img src={getCurrentImageSrc(item)} alt={item.itemData?.name || item.name || 'Stage Item'} style="width: {item.position.width}px; height: {item.position.height}px;" />
+									{/if}
+
+									{#if selectedItems.some((el) => el.dataset?.id === String(item.id))}
+										{#if getVariantKeys(item).length > 1}
+											<div class="absolute -bottom-8 left-1/2 z-20 flex -translate-x-1/2 transform gap-1">
+												<button
+												onclick={(e) => { e.stopPropagation(); rotateItemRight(item); }}
+												class="flex h-6 w-6 items-center justify-center rounded-full bg-blue-500 text-sm text-white shadow-md transition-colors hover:bg-blue-600"
+												title="Rotate Right"
+											>
+												<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+													<path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd" />
+												</svg>
+											</button>
+										</div>
+									{/if}
+								{/if}
+
+								<button
+									onclick={(e) => { e.stopPropagation(); deleteItem(item.id); }}
+									class="absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs text-white opacity-0 transition-opacity group-hover:opacity-100"
+								>
+									&times;
+								</button>
+							</div>
+						</ContextMenu.Trigger>
+						<ContextMenu.Portal>
+							<ContextMenu.Content class="z-50 w-[200px] rounded-xl border border-gray-300 bg-white px-1 py-1.5 shadow-lg dark:border-gray-600 dark:bg-gray-800">
+								<ContextMenu.Item onSelect={(e) => openItemEditor(item, e)} class="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700">
+									Edit
+								</ContextMenu.Item>
+								<ContextMenu.Item onSelect={() => duplicateItem(item)} class="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700">
+									Duplicate
+								</ContextMenu.Item>
+								<ContextMenu.Separator class="bg-muted -mx-1 my-1 block h-px" />
+								<ContextMenu.Item onSelect={() => moveToFront(item.id)} class="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700">
+									Bring to Front
+								</ContextMenu.Item>
+								<ContextMenu.Item onSelect={() => moveForward(item.id)} class="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700">
+									Bring Forward
+								</ContextMenu.Item>
+								<ContextMenu.Item onSelect={() => moveBackward(item.id)} class="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700">
+									Send Backward
+								</ContextMenu.Item>
+								<ContextMenu.Item onSelect={() => moveToBack(item.id)} class="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700">
+									Send to Back
+								</ContextMenu.Item>
+								<ContextMenu.Separator class="bg-muted -mx-1 my-1 block h-px" />
+								<ContextMenu.Item onSelect={() => deleteItem(item.id)} class="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-red-50 dark:hover:bg-red-600/30">
+									Delete
+								</ContextMenu.Item>
+							</ContextMenu.Content>
+						</ContextMenu.Portal>
+						</ContextMenu.Root>
+						{/each}
+
+						{#if placingItem}
+							<div
+								class="pointer-events-none absolute opacity-60"
+								style="left: {placingItem.x}px; top: {placingItem.y}px; width: {placingItem.width}px; height: {placingItem.height}px;"
+							>
+								{#if placingItem.type === 'riser'}
+									<div class="flex h-full w-full items-center justify-center rounded border-2 border-dashed border-gray-500 bg-gray-400/40 text-[10px] font-bold text-gray-700">
+										RISER
+									</div>
+								{:else}
+									<img
+										src={placingItem.itemData?.image || ''}
+										alt={placingItem.itemData?.name || 'Item Preview'}
+										style="width: {placingItem.width}px; height: {placingItem.height}px;"
+									/>
+								{/if}
+							</div>
+						{/if}
+					</div>
+				</div>
+
+					<div class="mt-1.5 flex justify-between text-xs text-text-tertiary">
+					<div class="flex items-center gap-3">Items: {stagePlot.items.length} | Musicians: {stagePlot.musicians.length}
+						{#if isAltPressed}
+							<span class="text-blue-600 font-semibold animate-bounce">(Duplicate)</span>
+						{/if}
+					</div>
+					<div>
+						{#if placingItem}Click on canvas to place item. Press 'Escape' to cancel.{/if}
+					</div>
 				</div>
 			</div>
-
+			{:else if mobileMainTab === 'patch'}
+				<div class="flex-1 min-h-0 overflow-hidden p-4">
+					<StagePatch
+						items={stagePlot.items}
+						columnCount={4}
+						onUpdateItem={handlePatchItemUpdate}
+						onReorderPatch={handlePatchReorder}
+						onSelectItem={openItemEditor}
+						onAddItem={handlePatchAddItem}
+						onRemoveItem={handlePatchRemoveItem}
+					/>
+				</div>
+			{:else}
+				<div class="flex-1 min-h-0 overflow-hidden p-4">
+					<div class="inspector-panel flex h-full flex-col overflow-hidden rounded-xl border border-border-primary bg-surface shadow-sm">
+						<div class="border-b border-border-primary bg-muted/30 px-3 pt-3">
+							<div class="flex gap-1">
+								<button
+									type="button"
+									onclick={() => (mobilePanelTab = 'inspector')}
+									class={`px-3 py-2 text-sm font-medium rounded-t-lg transition-colors ${mobilePanelTab === 'inspector' ? 'bg-surface text-text-primary' : 'text-text-secondary hover:text-text-primary'}`}
+								>
+									Inspector
+								</button>
+								<button
+									type="button"
+									onclick={() => (mobilePanelTab = 'musicians')}
+									class={`px-3 py-2 text-sm font-medium rounded-t-lg transition-colors ${mobilePanelTab === 'musicians' ? 'bg-surface text-text-primary' : 'text-text-secondary hover:text-text-primary'}`}
+								>
+									Musicians
+								</button>
+							</div>
+						</div>
+						{#if mobilePanelTab === 'inspector'}
+							<div class="flex-1 min-h-0 overflow-auto p-4">
+								<Inspector
+									bind:selectedItems
+									bind:items={stagePlot.items}
+									bind:musicians={stagePlot.musicians}
+									bind:title={stagePlot.plot_name}
+									bind:lastModified={stagePlot.revision_date}
+									bind:showZones
+									bind:stageWidth={stagePlot.stage_width}
+									bind:stageDepth={stagePlot.stage_depth}
+									bind:unit
+									onPlaceRiser={placeRiser}
+									onUpdateItem={updateItemProperty}
+									onAddMusician={(name: string, instrument: string) => {
+										newMusician.name = name;
+										newMusician.instrument = instrument;
+										addMusician();
+									}}
+									{getItemZone}
+									{getItemPosition}
+									{updateItemPosition}
+								/>
+							</div>
+						{:else}
+							<div class="flex-1 min-h-0 overflow-auto p-4">
+								<MusicianPanel
+									musicians={stagePlot.musicians}
+									onAdd={(name, instrument) => {
+										newMusician.name = name;
+										newMusician.instrument = instrument || '';
+										addMusician();
+									}}
+									onDelete={deleteMusician}
+									{bandPersons}
+									onImportFromBand={importMusiciansFromBand}
+								/>
+							</div>
+						{/if}
+					</div>
+				</div>
+			{/if}
 		</div>
+		</div>
+	{/if}
 
-		<!-- Right Sidebar -->
-		<div class="flex w-full flex-col gap-6 lg:w-80">
-			<!-- Inspector Panel -->
-			<div class="inspector-panel h-fit rounded-xl border border-border-primary bg-surface p-4 shadow-sm">
-				<Inspector
-					bind:selectedItems
-					bind:items={stagePlot.items}
-					bind:musicians={stagePlot.musicians}
-					bind:title={stagePlot.plot_name}
-					bind:lastModified={stagePlot.revision_date}
-					bind:showZones
-					bind:stageWidth={stagePlot.stage_width}
-					bind:stageDepth={stagePlot.stage_depth}
-					bind:unit
-					onPlaceRiser={placeRiser}
-					onUpdateItem={updateItemProperty}
-					onAddMusician={(name: string, instrument: string) => {
-						newMusician.name = name;
-						newMusician.instrument = instrument;
-						addMusician();
-					}}
-					{getItemZone}
-					{getItemPosition}
-					{updateItemPosition}
-				/>
+	<!-- Footer -->
+	<footer class="shrink-0 rounded-xl border border-border-primary bg-surface p-4 shadow-sm">
+		<div class="flex flex-col items-center justify-between gap-3 text-sm sm:flex-row">
+			<div class="text-text-secondary">
+				StagePlotter — plan your stage layout and input list.
+			</div>
+			<div class="flex items-center gap-4 text-text-tertiary">
+				<a href="https://github.com/cdslipp/stageplotter" class="hover:text-text-primary" aria-label="GitHub">GitHub</a>
 			</div>
 		</div>
-	</div>
-
-	<!-- Stage Patch Component — full width -->
-	<StagePatch
-		items={stagePlot.items}
-		onUpdateItem={handlePatchItemUpdate}
-		onReorderPatch={handlePatchReorder}
-		onSelectItem={openItemEditor}
-		onAddItem={handlePatchAddItem}
-		onRemoveItem={handlePatchRemoveItem}
-	/>
+	</footer>
 </div>
-
-
-<!-- Footer -->
-<footer class="mt-4 rounded-xl border border-border-primary bg-surface p-4 shadow-sm">
-	<div class="flex flex-col items-center justify-between gap-3 text-sm sm:flex-row">
-		<div class="text-text-secondary">
-			StagePlotter — plan your stage layout and input list.
-		</div>
-		<div class="flex items-center gap-4 text-text-tertiary">
-			<a href="https://github.com/cdslipp/stageplotter" class="hover:text-text-primary" aria-label="GitHub">GitHub</a>
-		</div>
-	</div>
-</footer>
 
 <!-- Command Palette for Adding Items -->
 <div data-command-palette>

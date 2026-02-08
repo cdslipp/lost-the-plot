@@ -49,8 +49,8 @@
 	}
 </script>
 
-<div class="hidden w-full flex-col gap-6 lg:flex lg:w-64">
-	<div class="h-fit rounded-xl border border-border-primary bg-surface p-4 shadow-sm">
+<div class="flex h-full w-full min-h-0 flex-col gap-6">
+	<div class="flex min-h-0 flex-1 flex-col">
 		<h2 class="mb-4 font-serif text-lg font-semibold text-text-primary">Musicians</h2>
 		<div class="mb-4 border-b border-border-primary pb-4">
 			<div class="space-y-2">
@@ -127,7 +127,7 @@
 			</div>
 		{/if}
 
-		<div class="space-y-2 pr-1">
+		<div class="min-h-0 flex-1 space-y-2 overflow-auto pr-1">
 			{#if musicians.length === 0}
 				<p class="py-4 text-center text-sm text-text-secondary">No musicians added yet</p>
 			{:else}

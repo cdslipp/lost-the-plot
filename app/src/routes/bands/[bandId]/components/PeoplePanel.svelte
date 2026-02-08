@@ -88,26 +88,8 @@
 </script>
 
 <div>
-	<div class="mb-4 flex items-center justify-between">
+	<div class="mb-2.5">
 		<h2 class="font-serif text-xl font-semibold text-text-primary">People</h2>
-		<button
-			onclick={() => (showAddPerson = !showAddPerson)}
-			class="flex items-center gap-2 rounded-lg border border-border-primary px-3 py-2 text-sm text-text-primary transition hover:bg-surface-hover"
-		>
-			<svg
-				xmlns="http://www.w3.org/2000/svg"
-				class="h-4 w-4"
-				viewBox="0 0 20 20"
-				fill="currentColor"
-			>
-				<path
-					fill-rule="evenodd"
-					d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z"
-					clip-rule="evenodd"
-				/>
-			</svg>
-			Add Person
-		</button>
 	</div>
 
 	{#if showAddPerson}
@@ -116,9 +98,9 @@
 				e.preventDefault();
 				addPerson();
 			}}
-			class="mb-4 rounded-xl border border-border-primary bg-surface p-4 shadow-sm"
+			class="mb-3 rounded-xl border border-border-primary bg-surface p-4 shadow-sm"
 		>
-			<div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+			<div class="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
 				<input
 					bind:value={newPerson.name}
 					placeholder="Name"
@@ -161,7 +143,7 @@
 					class="rounded-lg border border-border-primary bg-surface px-3 py-2 text-sm text-text-primary focus:border-stone-500 focus:ring-2 focus:ring-stone-500"
 				/>
 			</div>
-			<div class="mt-3 flex gap-2">
+			<div class="mt-2.5 flex gap-2">
 				<button
 					type="submit"
 					class="rounded-lg bg-stone-900 px-4 py-2 text-sm text-white hover:bg-stone-800 dark:bg-stone-100 dark:text-stone-900 dark:hover:bg-stone-200"
@@ -181,7 +163,7 @@
 
 	<!-- Filter buttons -->
 	{#if persons.length > 0}
-		<div class="mb-3 flex gap-1">
+		<div class="mb-2 flex gap-1">
 			{#each [{ key: 'all', label: 'All' }, { key: 'performer', label: 'Performers' }, { key: 'crew', label: 'Crew' }, { key: 'management', label: 'Management' }] as filter}
 				<button
 					onclick={() => (filterType = filter.key as typeof filterType)}
@@ -196,22 +178,24 @@
 	{/if}
 
 	{#if persons.length === 0 && !showAddPerson}
-		<div
-			class="rounded-xl border border-dashed border-border-primary bg-surface p-8 text-center"
+		<button
+			onclick={() => (showAddPerson = true)}
+			class="flex w-full items-center gap-2 rounded-xl border border-dashed border-border-primary bg-surface px-3 py-2.5 text-sm text-text-secondary transition hover:border-stone-400 hover:text-text-primary"
 		>
-			<p class="text-text-secondary">No people added yet</p>
-			<button
-				onclick={() => (showAddPerson = true)}
-				class="mt-3 text-sm text-stone-600 hover:text-stone-800 dark:text-stone-400 dark:hover:text-stone-200"
-			>
-				Add your first band member
-			</button>
-		</div>
+			<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+				<path
+					fill-rule="evenodd"
+					d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z"
+					clip-rule="evenodd"
+				/>
+			</svg>
+			Add Person
+		</button>
 	{:else}
-		<div class="space-y-2">
+		<div class="space-y-1">
 			{#each filteredPersons as person (person.id)}
 				<div
-					class="group flex items-center justify-between rounded-xl border border-border-primary bg-surface p-3 shadow-sm"
+					class="group flex items-center justify-between rounded-xl border border-border-primary bg-surface p-2 shadow-sm"
 				>
 					{#if editingPersonId === person.id}
 						<div class="grid flex-1 grid-cols-1 gap-2 sm:grid-cols-3 lg:grid-cols-6">
@@ -373,5 +357,18 @@
 				</div>
 			{/each}
 		</div>
+		<button
+			onclick={() => (showAddPerson = true)}
+			class="mt-1.5 flex w-full items-center gap-2 rounded-xl border border-dashed border-border-primary bg-surface px-3 py-2 text-sm text-text-secondary transition hover:border-stone-400 hover:text-text-primary"
+		>
+			<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+				<path
+					fill-rule="evenodd"
+					d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z"
+					clip-rule="evenodd"
+				/>
+			</svg>
+			Add Person
+		</button>
 	{/if}
 </div>

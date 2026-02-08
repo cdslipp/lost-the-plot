@@ -155,7 +155,7 @@
 		<p class="text-text-secondary">Loading...</p>
 	</div>
 {:else if band}
-	<div class="flex flex-col gap-10">
+	<div class="flex flex-col gap-6">
 		<!-- Band Name -->
 		<div class="flex items-center gap-3">
 			<a
@@ -214,31 +214,13 @@
 
 		<!-- Plots Section -->
 		<div>
-			<div class="mb-4 flex items-center justify-between">
-				<h2 class="font-serif text-xl font-semibold text-text-primary">Stage Plots</h2>
-				<button
-					onclick={createPlot}
-					class="flex items-center gap-2 rounded-lg bg-stone-900 px-3 py-2 text-sm text-white transition hover:bg-stone-800 dark:bg-stone-100 dark:text-stone-900 dark:hover:bg-stone-200"
-				>
-					<svg
-						xmlns="http://www.w3.org/2000/svg"
-						class="h-4 w-4"
-						viewBox="0 0 20 20"
-						fill="currentColor"
-					>
-						<path
-							fill-rule="evenodd"
-							d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z"
-							clip-rule="evenodd"
-						/>
-					</svg>
-					New Plot
-				</button>
-			</div>
+		<div class="mb-2.5">
+			<h2 class="font-serif text-xl font-semibold text-text-primary">Stage Plots</h2>
+		</div>
 
 			{#if plots.length === 0}
 				<div
-					class="rounded-xl border border-dashed border-border-primary bg-surface p-8 text-center"
+					class="rounded-xl border border-dashed border-border-primary bg-surface p-6 text-center"
 				>
 					<p class="text-text-secondary">No stage plots yet</p>
 					<button
@@ -249,11 +231,11 @@
 					</button>
 				</div>
 			{:else}
-				<div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+				<div class="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
 					{#each plots as plot (plot.id)}
-						<div
-							class="group relative rounded-xl border border-border-primary bg-surface p-4 shadow-sm transition hover:border-stone-400"
-						>
+					<div
+						class="group relative rounded-xl border border-border-primary bg-surface p-2.5 shadow-sm transition hover:border-stone-400"
+					>
 							<a href="/bands/{bandId}/plots/{plot.id}" class="block">
 								<h3 class="font-medium text-text-primary group-hover:text-stone-600">
 									{plot.name}
@@ -290,6 +272,22 @@
 							</button>
 						</div>
 					{/each}
+					<button
+						onclick={createPlot}
+						class="group flex min-h-[76px] flex-col items-start justify-center rounded-xl border border-dashed border-border-primary bg-surface px-3 py-2.5 text-left text-sm text-text-tertiary transition hover:border-stone-400 hover:text-text-secondary"
+					>
+						<span class="flex items-center gap-2 text-text-secondary">
+							<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+								<path
+									fill-rule="evenodd"
+									d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z"
+									clip-rule="evenodd"
+								/>
+							</svg>
+							New Plot
+						</span>
+						<span class="mt-1 text-xs text-text-tertiary">Create a new stage plot</span>
+					</button>
 				</div>
 			{/if}
 		</div>
@@ -297,7 +295,7 @@
 		<hr class="border-border-primary" />
 
 		<!-- Two-Column Grid: People + Songs -->
-		<div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+		<div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
 			<PeoplePanel {bandId} bind:persons />
 			<SongsPanel {bandId} bind:songs />
 		</div>

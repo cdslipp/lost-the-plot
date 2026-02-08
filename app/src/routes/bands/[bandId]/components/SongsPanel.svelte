@@ -22,6 +22,9 @@
 	let editingSongId = $state<number | null>(null);
 	let expandedNoteId = $state<number | null>(null);
 	let showAddSong = $state(false);
+	let songFilter = $state<
+		'all' | 'starred' | 'ballad' | 'midtempo' | 'uptempo' | 'major' | 'minor' | 'unknown'
+	>('all');
 	let newSong = $state({
 		title: '',
 		starting_key: '',
@@ -36,6 +39,38 @@
 			if (a.starred !== b.starred) return b.starred - a.starred;
 			return a.title.localeCompare(b.title);
 		})
+	);
+
+	function tempoBucket(tempo: number | null): 'ballad' | 'midtempo' | 'uptempo' | 'unknown' {
+		if (!tempo) return 'unknown';
+		if (tempo <= 80) return 'ballad';
+		if (tempo <= 110) return 'midtempo';
+		return 'uptempo';
+	}
+
+	function keyType(key: string | null): 'major' | 'minor' | 'unknown' {
+		if (!key) return 'unknown';
+		const clean = key.trim().toLowerCase();
+		if (clean.endsWith('m') || clean.includes('min')) return 'minor';
+		if (clean) return 'major';
+		return 'unknown';
+	}
+
+	const filteredSongs = $derived(
+		songFilter === 'all'
+			? sortedSongs
+			: sortedSongs.filter((song) => {
+				if (songFilter === 'starred') return !!song.starred;
+				if (songFilter === 'ballad') return tempoBucket(song.starting_tempo) === 'ballad';
+				if (songFilter === 'midtempo') return tempoBucket(song.starting_tempo) === 'midtempo';
+				if (songFilter === 'uptempo') return tempoBucket(song.starting_tempo) === 'uptempo';
+				if (songFilter === 'major') return keyType(song.starting_key) === 'major';
+				if (songFilter === 'minor') return keyType(song.starting_key) === 'minor';
+				return (
+					tempoBucket(song.starting_tempo) === 'unknown' &&
+					keyType(song.starting_key) === 'unknown'
+				);
+			})
 	);
 
 	async function addSong() {
@@ -106,27 +141,33 @@
 </script>
 
 <div>
-	<div class="mb-4 flex items-center justify-between">
+	<div class="mb-2.5">
 		<h2 class="font-serif text-xl font-semibold text-text-primary">Songs</h2>
-		<button
-			onclick={() => (showAddSong = !showAddSong)}
-			class="flex items-center gap-2 rounded-lg border border-border-primary px-3 py-2 text-sm text-text-primary transition hover:bg-surface-hover"
-		>
-			<svg
-				xmlns="http://www.w3.org/2000/svg"
-				class="h-4 w-4"
-				viewBox="0 0 20 20"
-				fill="currentColor"
-			>
-				<path
-					fill-rule="evenodd"
-					d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z"
-					clip-rule="evenodd"
-				/>
-			</svg>
-			Add Song
-		</button>
 	</div>
+
+	{#if songs.length > 0}
+		<div class="mb-2 flex gap-1">
+			{#each [
+				{ key: 'all', label: 'All' },
+				{ key: 'starred', label: 'Starred' },
+				{ key: 'ballad', label: 'Ballad' },
+				{ key: 'midtempo', label: 'Midtempo' },
+				{ key: 'uptempo', label: 'Uptempo' },
+				{ key: 'major', label: 'Major' },
+				{ key: 'minor', label: 'Minor' },
+				{ key: 'unknown', label: 'Unknown' }
+			] as filter}
+				<button
+					onclick={() => (songFilter = filter.key as typeof songFilter)}
+					class="rounded-full px-3 py-1 text-xs transition {songFilter === filter.key
+						? 'bg-stone-900 text-white dark:bg-stone-100 dark:text-stone-900'
+						: 'bg-muted text-text-secondary hover:bg-bg-tertiary'}"
+				>
+					{filter.label}
+				</button>
+			{/each}
+		</div>
+	{/if}
 
 	{#if showAddSong}
 		<form
@@ -134,9 +175,9 @@
 				e.preventDefault();
 				addSong();
 			}}
-			class="mb-4 rounded-xl border border-border-primary bg-surface p-4 shadow-sm"
+			class="mb-3 rounded-xl border border-border-primary bg-surface p-4 shadow-sm"
 		>
-			<div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+			<div class="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
 				<input
 					bind:value={newSong.title}
 					placeholder="Song title"
@@ -170,7 +211,7 @@
 					class="rounded-lg border border-border-primary bg-surface px-3 py-2 text-sm text-text-primary focus:border-stone-500 focus:ring-2 focus:ring-stone-500 sm:col-span-2"
 				></textarea>
 			</div>
-			<div class="mt-3 flex gap-2">
+			<div class="mt-2.5 flex gap-2">
 				<button
 					type="submit"
 					class="rounded-lg bg-stone-900 px-4 py-2 text-sm text-white hover:bg-stone-800 dark:bg-stone-100 dark:text-stone-900 dark:hover:bg-stone-200"
@@ -189,22 +230,24 @@
 	{/if}
 
 	{#if songs.length === 0 && !showAddSong}
-		<div
-			class="rounded-xl border border-dashed border-border-primary bg-surface p-8 text-center"
+		<button
+			onclick={() => (showAddSong = true)}
+			class="flex w-full items-center gap-2 rounded-xl border border-dashed border-border-primary bg-surface px-3 py-2.5 text-sm text-text-secondary transition hover:border-stone-400 hover:text-text-primary"
 		>
-			<p class="text-text-secondary">No songs yet</p>
-			<button
-				onclick={() => (showAddSong = true)}
-				class="mt-3 text-sm text-stone-600 hover:text-stone-800 dark:text-stone-400 dark:hover:text-stone-200"
-			>
-				Add your first song
-			</button>
-		</div>
+			<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+				<path
+					fill-rule="evenodd"
+					d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z"
+					clip-rule="evenodd"
+				/>
+			</svg>
+			Add Song
+		</button>
 	{:else}
-		<div class="space-y-2">
-			{#each sortedSongs as song (song.id)}
+		<div class="space-y-1">
+			{#each filteredSongs as song (song.id)}
 				<div
-					class="group rounded-xl border border-border-primary bg-surface p-3 shadow-sm {song.starred ? 'border-amber-200 dark:border-amber-800/40' : ''}"
+					class="group rounded-xl border border-border-primary bg-surface p-2 shadow-sm {song.starred ? 'border-amber-200 dark:border-amber-800/40' : ''}"
 				>
 					{#if editingSongId === song.id}
 						<div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
@@ -380,7 +423,7 @@
 						</div>
 						{#if expandedNoteId === song.id && song.notes}
 							<div
-								class="mt-2 rounded-lg bg-muted px-3 py-2 text-sm text-text-secondary"
+								class="mt-1 rounded-lg bg-muted px-3 py-2 text-sm text-text-secondary"
 							>
 								{song.notes}
 							</div>
@@ -389,5 +432,18 @@
 				</div>
 			{/each}
 		</div>
+		<button
+			onclick={() => (showAddSong = true)}
+			class="mt-1.5 flex w-full items-center gap-2 rounded-xl border border-dashed border-border-primary bg-surface px-3 py-2 text-sm text-text-secondary transition hover:border-stone-400 hover:text-text-primary"
+		>
+			<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+				<path
+					fill-rule="evenodd"
+					d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z"
+					clip-rule="evenodd"
+				/>
+			</svg>
+			Add Song
+		</button>
 	{/if}
 </div>

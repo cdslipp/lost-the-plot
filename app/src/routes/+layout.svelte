@@ -18,6 +18,7 @@
 		const skipRedirect =
 			currentPath === '/mobile' ||
 			currentPath === '/tablet' ||
+			currentPath.startsWith('/s/') ||
 			sessionStorage.getItem('stageplotter-skip-device-redirect') === '1';
 
 		if (!skipRedirect) {
@@ -136,7 +137,7 @@
 	>
 		<div class="flex flex-col items-center pb-8">
 			<button
-				class="pointer-events-auto mb-4 h-20 w-16 cursor-pointer border-none bg-transparent p-0 outline-none"
+				class="pointer-events-auto mb-16 h-20 w-16 cursor-pointer border-none bg-transparent p-0 outline-none"
 				style="transform: rotate(-8deg);"
 				onclick={handleInstrumentClick}
 				aria-label="Change instrument"
