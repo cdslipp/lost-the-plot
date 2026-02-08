@@ -58,6 +58,12 @@ stripping server-only files, before Tauri builds.
 
 See `docs/canvas-architecture.md` and `docs/scale-system.md` for details.
 
+## Sharing
+
+Stage plots can be shared via compact URLs that encode the entire plot state (items, positions, musicians, contacts) into the URL hash fragment. The encoding uses catalog index substitution, numeric tuples, and browser-native gzip compression to achieve ~80% compression, resulting in URLs under 1,000 characters for typical plots.
+
+The share codec lives in `packages/shared/src/share-codec.ts`. The read-only viewer is at `/s/[bandName]/[plotName]`. See `docs/url-sharing.md` for full details.
+
 ## Key Technologies
 
 - **Svelte 5** with runes (`$state`, `$derived`, `$effect`, `$props`)

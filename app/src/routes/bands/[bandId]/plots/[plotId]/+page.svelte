@@ -941,7 +941,7 @@
 
 <svelte:window onkeydown={handleGlobalKeydown} />
 
-<div class="flex h-[100dvh] flex-col gap-3 overflow-hidden">
+<div class="flex h-[calc(100dvh-3rem)] flex-col gap-3 overflow-hidden">
 	<div class="shrink-0">
 		<EditorToolbar
 			bind:title={stagePlot.plot_name}
@@ -1637,17 +1637,6 @@
 		</div>
 	{/if}
 
-	<!-- Footer -->
-	<footer class="shrink-0 rounded-xl border border-border-primary bg-surface p-4 shadow-sm">
-		<div class="flex flex-col items-center justify-between gap-3 text-sm sm:flex-row">
-			<div class="text-text-secondary">
-				StagePlotter — plan your stage layout and input list.
-			</div>
-			<div class="flex items-center gap-4 text-text-tertiary">
-				<a href="https://github.com/cdslipp/stageplotter" class="hover:text-text-primary" aria-label="GitHub">GitHub</a>
-			</div>
-		</div>
-	</footer>
 </div>
 
 <!-- Command Palette for Adding Items -->

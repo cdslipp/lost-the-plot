@@ -2,9 +2,14 @@
 
 The Stage Plot Creator includes a robust import/export system that allows users to save their work and share stage plots with others.
 
+There are two sharing mechanisms:
+
+- **File-based export/import** (this document) -- Download/upload JSON files for full-fidelity project transfer.
+- **URL sharing** (`docs/url-sharing.md`) -- Encode an entire stage plot into a compact, shareable URL. No files needed.
+
 ## Overview
 
-The import/export system uses a standardized JSON format based on the InputList 1.0.0 specification, adapted specifically for stage plots with positioning data.
+The file-based import/export system uses a standardized JSON format based on the InputList 1.0.0 specification, adapted specifically for stage plots with positioning data.
 
 **Key Design Decision**: All stage plots use a standardized **letter-size landscape** canvas (8.5" × 11") to ensure consistent positioning across different devices and exports. This prevents positioning issues that would occur with variable canvas sizes.
 
@@ -186,7 +191,7 @@ This separation allows for:
 ## Future Enhancements
 
 - Batch export/import for multiple plots
-- Direct sharing via URLs
+- ~~Direct sharing via URLs~~ -- **Implemented.** See `docs/url-sharing.md`.
 - Integration with cloud storage services
 - Version history and change tracking
 - Collaborative editing features

@@ -27,6 +27,8 @@ Features that make the tool genuinely useful for working musicians and techs.
 - **Backline management** — Backline requirements annotated on stage plot + generate a standalone backline list (printable/exportable)
 - ✅ **Multiple plots per project** — Support bands with different configurations (full show vs. acoustic set)
 
+- ✅ **URL sharing** — Encode a complete stage plot (items, positions, musicians, contacts) into a compact shareable URL. No server needed. Uses gzip + base64url compression in the hash fragment. Typical plots encode to ~600-900 characters. See `docs/url-sharing.md`.
+
 ## P2 — Festival Tools & Interop
 
 Features for production managers, festival organizers, and cross-tool workflows.

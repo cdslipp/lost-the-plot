@@ -241,19 +241,11 @@
 						class="w-full rounded-lg border border-border-primary bg-surface px-2 py-1.5 text-sm text-text-primary focus:border-stone-500 focus:ring-2 focus:ring-stone-500"
 					/>
 				</div>
-				<div>
-					<label class="mb-1 block text-xs text-text-secondary">Technical Contact</label>
-					<input
-						type="text"
-						class="w-full rounded-lg border border-border-primary bg-surface px-2 py-1.5 text-sm text-text-primary focus:border-stone-500 focus:ring-2 focus:ring-stone-500"
-						placeholder="Name and phone/email"
-					/>
 			</div>
+			<div class="mt-6 text-center text-xs text-text-secondary">
+				<p>Select items on the stage plot to view and edit their properties.</p>
 			</div>
-					</div>
-				<div class="mt-6 text-center text-xs text-text-secondary">
-					<p>Select items on the stage plot to view and edit their properties.</p>
-				</div>
+		</div>
 	{:else if selectedItemsData.length === 1}
 		<!-- Single item inspector -->
 		<div class="flex flex-1 flex-col">
