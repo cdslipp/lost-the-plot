@@ -28,6 +28,7 @@
 
 	// --- UI-only layout state ---
 	let layoutMode = $state<'mobile' | 'medium' | 'desktop'>('desktop');
+	let viewOnly = $derived(layoutMode === 'mobile');
 	let sidePanelTab = $state<'inspector' | 'people' | 'settings'>('inspector');
 	let mediumMainTab = $state<'canvas' | 'patch'>('canvas');
 	let mobileMainTab = $state<'canvas' | 'patch' | 'panel'>('canvas');
@@ -615,22 +616,24 @@
 
 	// --- Global keyboard handler ---
 	function handleGlobalKeydown(event: KeyboardEvent) {
-		if ((event.metaKey || event.ctrlKey) && event.key === 'k') {
-			event.preventDefault();
-			openAddMenu();
-		}
-		if ((event.metaKey || event.ctrlKey) && event.key === 'z' && !event.shiftKey) {
-			event.preventDefault();
-			ps.history.undo();
-			return;
-		}
-		if (
-			(event.metaKey || event.ctrlKey) &&
-			((event.key === 'z' && event.shiftKey) || event.key === 'y')
-		) {
-			event.preventDefault();
-			ps.history.redo();
-			return;
+		if (!viewOnly) {
+			if ((event.metaKey || event.ctrlKey) && event.key === 'k') {
+				event.preventDefault();
+				openAddMenu();
+			}
+			if ((event.metaKey || event.ctrlKey) && event.key === 'z' && !event.shiftKey) {
+				event.preventDefault();
+				ps.history.undo();
+				return;
+			}
+			if (
+				(event.metaKey || event.ctrlKey) &&
+				((event.key === 'z' && event.shiftKey) || event.key === 'y')
+			) {
+				event.preventDefault();
+				ps.history.redo();
+				return;
+			}
 		}
 		if (event.key === 'Escape') {
 			placingItem = null;
@@ -650,11 +653,7 @@
 			}
 			if (layoutMode === 'mobile') {
 				event.preventDefault();
-				const order: Array<'canvas' | 'patch' | 'panel'> = ['canvas', 'patch', 'panel'];
-				const currentIndex = order.indexOf(mobileMainTab);
-				const delta = event.shiftKey ? -1 : 1;
-				const nextIndex = (currentIndex + delta + order.length) % order.length;
-				mobileMainTab = order[nextIndex];
+				mobileMainTab = mobileMainTab === 'canvas' ? 'patch' : 'canvas';
 				return;
 			}
 		}
@@ -670,6 +669,7 @@
 			onImportComplete={handleImportComplete}
 			onExportPdf={handleExportPdf}
 			backHref={'/bands/' + bandId}
+			{viewOnly}
 		/>
 	</div>
 
@@ -678,6 +678,7 @@
 			items={ps.items}
 			outputs={ps.outputs}
 			{columnCount}
+			readonly={viewOnly}
 			onUpdateItem={handlePatchItemUpdate}
 			onReorderPatch={(from, to) => ps.reorderItems(from, to)}
 			onSelectItem={openItemEditor}

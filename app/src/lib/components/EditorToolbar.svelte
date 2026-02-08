@@ -25,12 +25,14 @@
 		onAddItem,
 		onImportComplete,
 		onExportPdf,
-		backHref
+		backHref,
+		viewOnly = false
 	}: {
 		onAddItem: () => void;
 		onImportComplete: () => void;
 		onExportPdf?: () => Promise<void>;
 		backHref?: string;
+		viewOnly?: boolean;
 	} = $props();
 
 	async function handleExportPdf() {
@@ -134,13 +136,19 @@
 			</a>
 		{/if}
 		<div class="min-w-0 flex-1">
-			<input
-				bind:value={ps.plotName}
-				oninput={() => ps.debouncedWrite()}
-				class="w-full min-w-0 border-b-2 border-dashed border-border-secondary bg-transparent px-2 py-1 font-serif text-3xl font-bold text-text-primary transition-all placeholder:font-normal placeholder:text-text-tertiary hover:border-border-primary focus:border-solid focus:border-stone-500 focus:outline-none"
-				placeholder="Plot Name"
-			/>
-			{#if editingDate}
+			{#if viewOnly}
+				<div class="px-2 py-1 font-serif text-3xl font-bold text-text-primary">
+					{ps.plotName || 'Untitled Plot'}
+				</div>
+			{:else}
+				<input
+					bind:value={ps.plotName}
+					oninput={() => ps.debouncedWrite()}
+					class="w-full min-w-0 border-b-2 border-dashed border-border-secondary bg-transparent px-2 py-1 font-serif text-3xl font-bold text-text-primary transition-all placeholder:font-normal placeholder:text-text-tertiary hover:border-border-primary focus:border-solid focus:border-stone-500 focus:outline-none"
+					placeholder="Plot Name"
+				/>
+			{/if}
+			{#if editingDate && !viewOnly}
 				<input
 					type="date"
 					value={(() => {
@@ -162,8 +170,8 @@
 			{:else}
 				<button
 					type="button"
-					onclick={() => (editingDate = true)}
-					class="mt-0.5 cursor-pointer px-2 text-[11px] font-medium text-text-tertiary transition-colors hover:text-text-secondary"
+					onclick={() => !viewOnly && (editingDate = true)}
+					class="mt-0.5 px-2 text-[11px] font-medium text-text-tertiary transition-colors {viewOnly ? '' : 'cursor-pointer hover:text-text-secondary'}"
 				>
 					Revised: {(() => {
 						try {
@@ -201,29 +209,31 @@
 			{/if}
 			{shareCopied ? 'Copied!' : 'Share'}
 		</button>
-		<ImportExport {onImportComplete} onExportPdf={handleExportPdf} onExportScn={handleExportScn} />
-		<button
-			onclick={onAddItem}
-			class="flex items-center gap-2 rounded-lg bg-stone-900 px-4 py-2 text-sm text-white transition hover:bg-stone-800 dark:bg-stone-100 dark:text-stone-900 dark:hover:bg-stone-200"
-			title="Add Item ({modKey}K)"
-		>
-			<svg
-				xmlns="http://www.w3.org/2000/svg"
-				class="h-4 w-4"
-				viewBox="0 0 20 20"
-				fill="currentColor"
+		<ImportExport {onImportComplete} onExportPdf={handleExportPdf} onExportScn={handleExportScn} hideImport={viewOnly} />
+		{#if !viewOnly}
+			<button
+				onclick={onAddItem}
+				class="flex items-center gap-2 rounded-lg bg-stone-900 px-4 py-2 text-sm text-white transition hover:bg-stone-800 dark:bg-stone-100 dark:text-stone-900 dark:hover:bg-stone-200"
+				title="Add Item ({modKey}K)"
 			>
-				<path
-					fill-rule="evenodd"
-					d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z"
-					clip-rule="evenodd"
-				/>
-			</svg>
-			Add Item
-			<span
-				class="rounded bg-stone-700 px-1.5 py-0.5 text-xs text-stone-200 dark:bg-stone-300 dark:text-stone-800"
-				>{modKey}K</span
-			>
-		</button>
+				<svg
+					xmlns="http://www.w3.org/2000/svg"
+					class="h-4 w-4"
+					viewBox="0 0 20 20"
+					fill="currentColor"
+				>
+					<path
+						fill-rule="evenodd"
+						d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z"
+						clip-rule="evenodd"
+					/>
+				</svg>
+				Add Item
+				<span
+					class="rounded bg-stone-700 px-1.5 py-0.5 text-xs text-stone-200 dark:bg-stone-300 dark:text-stone-800"
+					>{modKey}K</span
+				>
+			</button>
+		{/if}
 	</div>
 </div>

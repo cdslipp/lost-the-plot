@@ -1,7 +1,9 @@
 <script lang="ts">
 	// SPDX-License-Identifier: AGPL-3.0-only
 	import '../app.css';
-	import favicon from '$lib/assets/favicon.svg';
+	const faviconEmojis = ['🎸', '🥁', '🎹', '🎷', '🎺', '🎻', '🪗', '🎤'];
+	const faviconEmoji = faviconEmojis[Math.floor(Math.random() * faviconEmojis.length)];
+	const favicon = `data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>${faviconEmoji}</text></svg>`;
 	import { ModeWatcher } from 'mode-watcher';
 	import { useRegisterSW } from 'virtual:pwa-register/svelte';
 	import { browser } from '$app/environment';
@@ -16,16 +18,13 @@
 	if (browser) {
 		const currentPath = $page.url.pathname;
 		const skipRedirect =
-			currentPath === '/mobile' ||
 			currentPath === '/tablet' ||
 			currentPath.startsWith('/s/') ||
 			sessionStorage.getItem('stageplotter-skip-device-redirect') === '1';
 
 		if (!skipRedirect) {
 			const device = detectDevice();
-			if (device === 'mobile') {
-				goto('/mobile', { replaceState: true });
-			} else if (device === 'tablet') {
+			if (device === 'tablet') {
 				goto('/tablet', { replaceState: true });
 			}
 		}
@@ -119,7 +118,7 @@
 <div class="relative min-h-screen bg-bg-secondary font-sans text-text-primary">
 	<!-- Sideways wordmark — decorative, sits behind all content -->
 	<div
-		class="pointer-events-none fixed top-0 left-0 z-0 flex h-screen items-end select-none"
+		class="pointer-events-none fixed top-0 left-0 z-0 hidden h-screen items-end select-none sm:flex"
 		aria-hidden="true"
 	>
 		<div class="flex flex-col items-center pb-8">
@@ -132,7 +131,7 @@
 		</div>
 	</div>
 	<!-- Clickable instrument — own stacking context above content -->
-	<div class="pointer-events-none fixed top-0 left-0 z-20 flex h-screen items-end select-none">
+	<div class="pointer-events-none fixed top-0 left-0 z-20 hidden h-screen items-end select-none sm:flex">
 		<div class="flex flex-col items-center pb-8">
 			<button
 				class="pointer-events-auto mb-16 lg:mb-24 h-20 w-16 cursor-pointer border-none bg-transparent p-0 outline-none"
@@ -160,8 +159,14 @@
 			</span>
 		</div>
 	</div>
+	<!-- Mobile top wordmark bar -->
+	<div class="sticky top-0 z-20 flex items-center px-4 py-2 sm:hidden" aria-hidden="true">
+		<a href="/" class="font-serif text-lg font-bold text-stone-400 no-underline dark:text-stone-500">
+			Lost the Plot
+		</a>
+	</div>
 	<div
-		class="relative z-10 container mx-auto max-w-[1600px] pr-4 pl-28 sm:pr-6 sm:pl-32 lg:pr-8 lg:pl-36"
+		class="relative z-10 container mx-auto max-w-[1600px] px-4 sm:pr-6 sm:pl-32 lg:pr-8 lg:pl-36"
 	>
 		{@render children()}
 	</div>
