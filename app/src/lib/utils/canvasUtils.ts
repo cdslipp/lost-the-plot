@@ -93,7 +93,16 @@ export function getItemVariants(item: any) {
 export function getVariantKeys(item: any) {
 	const variants = getItemVariants(item);
 	if (!variants) return ['default'];
-	return Object.keys(variants);
+	const keys = Object.keys(variants);
+	if (!keys.length) return ['default'];
+	const defaultKey = keys.includes('default') ? 'default' : keys[0];
+	const customOrder = Array.isArray(item.itemData?.variant_order)
+		? item.itemData.variant_order.filter((key: string) => keys.includes(key))
+		: [];
+	let order = customOrder.length ? customOrder : [];
+	order = order.filter((key: string) => key !== defaultKey);
+	const remaining = keys.filter((key) => key !== defaultKey && !order.includes(key)).sort();
+	return [defaultKey, ...order, ...remaining].filter(Boolean);
 }
 
 export function buildImagePath(item: any, imagePath: string) {

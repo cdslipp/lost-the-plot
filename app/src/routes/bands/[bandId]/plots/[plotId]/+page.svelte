@@ -476,6 +476,7 @@
 			selecto?.destroy();
 			selecto = null;
 			selectedItems = [];
+			dragging = null;
 		};
 	});
 
@@ -739,6 +740,7 @@
 	}
 
 	function openItemEditor(item: any, event: any) {
+		if (justSelected) { justSelected = false; return; }
 		event.stopPropagation();
 		const itemEl = document.querySelector(`[data-id="${item.id}"]`);
 		if (itemEl) {
@@ -769,50 +771,83 @@
 		}
 	}
 
-	function handleDragStart(event: DragEvent, item: any) {
-		if (placingItem) placingItem = null;
-		event.dataTransfer!.setData('application/json', JSON.stringify({
-			id: item.id,
-			offsetX: (event as any).offsetX,
-			offsetY: (event as any).offsetY
-		}));
-		event.dataTransfer!.effectAllowed = 'copyMove';
-		(event.currentTarget as HTMLElement).style.opacity = '0.5';
+	// Pointer-based drag state
+	let dragging = $state<{
+		item: any;
+		offsetX: number;
+		offsetY: number;
+		startX: number;
+		startY: number;
+		moved: boolean;
+	} | null>(null);
+
+	function handleItemPointerDown(event: PointerEvent, item: any) {
+		if (event.button !== 0) return;
+		if (placingItem) return;
+		if ((event.target as HTMLElement).closest('button')) return;
+
+		const el = event.currentTarget as HTMLElement;
+		el.setPointerCapture(event.pointerId);
+
+		const canvasRect = canvasEl!.getBoundingClientRect();
+		dragging = {
+			item,
+			offsetX: event.clientX - canvasRect.left - item.position.x,
+			offsetY: event.clientY - canvasRect.top - item.position.y,
+			startX: item.position.x,
+			startY: item.position.y,
+			moved: false
+		};
 	}
 
-	function handleDragOver(event: DragEvent) { event.preventDefault(); }
+	function handleItemPointerMove(event: PointerEvent) {
+		if (!dragging || !canvasEl) return;
 
-	function handleDrop(event: DragEvent) {
-		event.preventDefault();
-		const data = JSON.parse(event.dataTransfer!.getData('application/json'));
-		const item = stagePlot.items.find((i: any) => i.id === data.id);
-		if (item && canvasEl) {
-			const rect = canvasEl.getBoundingClientRect();
-			const rawX = Math.max(0, Math.min(event.clientX - rect.left - data.offsetX, canvasWidth - item.position.width));
-			const rawY = Math.max(0, Math.min(event.clientY - rect.top - data.offsetY, canvasHeight - item.position.height));
-			const snapped = snapToGrid(rawX, rawY, item.position.width, item.position.height);
-			const x = Math.max(0, Math.min(snapped.x, canvasWidth - item.position.width));
-			const y = Math.max(0, Math.min(snapped.y, canvasHeight - item.position.height));
+		const canvasRect = canvasEl.getBoundingClientRect();
+		const rawX = event.clientX - canvasRect.left - dragging.offsetX;
+		const rawY = event.clientY - canvasRect.top - dragging.offsetY;
+
+		if (!dragging.moved) {
+			const dx = rawX - dragging.startX;
+			const dy = rawY - dragging.startY;
+			if (Math.abs(dx) < 3 && Math.abs(dy) < 3) return;
+			dragging.moved = true;
+		}
+
+		dragging.item.position.x = Math.max(0, Math.min(rawX, canvasWidth - dragging.item.position.width));
+		dragging.item.position.y = Math.max(0, Math.min(rawY, canvasHeight - dragging.item.position.height));
+	}
+
+	function handleItemPointerUp(event: PointerEvent) {
+		if (!dragging) return;
+
+		if (dragging.moved) {
+			const snapped = snapToGrid(
+				dragging.item.position.x, dragging.item.position.y,
+				dragging.item.position.width, dragging.item.position.height
+			);
+			const x = Math.max(0, Math.min(snapped.x, canvasWidth - dragging.item.position.width));
+			const y = Math.max(0, Math.min(snapped.y, canvasHeight - dragging.item.position.height));
 
 			if (isAltPressed) {
-				duplicateItem(item, { position: { ...item.position, x, y } });
+				dragging.item.position.x = dragging.startX;
+				dragging.item.position.y = dragging.startY;
+				duplicateItem(dragging.item, { position: { ...dragging.item.position, x, y } });
 			} else {
-				item.position.x = x;
-				item.position.y = y;
+				dragging.item.position.x = x;
+				dragging.item.position.y = y;
 				commitChange();
 			}
+			justSelected = true;
 		}
-	}
 
-	function handleDragEnd(event: DragEvent) {
-		(event.currentTarget as HTMLElement).style.opacity = '1';
+		dragging = null;
 	}
-
 
 	function rotateItemRight(item: any) {
 		const variants = getItemVariants(item);
 		if (!variants) return;
-		const variantKeys = Object.keys(variants);
+		const variantKeys = getVariantKeys(item);
 		const currentIndex = variantKeys.indexOf(item.currentVariant || 'default');
 		const newIndex = (currentIndex + 1) % variantKeys.length;
 		item.currentVariant = variantKeys[newIndex];
@@ -1160,8 +1195,6 @@
 						style="aspect-ratio: {stagePlot.stage_width}/{stagePlot.stage_depth}; max-width: 1100px; cursor: {placingItem ? 'copy' : 'default'}"
 						onmousemove={handleCanvasMouseMove}
 						onclick={handleCanvasClick}
-						ondragover={handleDragOver}
-						ondrop={handleDrop}
 					>
 						<CanvasOverlay {showZones} {canvasWidth} {canvasHeight} itemCount={stagePlot.items.length} />
 
@@ -1171,14 +1204,16 @@
 								{#snippet child({ props: itemProps })}
 								<div
 									{...itemProps}
-									class="group selectable-item absolute transition-all cursor-move"
+									class="group selectable-item absolute cursor-move"
 									class:ring-2={editingItem?.id === item.id || selectedIds.has(String(item.id))}
 									class:ring-blue-500={editingItem?.id === item.id || selectedIds.has(String(item.id))}
 									data-id={item.id}
-									style="left: {item.position.x}px; top: {item.position.y}px; width: {item.position.width}px; height: {item.position.height}px;"
-									draggable="true"
-									ondragstart={(e) => handleDragStart(e, item)}
-									ondragend={handleDragEnd}
+									style="left: {item.position.x}px; top: {item.position.y}px; width: {item.position.width}px; height: {item.position.height}px; touch-action: none;"
+									draggable="false"
+									ondragstart={(e) => e.preventDefault()}
+									onpointerdown={(e) => handleItemPointerDown(e, item)}
+									onpointermove={handleItemPointerMove}
+									onpointerup={handleItemPointerUp}
 									onclick={(e) => openItemEditor(item, e)}
 								>
 									{#if item.type === 'stageDeck'}
@@ -1194,7 +1229,7 @@
 											</div>
 										</div>
 									{:else}
-										<img src={getCurrentImageSrc(item)} alt={item.itemData?.name || item.name || 'Stage Item'} style="width: {item.position.width}px; height: {item.position.height}px;" />
+										<img src={getCurrentImageSrc(item)} alt={item.itemData?.name || item.name || 'Stage Item'} draggable="false" style="width: {item.position.width}px; height: {item.position.height}px; pointer-events: none;" />
 									{/if}
 
 									{#if selectedItems.some((el) => el.dataset?.id === String(item.id))}

@@ -870,7 +870,7 @@
 			</button>
 		</div>
 	{:else}
-		<div class="flex flex-col gap-3">
+		<div class="band-list-scroll min-h-0 flex-1 flex flex-col gap-3 overflow-y-auto">
 			{#each bands as band (band.id)}
 				<div
 					class="group relative flex items-start justify-between gap-3 rounded-xl border border-border-primary bg-surface p-6 shadow-sm transition hover:border-stone-400 hover:shadow-md"
@@ -966,7 +966,7 @@
 		</div>
 	{/if}
 
-	<div class="mt-auto flex flex-wrap items-center justify-between gap-3 border-t border-border-primary pt-4">
+	<div class="mt-auto flex flex-wrap items-center justify-between gap-3 pt-4">
 		<input
 			bind:this={fileInput}
 			type="file"
@@ -1009,3 +1009,40 @@
 		</button>
 	</div>
 </div>
+
+<style>
+	/* Slim scrollbar */
+	.band-list-scroll {
+		scrollbar-width: thin;
+		scrollbar-color: rgb(168 162 158 / 0.4) transparent;
+	}
+	.band-list-scroll::-webkit-scrollbar {
+		width: 6px;
+	}
+	.band-list-scroll::-webkit-scrollbar-track {
+		background: transparent;
+	}
+	.band-list-scroll::-webkit-scrollbar-thumb {
+		background: rgb(168 162 158 / 0.4);
+		border-radius: 3px;
+	}
+	.band-list-scroll::-webkit-scrollbar-thumb:hover {
+		background: rgb(168 162 158 / 0.6);
+	}
+
+	/* Feathered fade at bottom edge */
+	.band-list-scroll {
+		mask-image: linear-gradient(
+			to bottom,
+			black 0%,
+			black calc(100% - 32px),
+			transparent 100%
+		);
+		-webkit-mask-image: linear-gradient(
+			to bottom,
+			black 0%,
+			black calc(100% - 32px),
+			transparent 100%
+		);
+	}
+</style>

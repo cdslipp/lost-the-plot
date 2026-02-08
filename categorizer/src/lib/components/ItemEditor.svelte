@@ -21,6 +21,7 @@
 	type EditorItem = CatalogItem & {
 		brands?: string[];
 		instrument_signal?: 'acoustic' | 'electric' | '';
+		variant_order?: string[];
 		default_outputs?: Array<{ name: string; short_name: string; type?: string; link_mode: string }>;
 	};
 
@@ -69,6 +70,85 @@
 	const showDefaultOutputs = $derived(
 		['monitor', 'speaker'].includes(item.item_type) || item.category === 'monitors'
 	);
+	let draggingVariant = $state<string | null>(null);
+	let dropVariant = $state<string | null>(null);
+
+	function getDefaultVariantKey(variants: Record<string, string>) {
+		if (variants.default) return 'default';
+		const keys = Object.keys(variants);
+		return keys[0] ?? 'default';
+	}
+
+	function buildVariantOrder(variants: Record<string, string>, existing?: string[]) {
+		const keys = Object.keys(variants);
+		if (keys.length === 0) return [];
+		const defaultKey = getDefaultVariantKey(variants);
+		const order = (existing ?? []).filter((k) => keys.includes(k) && k !== defaultKey);
+		const missing = keys.filter((k) => k !== defaultKey && !order.includes(k));
+		const priority = ['L', 'R', 'LA', 'RA', 'LB', 'RB', 'B', 'back'];
+		missing.sort((a, b) => {
+			const ia = priority.indexOf(a);
+			const ib = priority.indexOf(b);
+			if (ia === -1 && ib === -1) return a.localeCompare(b);
+			if (ia === -1) return 1;
+			if (ib === -1) return -1;
+			return ia - ib;
+		});
+		return [defaultKey, ...order, ...missing];
+	}
+
+	function handleVariantDragStart(key: string, event: DragEvent) {
+		if (key === getDefaultVariantKey(item.variants)) return;
+		draggingVariant = key;
+		event.dataTransfer?.setData('text/plain', key);
+		if (event.dataTransfer) event.dataTransfer.effectAllowed = 'move';
+	}
+
+	function handleVariantDragOver(key: string, event: DragEvent) {
+		if (key === getDefaultVariantKey(item.variants)) return;
+		event.preventDefault();
+		dropVariant = key;
+	}
+
+	function handleVariantDrop(key: string, event: DragEvent) {
+		event.preventDefault();
+		const dragKey = draggingVariant || event.dataTransfer?.getData('text/plain');
+		if (!dragKey || dragKey === key) return;
+		const order = buildVariantOrder(item.variants, item.variant_order);
+		const defaultKey = order[0];
+		if (dragKey === defaultKey) return;
+		const withoutDrag = order.filter((k) => k !== dragKey);
+		const targetKey = key === defaultKey ? withoutDrag[1] : key;
+		const targetIndex = targetKey ? withoutDrag.indexOf(targetKey) : withoutDrag.length;
+		const insertIndex = targetIndex >= 0 ? targetIndex : withoutDrag.length;
+		withoutDrag.splice(insertIndex, 0, dragKey);
+		if (withoutDrag[0] !== defaultKey) {
+			withoutDrag.splice(withoutDrag.indexOf(defaultKey), 1);
+			withoutDrag.unshift(defaultKey);
+		}
+		item.variant_order = withoutDrag;
+		draggingVariant = null;
+		dropVariant = null;
+	}
+
+	function handleVariantDragEnd() {
+		draggingVariant = null;
+		dropVariant = null;
+	}
+
+	const orderedVariants = $derived.by(() => {
+		const order = buildVariantOrder(item.variants, item.variant_order);
+		return order
+			.map((key) => ({ key, filename: item.variants[key] }))
+			.filter((entry) => Boolean(entry.filename));
+	});
+
+	$effect(() => {
+		const next = buildVariantOrder(item.variants, item.variant_order);
+		if (!item.variant_order || next.join('|') !== item.variant_order.join('|')) {
+			item.variant_order = next;
+		}
+	});
 
 	// Sync tagsText when selected item changes
 	$effect(() => {
@@ -202,10 +282,10 @@
 <div class="flex h-full flex-col">
 	<!-- Sticky header with item identity and save -->
 	<div
-		class="flex shrink-0 items-start justify-between border-b border-gray-200 bg-white px-6 py-3"
+		class="flex shrink-0 items-start justify-between border-b border-gray-200 bg-white px-4 py-2"
 	>
 		<div class="min-w-0">
-			<div class="text-lg font-semibold text-gray-900">{item.name}</div>
+			<div class="text-base font-semibold text-gray-900">{item.name}</div>
 			<div class="font-mono text-xs text-gray-400">{item.path}</div>
 			{#if item._original_name !== item.name}
 				<div class="text-xs text-amber-600">Original: {item._original_name}</div>
@@ -214,14 +294,14 @@
 		<div class="flex items-center gap-2">
 			{#if ontoggleduplicate}
 				<button
-					class="rounded-md border border-gray-200 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100"
+					class="rounded-md border border-gray-200 px-2.5 py-1.5 text-xs text-gray-700 hover:bg-gray-100"
 					onclick={ontoggleduplicate}
 				>
 					Duplicate
 				</button>
 			{/if}
 			<button
-				class="shrink-0 rounded-md px-4 py-2 text-sm font-medium text-white transition-colors
+				class="shrink-0 rounded-md px-3 py-1.5 text-xs font-medium text-white transition-colors
 					{saved ? 'bg-green-500' : saving ? 'bg-gray-400' : 'bg-blue-600 hover:bg-blue-700'}"
 				onclick={save}
 				disabled={saving}
@@ -232,25 +312,44 @@
 	</div>
 
 	<!-- Scrollable form -->
-	<div class="flex-1 space-y-6 overflow-y-auto px-6 py-4">
+	<div class="flex-1 space-y-4 overflow-y-auto px-4 py-3">
 		<!-- Variant gallery -->
 		<section>
-			<h3 class="mb-2 text-sm font-medium text-gray-700">Variants</h3>
-			<div class="flex gap-3 overflow-x-auto pb-2">
-				{#each Object.entries(item.variants) as [key, filename] (key)}
-					<div class="shrink-0 text-center">
+			<div class="mb-1.5 flex items-center justify-between">
+				<h3 class="text-sm font-medium text-gray-700">Variants</h3>
+				<span class="text-[11px] text-gray-400">Drag to reorder (default locked)</span>
+			</div>
+			<div class="flex gap-2 overflow-x-auto pb-1">
+				{#each orderedVariants as variant (variant.key)}
+					<div
+						class="shrink-0 text-center"
+						draggable={variant.key !== getDefaultVariantKey(item.variants)}
+						ondragstart={(event) => handleVariantDragStart(variant.key, event)}
+						ondragover={(event) => handleVariantDragOver(variant.key, event)}
+						ondrop={(event) => handleVariantDrop(variant.key, event)}
+						ondragend={handleVariantDragEnd}
+					>
 						<img
-							src="/assets/{item.path}/{filename}"
-							alt="{item.name} - {key}"
-							class="h-20 w-20 rounded border object-contain
-								{key === 'default' ? 'border-blue-300 bg-blue-50' : 'border-gray-200 bg-gray-50'}"
+							src="/assets/{item.path}/{variant.filename}"
+							alt="{item.name} - {variant.key}"
+							class="h-16 w-16 rounded border object-contain
+								{variant.key === getDefaultVariantKey(item.variants)
+								? 'border-blue-300 bg-blue-50'
+								: dropVariant === variant.key
+									? 'border-blue-300 bg-blue-50'
+									: 'border-gray-200 bg-gray-50'}
+								{variant.key !== getDefaultVariantKey(item.variants) ? 'cursor-grab active:cursor-grabbing' : ''}"
 							onerror={(e) => {
 								const el = e.currentTarget as HTMLImageElement;
 								el.parentElement!.style.display = 'none';
 							}}
 						/>
-						<div class="mt-1 text-xs text-gray-400">{key}</div>
-						<div class="max-w-20 truncate text-xs text-gray-300">{filename}</div>
+						<div class="mt-1 text-[11px] text-gray-500">
+							{variant.key}{variant.key === getDefaultVariantKey(item.variants) ? ' (default)' : ''}
+						</div>
+						<div class="max-w-16 truncate text-[10px] text-gray-300">
+							{variant.filename}
+						</div>
 					</div>
 				{/each}
 			</div>
@@ -258,8 +357,8 @@
 
 		<!-- Identity -->
 		<section>
-			<h3 class="mb-2 text-sm font-medium text-gray-700">Identity</h3>
-			<div class="grid grid-cols-2 gap-4">
+			<h3 class="mb-1.5 text-sm font-medium text-gray-700">Identity</h3>
+			<div class="grid grid-cols-2 gap-3">
 				<div>
 					<label for="ed-name" class="mb-1 block text-xs font-medium text-gray-500">Name</label>
 					<input
@@ -279,24 +378,12 @@
 					/>
 				</div>
 				<div>
-					<label for="ed-auto-number" class="mb-1 block text-xs font-medium text-gray-500"
-						>Auto-number Prefix</label
-					>
-					<input
-						id="ed-auto-number"
-						type="text"
-						placeholder="e.g., Gtr, Keys, Vox"
-						class="w-full rounded border-gray-300 text-sm"
-						bind:value={item.auto_number_prefix}
-					/>
-				</div>
-				<div class="col-span-2">
 					<label class="mb-1 block text-xs font-medium text-gray-500">Brands</label>
 					<div class="relative">
-						<div class="mb-2 flex flex-wrap gap-1">
+						<div class="mb-1.5 flex flex-wrap gap-1">
 							{#each item.brands ?? [] as brand (brand)}
 								<span
-									class="flex items-center gap-1 rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-700"
+									class="flex items-center gap-1 rounded-full bg-gray-100 px-1.5 py-0 text-[11px] text-gray-700"
 								>
 									{brand}
 									<button
@@ -308,7 +395,7 @@
 								</span>
 							{/each}
 							{#if (item.brands ?? []).length === 0}
-								<span class="text-xs text-gray-400">No brands selected</span>
+								<span class="text-[11px] text-gray-400">No brands selected</span>
 							{/if}
 						</div>
 						<input
@@ -326,7 +413,7 @@
 								{#if filteredBrands.length > 0}
 									{#each filteredBrands as brand (brand.slug)}
 										<button
-											class="flex w-full items-center justify-between px-3 py-1.5 text-left text-xs hover:bg-gray-50"
+											class="flex w-full items-center justify-between px-2.5 py-1.5 text-left text-xs hover:bg-gray-50"
 											onclick={() => toggleBrandSelection(brand.name)}
 										>
 											<span>{brand.name}</span>
@@ -336,10 +423,10 @@
 										</button>
 									{/each}
 								{:else}
-									<div class="px-3 py-2 text-xs text-gray-400">No matching brands</div>
+									<div class="px-2.5 py-2 text-xs text-gray-400">No matching brands</div>
 								{/if}
 								<button
-									class="w-full border-t border-gray-200 px-3 py-2 text-left text-xs text-blue-600 hover:bg-blue-50"
+									class="w-full border-t border-gray-200 px-2.5 py-2 text-left text-xs text-blue-600 hover:bg-blue-50"
 									onclick={openBrandModal}
 								>
 									+ Create brand
@@ -356,6 +443,18 @@
 						placeholder="e.g., Deluxe Reverb, JCM800"
 						class="w-full rounded border-gray-300 text-sm"
 						bind:value={item.model}
+					/>
+				</div>
+				<div>
+					<label for="ed-auto-number" class="mb-1 block text-xs font-medium text-gray-500"
+						>Auto-number Prefix</label
+					>
+					<input
+						id="ed-auto-number"
+						type="text"
+						placeholder="e.g., Gtr, Keys, Vox"
+						class="w-full rounded border-gray-300 text-sm"
+						bind:value={item.auto_number_prefix}
 					/>
 				</div>
 				{#if item.item_type === 'instrument'}
@@ -383,8 +482,8 @@
 
 		<!-- Classification -->
 		<section>
-			<h3 class="mb-2 text-sm font-medium text-gray-700">Classification</h3>
-			<div class="grid grid-cols-2 gap-4">
+			<h3 class="mb-1.5 text-sm font-medium text-gray-700">Classification</h3>
+			<div class="grid grid-cols-2 gap-3">
 				<div>
 					<label for="ed-item_type" class="mb-1 block text-xs font-medium text-gray-500"
 						>Item Type</label
@@ -459,8 +558,8 @@
 
 		<!-- Dimensions -->
 		<section>
-			<h3 class="mb-2 text-sm font-medium text-gray-700">Dimensions (inches)</h3>
-			<div class="grid grid-cols-3 gap-4">
+			<h3 class="mb-1.5 text-sm font-medium text-gray-700">Dimensions (inches)</h3>
+			<div class="grid grid-cols-3 gap-3">
 				<div>
 					<label for="ed-dim_w" class="mb-1 block text-xs font-medium text-gray-500">Width</label>
 					<input
@@ -499,8 +598,8 @@
 
 		<!-- Provision & Backline -->
 		<section>
-			<h3 class="mb-2 text-sm font-medium text-gray-700">Provision</h3>
-			<div class="grid grid-cols-2 gap-4">
+			<h3 class="mb-1.5 text-sm font-medium text-gray-700">Provision</h3>
+			<div class="grid grid-cols-2 gap-3">
 				<div>
 					<label for="ed-provision" class="mb-1 block text-xs font-medium text-gray-500"
 						>Default Provision</label
@@ -532,7 +631,7 @@
 
 		<!-- Connectors -->
 		<section>
-			<h3 class="mb-2 text-sm font-medium text-gray-700">Connectors</h3>
+			<h3 class="mb-1.5 text-sm font-medium text-gray-700">Connectors</h3>
 			<div class="flex flex-wrap gap-2">
 				{#each CONNECTOR_TYPES as conn (conn)}
 					<label
