@@ -36,6 +36,7 @@ export const CATEGORIES = [
 	'furniture',
 	'stagecraft',
 	'connectors',
+	'snakes',
 	'equipment',
 	'power'
 ] as const;
@@ -89,6 +90,7 @@ export const CATEGORY_MAP: Record<string, string> = {
 	symbols: 'equipment',
 	winds: 'winds',
 	connectors: 'connectors',
+	snakes: 'snakes',
 	monitors: 'monitors',
 	furniture: 'furniture',
 	equipment: 'equipment',

@@ -15,6 +15,8 @@
 	import MusicianPanel from '$lib/components/MusicianPanel.svelte';
 	import CanvasOverlay from '$lib/components/CanvasOverlay.svelte';
 	import { exportToPdf } from '$lib/utils/pdf';
+	import { feetToPixels, type UnitSystem } from '$lib/utils/scale';
+	import { browser } from '$app/environment';
 
 	let plotId = $derived($page.params.plotId);
 	let bandId = $derived($page.params.bandId);
@@ -174,6 +176,15 @@
 	let isAddingItem = $state(false);
 	let showZones = $state(true);
 
+	// Unit preference (persisted to localStorage)
+	let unit = $state<UnitSystem>(
+		(browser && localStorage.getItem('stageplotter-units') as UnitSystem) || 'imperial'
+	);
+
+	$effect(() => {
+		if (browser) localStorage.setItem('stageplotter-units', unit);
+	});
+
 	// --- Stage Zones ---
 	function getZones(cw: number, ch: number) {
 		const colWidth = cw / 3;
@@ -237,10 +248,28 @@
 		}
 	});
 
-	// Persist stage dimension changes
+	// Rescale items proportionally when stage dimensions change
+	let prevStageWidth = $state(stagePlot.stage_width);
+	let prevStageDepth = $state(stagePlot.stage_depth);
+
 	$effect(() => {
-		stagePlot.stage_width;
-		stagePlot.stage_depth;
+		const newW = stagePlot.stage_width;
+		const newD = stagePlot.stage_depth;
+		if (prevStageWidth > 0 && prevStageDepth > 0 && (newW !== prevStageWidth || newD !== prevStageDepth)) {
+			const scaleX = newW / prevStageWidth;
+			const scaleY = newD / prevStageDepth;
+			for (const item of stagePlot.items) {
+				item.position.x = Math.round(item.position.x * scaleX);
+				item.position.y = Math.round(item.position.y * scaleY);
+				// Only scale width/height for risers (image items keep their pixel size)
+				if (item.type === 'riser') {
+					item.position.width = Math.round(item.position.width * scaleX);
+					item.position.height = Math.round(item.position.height * scaleY);
+				}
+			}
+		}
+		prevStageWidth = newW;
+		prevStageDepth = newD;
 		write();
 	});
 
@@ -630,7 +659,21 @@
 
 	function updateItemProperty(itemId: number, property: string, value: string) {
 		const item = stagePlot.items.find((i: any) => i.id === itemId);
-		if (item) { (item as any)[property] = value; write(); }
+		if (!item) return;
+		// Handle riser dimension properties stored in itemData
+		if (['riserWidth', 'riserDepth', 'riserHeight'].includes(property)) {
+			if (!item.itemData) item.itemData = {};
+			item.itemData[property] = parseFloat(value);
+			// Recalculate canvas pixel dimensions for width/depth
+			if (property === 'riserWidth') {
+				item.position.width = feetToPixels(parseFloat(value));
+			} else if (property === 'riserDepth') {
+				item.position.height = feetToPixels(parseFloat(value));
+			}
+		} else {
+			(item as any)[property] = value;
+		}
+		write();
 	}
 
 	function handlePatchReorder(fromIndex: number, toIndex: number) {
@@ -656,6 +699,25 @@
 	function handlePatchRemoveItem(channel: number) {
 		stagePlot.items = stagePlot.items.filter((i: any) => i.channel !== String(channel));
 		write();
+	}
+
+	function placeRiser(riserWidth: number, riserDepth: number, riserHeight: number) {
+		const pxW = feetToPixels(riserWidth);
+		const pxH = feetToPixels(riserDepth);
+		placingItem = {
+			type: 'riser',
+			itemData: {
+				name: `Riser ${riserWidth}'×${riserDepth}'`,
+				item_type: 'riser',
+				riserWidth,
+				riserDepth,
+				riserHeight
+			},
+			width: pxW,
+			height: pxH,
+			x: -1000,
+			y: -1000
+		};
 	}
 
 	function importMusiciansFromBand(persons: { name: string; role: string | null }[]) {
@@ -731,7 +793,7 @@
 				<div
 					bind:this={canvasEl}
 					class="items-container relative mx-auto w-full bg-white dark:bg-gray-800"
-					style="aspect-ratio: 11/8.5; max-width: 1100px; cursor: {placingItem ? 'copy' : 'default'}"
+					style="aspect-ratio: {stagePlot.stage_width}/{stagePlot.stage_depth}; max-width: 1100px; cursor: {placingItem ? 'copy' : 'default'}"
 					onmousemove={handleCanvasMouseMove}
 					onclick={handleCanvasClick}
 					ondragover={handleDragOver}
@@ -754,6 +816,16 @@
 						>
 							{#if item.type === 'stageDeck'}
 								<StageDeck size={item.size} x={0} y={0} class="w-full h-full" />
+							{:else if item.type === 'riser'}
+								<div class="flex h-full w-full items-center justify-center rounded border-2 border-gray-500 bg-gray-400/50 dark:border-gray-400 dark:bg-gray-600/50">
+									<div class="text-center leading-tight">
+										<div class="text-[10px] font-bold text-gray-700 dark:text-gray-200">RISER</div>
+										<div class="text-[8px] text-gray-600 dark:text-gray-300">{item.itemData?.riserWidth ?? '?'}' × {item.itemData?.riserDepth ?? '?'}'</div>
+										{#if item.itemData?.riserHeight}
+											<div class="text-[7px] text-gray-500 dark:text-gray-400">h: {item.itemData.riserHeight}'</div>
+										{/if}
+									</div>
+								</div>
 							{:else}
 								<img src={getCurrentImageSrc(item)} alt={item.itemData?.name || item.name || 'Stage Item'} style="width: {item.position.width}px; height: {item.position.height}px;" />
 							{/if}
@@ -818,11 +890,17 @@
 							class="pointer-events-none absolute opacity-60"
 							style="left: {placingItem.x}px; top: {placingItem.y}px; width: {placingItem.width}px; height: {placingItem.height}px;"
 						>
-							<img
-								src={placingItem.itemData?.image || ''}
-								alt={placingItem.itemData?.name || 'Item Preview'}
-								style="width: {placingItem.width}px; height: {placingItem.height}px;"
-							/>
+							{#if placingItem.type === 'riser'}
+								<div class="flex h-full w-full items-center justify-center rounded border-2 border-dashed border-gray-500 bg-gray-400/40 text-[10px] font-bold text-gray-700">
+									RISER
+								</div>
+							{:else}
+								<img
+									src={placingItem.itemData?.image || ''}
+									alt={placingItem.itemData?.name || 'Item Preview'}
+									style="width: {placingItem.width}px; height: {placingItem.height}px;"
+								/>
+							{/if}
 						</div>
 					{/if}
 				</div>
@@ -854,6 +932,8 @@
 					bind:showZones
 					bind:stageWidth={stagePlot.stage_width}
 					bind:stageDepth={stagePlot.stage_depth}
+					bind:unit
+					onPlaceRiser={placeRiser}
 					onUpdateItem={updateItemProperty}
 					onAddMusician={(name: string, instrument: string) => {
 						newMusician.name = name;

@@ -95,6 +95,33 @@ export const STAGE_SIZES: Record<string, { width: number; height: number; label:
 	}
 };
 
+// --- Unit conversion ---
+export type UnitSystem = 'imperial' | 'metric';
+
+const FEET_TO_METERS = 0.3048;
+
+export function feetToMeters(feet: number): number {
+	return feet * FEET_TO_METERS;
+}
+
+export function metersToFeet(meters: number): number {
+	return meters / FEET_TO_METERS;
+}
+
+export function displayValue(valueFeet: number, unit: string): number {
+	return unit === 'metric'
+		? Math.round(feetToMeters(valueFeet) * 100) / 100
+		: valueFeet;
+}
+
+export function toFeet(displayVal: number, unit: string): number {
+	return unit === 'metric' ? metersToFeet(displayVal) : displayVal;
+}
+
+export function unitLabel(unit: string): string {
+	return unit === 'metric' ? 'm' : 'ft';
+}
+
 /**
  * Scale validation - verify our reference item
  */

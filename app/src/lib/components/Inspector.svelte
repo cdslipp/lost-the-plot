@@ -1,8 +1,10 @@
 <script lang="ts">
 	import { MusicianCombobox } from '$lib';
+	import { displayValue, toFeet, unitLabel } from '$lib/utils/scale';
 
 	type Item = {
 		id: number;
+		type?: string;
 		name: string;
 		channel: string;
 		musician: string;
@@ -29,6 +31,10 @@
 		showZones = $bindable(true),
 		stageWidth = $bindable(24),
 		stageDepth = $bindable(16),
+		unit = $bindable('imperial'),
+		onPlaceRiser = $bindable<
+			((riserWidth: number, riserDepth: number, riserHeight: number) => void) | undefined
+		>(undefined),
 		onUpdateItem = $bindable<
 			((itemId: number, property: string, value: string) => void) | undefined
 		>(undefined),
@@ -54,6 +60,17 @@
 
 	// For bulk editing
 	let bulkMusician = $state('');
+
+	// Riser form state
+	let showRiserForm = $state(false);
+	let customRiserW = $state(4);
+	let customRiserD = $state(4);
+	let customRiserHeight = $state(1);
+	const riserPresets = [
+		{ w: 4, d: 4, label: "4'×4'" },
+		{ w: 4, d: 8, label: "4'×8'" },
+		{ w: 8, d: 8, label: "8'×8'" }
+	];
 
 	// Handle updating item properties
 	function handleUpdateItem(itemId: number, property: string, value: string) {
@@ -243,11 +260,23 @@
 			<h3 class="mb-4 font-serif font-semibold text-text-primary">Edit Item</h3>
 			<div class="flex-1 space-y-4">
 				<div class="flex justify-center">
-					<img
-						src={getCurrentImageSrc(selectedItemsData[0])}
-						alt={selectedItemsData[0].itemData?.name || selectedItemsData[0].name || 'Stage Item'}
-						class="max-h-32 max-w-full object-contain"
-					/>
+					{#if selectedItemsData[0].type === 'riser'}
+						<div
+							class="flex items-center justify-center rounded border-2 border-gray-500 bg-gray-400/50 dark:border-gray-400 dark:bg-gray-600/50"
+							style="width: 120px; aspect-ratio: {selectedItemsData[0].itemData?.riserWidth ?? 4}/{selectedItemsData[0].itemData?.riserDepth ?? 4};"
+						>
+							<div class="text-center">
+								<div class="text-xs font-bold text-gray-700 dark:text-gray-200">RISER</div>
+								<div class="text-[10px] text-gray-600 dark:text-gray-300">{selectedItemsData[0].itemData?.riserWidth}' × {selectedItemsData[0].itemData?.riserDepth}'</div>
+							</div>
+						</div>
+					{:else}
+						<img
+							src={getCurrentImageSrc(selectedItemsData[0])}
+							alt={selectedItemsData[0].itemData?.name || selectedItemsData[0].name || 'Stage Item'}
+							class="max-h-32 max-w-full object-contain"
+						/>
+					{/if}
 				</div>
 
 				<div class="space-y-3">
@@ -261,6 +290,7 @@
 							placeholder="Item name"
 						/>
 					</div>
+					{#if selectedItemsData[0].type !== 'riser'}
 					<div>
 						<label class="mb-1 block text-xs text-text-secondary">Channel</label>
 						<input
@@ -281,6 +311,7 @@
 							{onAddMusician}
 						/>
 					</div>
+					{/if}
 					<div>
 						<label class="mb-1 block text-xs text-text-secondary">Zone</label>
 						<input
@@ -331,6 +362,60 @@
 						</div>
 						<div class="mt-1 text-xs text-text-secondary">
 							<p>X: Stage left (-) to right (+) | Y: Downstage (0) to upstage (+)</p>
+						</div>
+					{/if}
+
+					<!-- Riser dimensions (when a riser is selected) -->
+					{#if selectedItemsData[0].type === 'riser'}
+						<div>
+							<label class="mb-1 block text-xs text-text-secondary">Riser Size ({unitLabel(unit)})</label>
+							<div class="grid grid-cols-3 gap-2">
+								<div>
+									<label class="block text-[10px] text-text-tertiary">Width</label>
+									<input
+										type="number"
+										value={displayValue(selectedItemsData[0].itemData?.riserWidth ?? 4, unit)}
+										onchange={(e) => {
+											const target = e.target as HTMLInputElement;
+											const val = parseFloat(target.value);
+											if (!isNaN(val) && val > 0) onUpdateItem?.(selectedItemsData[0].id, 'riserWidth', String(toFeet(val, unit)));
+										}}
+										min="1"
+										step={unit === 'metric' ? '0.5' : '1'}
+										class="w-full rounded-lg border border-border-primary bg-surface px-2 py-1.5 text-xs text-text-primary focus:border-stone-500 focus:ring-2 focus:ring-stone-500"
+									/>
+								</div>
+								<div>
+									<label class="block text-[10px] text-text-tertiary">Depth</label>
+									<input
+										type="number"
+										value={displayValue(selectedItemsData[0].itemData?.riserDepth ?? 4, unit)}
+										onchange={(e) => {
+											const target = e.target as HTMLInputElement;
+											const val = parseFloat(target.value);
+											if (!isNaN(val) && val > 0) onUpdateItem?.(selectedItemsData[0].id, 'riserDepth', String(toFeet(val, unit)));
+										}}
+										min="1"
+										step={unit === 'metric' ? '0.5' : '1'}
+										class="w-full rounded-lg border border-border-primary bg-surface px-2 py-1.5 text-xs text-text-primary focus:border-stone-500 focus:ring-2 focus:ring-stone-500"
+									/>
+								</div>
+								<div>
+									<label class="block text-[10px] text-text-tertiary">Height</label>
+									<input
+										type="number"
+										value={displayValue(selectedItemsData[0].itemData?.riserHeight ?? 1, unit)}
+										onchange={(e) => {
+											const target = e.target as HTMLInputElement;
+											const val = parseFloat(target.value);
+											if (!isNaN(val) && val > 0) onUpdateItem?.(selectedItemsData[0].id, 'riserHeight', String(toFeet(val, unit)));
+										}}
+										min="0.5"
+										step="0.5"
+										class="w-full rounded-lg border border-border-primary bg-surface px-2 py-1.5 text-xs text-text-primary focus:border-stone-500 focus:ring-2 focus:ring-stone-500"
+									/>
+								</div>
+							</div>
 						</div>
 					{/if}
 
@@ -441,41 +526,148 @@
 
 	<!-- Stage Settings (bottom of panel) -->
 	<div class="mt-auto border-t border-border-primary pt-4 space-y-3">
+		<!-- Unit toggle -->
+		<div class="flex items-center justify-between">
+			<span class="text-xs text-text-secondary">Units</span>
+			<div class="flex rounded-md border border-border-primary text-xs">
+				<button
+					onclick={() => (unit = 'imperial')}
+					class="px-2 py-0.5 transition {unit === 'imperial' ? 'bg-stone-900 text-white dark:bg-stone-100 dark:text-stone-900' : 'text-text-secondary hover:bg-surface-hover'}"
+					style="border-radius: 0.3rem 0 0 0.3rem;"
+				>
+					ft
+				</button>
+				<button
+					onclick={() => (unit = 'metric')}
+					class="px-2 py-0.5 transition {unit === 'metric' ? 'bg-stone-900 text-white dark:bg-stone-100 dark:text-stone-900' : 'text-text-secondary hover:bg-surface-hover'}"
+					style="border-radius: 0 0.3rem 0.3rem 0;"
+				>
+					m
+				</button>
+			</div>
+		</div>
+
 		<div>
-			<label class="mb-1 block text-xs text-text-secondary">Stage Size (feet)</label>
+			<label class="mb-1 block text-xs text-text-secondary">Stage Size ({unitLabel(unit)})</label>
 			<div class="flex gap-2">
 				<input
 					type="number"
-					bind:value={stageWidth}
+					value={Math.round(displayValue(stageWidth, unit) * 100) / 100}
+					onchange={(e) => {
+						const target = e.target as HTMLInputElement;
+						const val = parseFloat(target.value);
+						if (!isNaN(val) && val > 0) stageWidth = Math.round(toFeet(val, unit) * 100) / 100;
+					}}
 					min="1"
+					step={unit === 'metric' ? '0.5' : '1'}
 					placeholder="Width"
 					class="w-full rounded-lg border border-border-primary bg-surface px-2 py-1.5 text-sm text-text-primary focus:border-stone-500 focus:ring-2 focus:ring-stone-500"
 				/>
 				<span class="self-center text-xs text-text-tertiary">x</span>
 				<input
 					type="number"
-					bind:value={stageDepth}
+					value={Math.round(displayValue(stageDepth, unit) * 100) / 100}
+					onchange={(e) => {
+						const target = e.target as HTMLInputElement;
+						const val = parseFloat(target.value);
+						if (!isNaN(val) && val > 0) stageDepth = Math.round(toFeet(val, unit) * 100) / 100;
+					}}
 					min="1"
+					step={unit === 'metric' ? '0.5' : '1'}
 					placeholder="Depth"
 					class="w-full rounded-lg border border-border-primary bg-surface px-2 py-1.5 text-sm text-text-primary focus:border-stone-500 focus:ring-2 focus:ring-stone-500"
 				/>
 			</div>
 		</div>
 
-		<button
-			class="w-full rounded-lg border border-dashed border-border-primary px-3 py-2 text-sm text-text-tertiary"
-			disabled
-		>
-			+ Add Riser (coming soon)
-		</button>
+		<!-- Add Riser -->
+		{#if showRiserForm}
+			<div class="rounded-lg border border-border-primary p-2 space-y-2">
+				<div class="flex items-center justify-between">
+					<span class="text-xs font-medium text-text-primary">Add Riser</span>
+					<button onclick={() => (showRiserForm = false)} class="text-xs text-text-tertiary hover:text-text-primary">&times;</button>
+				</div>
+				<div class="text-xs text-text-secondary mb-1">Presets:</div>
+				<div class="flex flex-wrap gap-1">
+					{#each riserPresets as preset}
+						<button
+							onclick={() => {
+								if (onPlaceRiser) onPlaceRiser(preset.w, preset.d, customRiserHeight);
+								showRiserForm = false;
+							}}
+							class="rounded bg-muted px-2 py-1 text-xs text-text-primary hover:bg-surface-hover transition"
+						>
+							{preset.label}
+						</button>
+					{/each}
+				</div>
+				<div class="text-xs text-text-secondary mt-1">Custom ({unitLabel(unit)}):</div>
+				<div class="flex gap-1.5 items-end">
+					<div class="flex-1">
+						<label class="block text-[10px] text-text-tertiary">W</label>
+						<input
+							type="number"
+							bind:value={customRiserW}
+							min="1"
+							step={unit === 'metric' ? '0.5' : '1'}
+							class="w-full rounded border border-border-primary bg-surface px-1.5 py-1 text-xs text-text-primary"
+						/>
+					</div>
+					<div class="flex-1">
+						<label class="block text-[10px] text-text-tertiary">D</label>
+						<input
+							type="number"
+							bind:value={customRiserD}
+							min="1"
+							step={unit === 'metric' ? '0.5' : '1'}
+							class="w-full rounded border border-border-primary bg-surface px-1.5 py-1 text-xs text-text-primary"
+						/>
+					</div>
+					<div class="flex-1">
+						<label class="block text-[10px] text-text-tertiary">H</label>
+						<input
+							type="number"
+							bind:value={customRiserHeight}
+							min="0.5"
+							step="0.5"
+							class="w-full rounded border border-border-primary bg-surface px-1.5 py-1 text-xs text-text-primary"
+						/>
+					</div>
+				</div>
+				<button
+					onclick={() => {
+						const w = toFeet(customRiserW, unit);
+						const d = toFeet(customRiserD, unit);
+						if (onPlaceRiser && w > 0 && d > 0) onPlaceRiser(w, d, customRiserHeight);
+						showRiserForm = false;
+					}}
+					class="w-full rounded bg-stone-900 px-2 py-1.5 text-xs text-white hover:bg-stone-800 dark:bg-stone-100 dark:text-stone-900 dark:hover:bg-stone-200 transition"
+				>
+					Place Custom Riser
+				</button>
+			</div>
+		{:else}
+			<button
+				onclick={() => (showRiserForm = true)}
+				class="w-full rounded-lg border border-dashed border-border-primary px-3 py-2 text-sm text-text-secondary hover:border-stone-400 hover:text-text-primary transition"
+			>
+				+ Add Riser
+			</button>
+		{/if}
 
+		<!-- Stage Zones toggle switch -->
 		<div class="flex items-center justify-between">
 			<span class="text-xs text-text-secondary">Stage Zones</span>
 			<button
 				onclick={() => (showZones = !showZones)}
-				class="flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs transition {showZones ? 'bg-stone-900 text-white dark:bg-stone-100 dark:text-stone-900' : 'bg-muted text-text-secondary hover:bg-surface-hover'}"
+				class="relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full transition-colors duration-200 {showZones ? 'bg-stone-900 dark:bg-stone-100' : 'bg-gray-300 dark:bg-gray-600'}"
+				role="switch"
+				aria-checked={showZones}
 			>
-				{showZones ? 'Visible' : 'Hidden'}
+				<span
+					class="pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-sm ring-0 transition-transform duration-200 dark:bg-gray-900 {showZones ? 'translate-x-4' : 'translate-x-0.5'}"
+					style="margin-top: 2px;"
+				></span>
 			</button>
 		</div>
 	</div>
