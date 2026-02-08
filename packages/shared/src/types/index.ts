@@ -79,10 +79,12 @@ export interface ItemData {
 	category?: string;
 	image?: string;
 	variants?: Record<string, string>;
+	variant_order?: string[];
 	path?: string;
 	keywords?: string[];
 	default_inputs?: DefaultInput[];
 	default_outputs?: DefaultOutput[];
+	instrument_signal?: 'acoustic' | 'electric' | '';
 }
 
 export interface DefaultInput {

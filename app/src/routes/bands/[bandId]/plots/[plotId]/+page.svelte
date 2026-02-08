@@ -328,6 +328,9 @@
 
 	// --- Item Management State ---
 	let selectedItems = $state<any[]>([]);
+	const selectedIds = $derived(new Set(
+		selectedItems.map((el: any) => el.dataset?.id).filter(Boolean)
+	));
 	let editingItem = $state<any>(null);
 	let isAddingItem = $state(false);
 	let showZones = $state(true);
@@ -405,9 +408,6 @@
 
 	function clearSelections() {
 		if (selecto && selectedItems.length > 0) {
-			selectedItems.forEach((el: any) => {
-				el.classList.remove('!ring-2', '!ring-blue-500');
-			});
 			selectedItems = [];
 			selecto.setSelectedTargets([]);
 		}
@@ -429,26 +429,6 @@
 
 		window.addEventListener('beforeunload', handleBeforeUnload);
 
-		selecto = new Selecto({
-			container: canvasEl,
-			selectableTargets: ['.selectable-item'],
-			selectByClick: true,
-			selectFromInside: false,
-			toggleContinueSelect: 'shift',
-			dragCondition: (e: any) => {
-				const target = e.inputEvent.target;
-				const item = target.closest('.selectable-item');
-				return !item;
-			}
-		});
-
-		selecto.on('select', (e: any) => {
-			selectedItems = e.selected;
-			if (e.selected.length) justSelected = true;
-			e.added.forEach((el: any) => { el.classList.add('!ring-2', '!ring-blue-500'); });
-			e.removed.forEach((el: any) => { el.classList.remove('!ring-2', '!ring-blue-500'); });
-		});
-
 		onClickOutside(
 			() => canvasEl,
 			(event: any) => {
@@ -463,6 +443,39 @@
 
 		return () => {
 			window.removeEventListener('beforeunload', handleBeforeUnload);
+		};
+	});
+
+	// Selecto lifecycle — re-initializes when canvasEl changes (layout/tab switches)
+	$effect(() => {
+		const el = canvasEl;
+		if (!el) {
+			selecto = null;
+			return;
+		}
+
+		selecto = new Selecto({
+			container: el,
+			selectableTargets: ['.selectable-item'],
+			selectByClick: true,
+			selectFromInside: false,
+			toggleContinueSelect: 'shift',
+			dragCondition: (e: any) => {
+				const target = e.inputEvent.target;
+				const item = target.closest('.selectable-item');
+				return !item;
+			}
+		});
+
+		selecto.on('select', (e: any) => {
+			selectedItems = e.selected;
+			if (e.selected.length) justSelected = true;
+		});
+
+		return () => {
+			selecto?.destroy();
+			selecto = null;
+			selectedItems = [];
 		};
 	});
 
@@ -627,7 +640,6 @@
 		if (!el) return;
 		clearSelections();
 		selectedItems = [el];
-		el.classList.add('!ring-2', '!ring-blue-500');
 		selecto?.setSelectedTargets([el]);
 		el.scrollIntoView({ block: 'nearest', inline: 'nearest' });
 	}
@@ -730,12 +742,8 @@
 		event.stopPropagation();
 		const itemEl = document.querySelector(`[data-id="${item.id}"]`);
 		if (itemEl) {
-			if (selectedItems.length) {
-				selectedItems.forEach((el: any) => el.classList.remove('!ring-2', '!ring-blue-500'));
-			}
 			selectedItems = [itemEl as HTMLElement];
 			selecto?.setSelectedTargets([itemEl]);
-			(itemEl as HTMLElement).classList.add('!ring-2', '!ring-blue-500');
 			(itemEl as HTMLElement).scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'smooth' });
 		}
 	}
@@ -1163,8 +1171,9 @@
 								{#snippet child({ props: itemProps })}
 								<div
 									{...itemProps}
-									class="group selectable-item absolute transition-all cursor-move {editingItem?.id === item.id ? 'ring-2 ring-blue-500' : ''}"
-									class:selected={selectedItems.includes(item)}
+									class="group selectable-item absolute transition-all cursor-move"
+									class:ring-2={editingItem?.id === item.id || selectedIds.has(String(item.id))}
+									class:ring-blue-500={editingItem?.id === item.id || selectedIds.has(String(item.id))}
 									data-id={item.id}
 									style="left: {item.position.x}px; top: {item.position.y}px; width: {item.position.width}px; height: {item.position.height}px;"
 									draggable="true"

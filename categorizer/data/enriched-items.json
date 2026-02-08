@@ -6853,22 +6853,30 @@
 			"default": "stringbass.png"
 		},
 		"path": "strings/double_bass",
-		"is_backline": true,
-		"auto_number_prefix": "Str",
-		"person_subcategory": "",
-		"brand": "",
+		"brands": [],
 		"model": "",
 		"common_models": [],
+		"slug": "strings-double-bass",
 		"category": "strings",
 		"subcategory": "orchestral_string",
-		"provision_default": "artist_provided",
-		"connectors": [],
 		"tags": ["strings", "instrument", "orchestral_string", "backline"],
+		"default_inputs": [],
+		"default_outputs": [],
 		"dimensions": {
 			"width": 24,
 			"depth": 12,
 			"height": 48
-		}
+		},
+		"provision_default": "artist_provided",
+		"is_backline": true,
+		"connectors": [],
+		"power_requirements": "",
+		"notes": "",
+		"instrument_signal": "acoustic",
+		"auto_number_prefix": "Str",
+		"person_subcategory": "",
+		"_enriched": true,
+		"_original_name": "Double Bass"
 	},
 	{
 		"name": "Harp",

@@ -1,11 +1,19 @@
 <script lang="ts">
-	import type { CatalogItem, Brand } from '$lib/types';
+	import type { CatalogItem } from '$lib/types';
 	import { ITEM_TYPES, CATEGORIES, PROVISION_TYPES } from '$lib/schema';
 	import { SvelteSet } from 'svelte/reactivity';
 	import ItemSidebar from '$lib/components/ItemSidebar.svelte';
 	import ItemEditor from '$lib/components/ItemEditor.svelte';
 
-	let { data } = $props();
+	type Brand = {
+		name: string;
+		slug: string;
+		website?: string;
+		status?: 'active' | 'defunct';
+		notes?: string;
+	};
+
+	let { data }: { data: { items: CatalogItem[]; brands: Brand[] } } = $props();
 	// $state wraps items with deep reactivity so bind:value works in the editor.
 	// This intentionally captures the initial load — we manage mutations locally.
 	let items: CatalogItem[] = $state(data.items);
@@ -69,6 +77,83 @@
 		} else {
 			item._enriched = true;
 		}
+	}
+
+	function slugifyPath(path: string): string {
+		return path
+			.replace(/\//g, '-')
+			.replace(/[^a-z0-9-]/gi, '-')
+			.replace(/-+/g, '-')
+			.toLowerCase();
+	}
+
+	async function createBrand(brand: Brand) {
+		const res = await fetch('/api/brands', {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify(brand)
+		});
+		if (!res.ok) {
+			console.error('Brand save failed:', await res.text());
+			return null;
+		}
+		const data = await res.json();
+		return data.brand as Brand;
+	}
+
+	async function handleCreateBrand(brand: Brand) {
+		const created = await createBrand(brand);
+		if (!created) return null;
+		brands = [...brands, created].sort((a, b) => a.name.localeCompare(b.name));
+		return created;
+	}
+
+	function openDuplicateModal(item: CatalogItem) {
+		duplicateItem = item;
+		duplicateName = `${item.name} Copy`;
+		duplicatePath = `${item.path}-copy`;
+		duplicateError = '';
+		showDuplicateModal = true;
+	}
+
+	function closeDuplicateModal() {
+		showDuplicateModal = false;
+		duplicateItem = null;
+		duplicateError = '';
+	}
+
+	async function confirmDuplicate() {
+		if (!duplicateItem) return;
+		const trimmedPath = duplicatePath.trim();
+		if (!trimmedPath) {
+			duplicateError = 'Path is required.';
+			return;
+		}
+		if (items.some((i) => i.path === trimmedPath)) {
+			duplicateError = 'That path already exists.';
+			return;
+		}
+		const cloned = structuredClone(duplicateItem);
+		const newItem: CatalogItem = {
+			...cloned,
+			name: duplicateName.trim() || duplicateItem.name,
+			path: trimmedPath,
+			slug: slugifyPath(trimmedPath),
+			_enriched: true,
+			_original_name: duplicateName.trim() || duplicateItem.name
+		};
+		const res = await fetch('/api/create', {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify(newItem)
+		});
+		if (!res.ok) {
+			duplicateError = await res.text();
+			return;
+		}
+		items = [...items, newItem];
+		selectedPath = newItem.path;
+		showDuplicateModal = false;
 	}
 
 	async function batchUpdate() {
@@ -293,7 +378,13 @@
 			</div>
 		{:else if selectedItem}
 			<!-- Single item editor -->
-			<ItemEditor bind:item={selectedItem} onsave={saveItem} />
+			<ItemEditor
+				bind:item={selectedItem}
+				onsave={saveItem}
+				{brands}
+				oncreatebrand={handleCreateBrand}
+				ontoggleduplicate={() => openDuplicateModal(selectedItem!)}
+			/>
 		{:else}
 			<!-- Empty state -->
 			<div class="flex h-full items-center justify-center bg-white">
@@ -309,4 +400,52 @@
 			</div>
 		{/if}
 	</div>
+
+	{#if showDuplicateModal}
+		<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
+			<div class="w-full max-w-lg rounded-lg bg-white p-6 shadow-lg">
+				<h3 class="text-lg font-semibold text-gray-900">Duplicate Item</h3>
+				<p class="mt-1 text-sm text-gray-500">
+					Create a new catalog item from the current one. Update the asset folder to match the new
+					path.
+				</p>
+				<div class="mt-4 space-y-4">
+					<div>
+						<label class="mb-1 block text-xs font-medium text-gray-500">Name</label>
+						<input
+							type="text"
+							class="w-full rounded border-gray-300 text-sm"
+							bind:value={duplicateName}
+						/>
+					</div>
+					<div>
+						<label class="mb-1 block text-xs font-medium text-gray-500">Path</label>
+						<input
+							type="text"
+							class="w-full rounded border-gray-300 font-mono text-sm"
+							bind:value={duplicatePath}
+						/>
+						<p class="mt-1 text-xs text-gray-400">Example: percussion/vibraphone</p>
+					</div>
+					{#if duplicateError}
+						<div class="text-sm text-red-500">{duplicateError}</div>
+					{/if}
+				</div>
+				<div class="mt-6 flex items-center justify-end gap-2">
+					<button
+						class="rounded border border-gray-200 px-4 py-2 text-sm"
+						onclick={closeDuplicateModal}
+					>
+						Cancel
+					</button>
+					<button
+						class="rounded bg-blue-600 px-4 py-2 text-sm text-white hover:bg-blue-700"
+						onclick={confirmDuplicate}
+					>
+						Create Duplicate
+					</button>
+				</div>
+			</div>
+		</div>
+	{/if}
 </div>

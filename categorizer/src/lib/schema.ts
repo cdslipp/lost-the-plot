@@ -59,6 +59,8 @@ export const STAND_TYPES = ['none', 'short_boom', 'tall_boom', 'straight'] as co
 
 export const LINK_MODES = ['mono', 'stereo_pair', 'stereo_sum'] as const;
 
+export const INSTRUMENT_SIGNAL_TYPES = ['acoustic', 'electric'] as const;
+
 export const OUTPUT_TYPES = [
 	'wedge',
 	'iem_stereo',

@@ -10,16 +10,35 @@
 		PERSON_SUBCATEGORIES
 	} from '$lib/schema';
 
+	type Brand = {
+		name: string;
+		slug: string;
+		website?: string;
+		status?: 'active' | 'defunct';
+		notes?: string;
+	};
+
 	type EditorItem = CatalogItem & {
+		brands?: string[];
+		instrument_signal?: 'acoustic' | 'electric' | '';
 		default_outputs?: Array<{ name: string; short_name: string; type?: string; link_mode: string }>;
 	};
 
 	interface Props {
 		item: EditorItem;
 		onsave: (item: CatalogItem) => Promise<void>;
+		brands?: Brand[];
+		oncreatebrand?: (brand: Brand) => Promise<Brand | null>;
+		ontoggleduplicate?: () => void;
 	}
 
-	let { item = $bindable(), onsave }: Props = $props();
+	let {
+		item = $bindable(),
+		onsave,
+		brands = [],
+		oncreatebrand,
+		ontoggleduplicate
+	}: Props = $props();
 
 	const OUTPUT_TYPES = [
 		'wedge',
@@ -36,6 +55,20 @@
 	let saving = $state(false);
 	let saved = $state(false);
 	let tagsText = $state('');
+	let brandQuery = $state('');
+	let showBrandMenu = $state(false);
+	let showBrandModal = $state(false);
+	let brandFormName = $state('');
+	let brandFormWebsite = $state('');
+	let brandFormStatus = $state<'active' | 'defunct'>('active');
+	let brandFormNotes = $state('');
+	let brandFormError = $state('');
+	const showDefaultInputs = $derived(
+		['instrument', 'amp', 'drumset', 'microphone'].includes(item.item_type)
+	);
+	const showDefaultOutputs = $derived(
+		['monitor', 'speaker'].includes(item.item_type) || item.category === 'monitors'
+	);
 
 	// Sync tagsText when selected item changes
 	$effect(() => {
@@ -47,6 +80,60 @@
 			.split(',')
 			.map((t) => t.trim())
 			.filter(Boolean);
+	}
+
+	$effect(() => {
+		if (!item.brands) item.brands = [];
+	});
+
+	function toggleBrandSelection(brandName: string) {
+		if (!item.brands) item.brands = [];
+		if (item.brands.includes(brandName)) {
+			item.brands = item.brands.filter((b) => b !== brandName);
+		} else {
+			item.brands = [...item.brands, brandName];
+		}
+	}
+
+	function removeBrandSelection(brandName: string) {
+		if (!item.brands) return;
+		item.brands = item.brands.filter((b) => b !== brandName);
+	}
+
+	const filteredBrands = $derived.by(() => {
+		const q = brandQuery.trim().toLowerCase();
+		return brands.filter((b) => !q || b.name.toLowerCase().includes(q));
+	});
+
+	function openBrandModal() {
+		brandFormName = brandQuery.trim();
+		brandFormWebsite = '';
+		brandFormNotes = '';
+		brandFormStatus = 'active';
+		brandFormError = '';
+		showBrandModal = true;
+	}
+
+	async function createBrandFromModal() {
+		if (!brandFormName.trim()) {
+			brandFormError = 'Brand name is required.';
+			return;
+		}
+		if (!oncreatebrand) return;
+		const created = await oncreatebrand({
+			name: brandFormName.trim(),
+			slug: '',
+			website: brandFormWebsite.trim() || undefined,
+			status: brandFormStatus,
+			notes: brandFormNotes.trim() || undefined
+		});
+		if (!created) {
+			brandFormError = 'Failed to create brand.';
+			return;
+		}
+		showBrandModal = false;
+		brandQuery = '';
+		toggleBrandSelection(created.name);
 	}
 
 	function addInput() {
@@ -124,14 +211,24 @@
 				<div class="text-xs text-amber-600">Original: {item._original_name}</div>
 			{/if}
 		</div>
-		<button
-			class="shrink-0 rounded-md px-4 py-2 text-sm font-medium text-white transition-colors
-				{saved ? 'bg-green-500' : saving ? 'bg-gray-400' : 'bg-blue-600 hover:bg-blue-700'}"
-			onclick={save}
-			disabled={saving}
-		>
-			{saved ? 'Saved!' : saving ? 'Saving...' : 'Save'}
-		</button>
+		<div class="flex items-center gap-2">
+			{#if ontoggleduplicate}
+				<button
+					class="rounded-md border border-gray-200 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100"
+					onclick={ontoggleduplicate}
+				>
+					Duplicate
+				</button>
+			{/if}
+			<button
+				class="shrink-0 rounded-md px-4 py-2 text-sm font-medium text-white transition-colors
+					{saved ? 'bg-green-500' : saving ? 'bg-gray-400' : 'bg-blue-600 hover:bg-blue-700'}"
+				onclick={save}
+				disabled={saving}
+			>
+				{saved ? 'Saved!' : saving ? 'Saving...' : 'Save'}
+			</button>
+		</div>
 	</div>
 
 	<!-- Scrollable form -->
@@ -193,15 +290,63 @@
 						bind:value={item.auto_number_prefix}
 					/>
 				</div>
-				<div>
-					<label for="ed-brand" class="mb-1 block text-xs font-medium text-gray-500">Brand</label>
-					<input
-						id="ed-brand"
-						type="text"
-						placeholder="e.g., Fender, Marshall"
-						class="w-full rounded border-gray-300 text-sm"
-						bind:value={item.brand}
-					/>
+				<div class="col-span-2">
+					<label class="mb-1 block text-xs font-medium text-gray-500">Brands</label>
+					<div class="relative">
+						<div class="mb-2 flex flex-wrap gap-1">
+							{#each item.brands ?? [] as brand (brand)}
+								<span
+									class="flex items-center gap-1 rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-700"
+								>
+									{brand}
+									<button
+										class="text-gray-400 hover:text-gray-600"
+										onclick={() => removeBrandSelection(brand)}
+									>
+										&times;
+									</button>
+								</span>
+							{/each}
+							{#if (item.brands ?? []).length === 0}
+								<span class="text-xs text-gray-400">No brands selected</span>
+							{/if}
+						</div>
+						<input
+							type="text"
+							placeholder="Search or add a brand"
+							class="w-full rounded border-gray-300 text-sm"
+							bind:value={brandQuery}
+							onfocus={() => (showBrandMenu = true)}
+							onblur={() => setTimeout(() => (showBrandMenu = false), 150)}
+						/>
+						{#if showBrandMenu}
+							<div
+								class="absolute z-10 mt-1 max-h-48 w-full overflow-auto rounded border border-gray-200 bg-white shadow-sm"
+							>
+								{#if filteredBrands.length > 0}
+									{#each filteredBrands as brand (brand.slug)}
+										<button
+											class="flex w-full items-center justify-between px-3 py-1.5 text-left text-xs hover:bg-gray-50"
+											onclick={() => toggleBrandSelection(brand.name)}
+										>
+											<span>{brand.name}</span>
+											{#if item.brands?.includes(brand.name)}
+												<span class="text-[10px] text-green-600">Selected</span>
+											{/if}
+										</button>
+									{/each}
+								{:else}
+									<div class="px-3 py-2 text-xs text-gray-400">No matching brands</div>
+								{/if}
+								<button
+									class="w-full border-t border-gray-200 px-3 py-2 text-left text-xs text-blue-600 hover:bg-blue-50"
+									onclick={openBrandModal}
+								>
+									+ Create brand
+								</button>
+							</div>
+						{/if}
+					</div>
 				</div>
 				<div>
 					<label for="ed-model" class="mb-1 block text-xs font-medium text-gray-500">Model</label>
@@ -213,6 +358,20 @@
 						bind:value={item.model}
 					/>
 				</div>
+				{#if item.item_type === 'instrument'}
+					<div>
+						<label class="mb-1 block text-xs font-medium text-gray-500">Signal Type</label>
+						<select
+							class="w-full rounded border-gray-300 text-sm"
+							bind:value={item.instrument_signal}
+						>
+							<option value="">-- Not set --</option>
+							{#each ['acoustic', 'electric'] as mode (mode)}
+								<option value={mode}>{mode}</option>
+							{/each}
+						</select>
+					</div>
+				{/if}
 				<div class="col-span-2">
 					<div class="text-xs text-gray-400">
 						Original: <span class="font-mono">{item._original_name}</span>
@@ -406,177 +565,182 @@
 			/>
 		</section>
 
-		<!-- Default Inputs -->
-		<section>
-			<div class="mb-2 flex items-center justify-between">
-				<h3 class="text-sm font-medium text-gray-700">Default Inputs</h3>
-				<button
-					class="rounded bg-gray-100 px-2 py-1 text-xs text-gray-600 hover:bg-gray-200"
-					onclick={addInput}
-				>
-					+ Add Input
-				</button>
-			</div>
-
-			{#if item.default_inputs.length === 0}
-				<div
-					class="rounded border border-dashed border-gray-200 p-4 text-center text-sm text-gray-400"
-				>
-					No default inputs. Click "+ Add Input" for items that generate audio channels when placed.
+		{#if showDefaultInputs}
+			<!-- Default Inputs -->
+			<section>
+				<div class="mb-2 flex items-center justify-between">
+					<h3 class="text-sm font-medium text-gray-700">Default Inputs</h3>
+					<button
+						class="rounded bg-gray-100 px-2 py-1 text-xs text-gray-600 hover:bg-gray-200"
+						onclick={addInput}
+					>
+						+ Add Input
+					</button>
 				</div>
-			{:else}
-				<table class="w-full text-xs">
-					<thead>
-						<tr class="border-b border-gray-200 text-left text-gray-500">
-							<th class="px-2 py-1 font-medium">#</th>
-							<th class="px-2 py-1 font-medium">Name</th>
-							<th class="px-2 py-1 font-medium">Short</th>
-							<th class="px-2 py-1 font-medium">Stand</th>
-							<th class="px-2 py-1 font-medium">Link</th>
-							<th class="px-2 py-1 font-medium">48V</th>
-							<th class="px-2 py-1 font-medium"></th>
-						</tr>
-					</thead>
-					<tbody>
-						{#each item.default_inputs as input, i (i)}
-							<tr class="border-b border-gray-100">
-								<td class="px-2 py-1 text-gray-400">{i + 1}</td>
-								<td class="px-2 py-1">
-									<input
-										type="text"
-										placeholder="Kick In"
-										class="w-full min-w-20 rounded border-gray-300 px-1 py-0.5 text-xs"
-										bind:value={input.name}
-									/>
-								</td>
-								<td class="px-2 py-1">
-									<input
-										type="text"
-										placeholder="KikIn"
-										class="w-full min-w-16 rounded border-gray-300 px-1 py-0.5 text-xs"
-										bind:value={input.short_name}
-									/>
-								</td>
-								<td class="px-2 py-1">
-									<select
-										class="rounded border-gray-300 px-1 py-0.5 text-xs"
-										bind:value={input.stand}
-									>
-										{#each STAND_TYPES as stand (stand)}
-											<option value={stand}>{stand.replace(/_/g, ' ')}</option>
-										{/each}
-									</select>
-								</td>
-								<td class="px-2 py-1">
-									<select
-										class="rounded border-gray-300 px-1 py-0.5 text-xs"
-										bind:value={input.link_mode}
-									>
-										{#each LINK_MODES as mode (mode)}
-											<option value={mode}>{mode.replace(/_/g, ' ')}</option>
-										{/each}
-									</select>
-								</td>
-								<td class="px-2 py-1 text-center">
-									<input
-										type="checkbox"
-										class="rounded border-gray-300 text-blue-600"
-										bind:checked={input.phantom_power}
-									/>
-								</td>
-								<td class="px-2 py-1">
-									<button class="text-red-400 hover:text-red-600" onclick={() => removeInput(i)}>
-										&times;
-									</button>
-								</td>
+
+				{#if item.default_inputs.length === 0}
+					<div
+						class="rounded border border-dashed border-gray-200 p-4 text-center text-sm text-gray-400"
+					>
+						No default inputs. Click "+ Add Input" for items that generate audio channels when
+						placed.
+					</div>
+				{:else}
+					<table class="w-full text-xs">
+						<thead>
+							<tr class="border-b border-gray-200 text-left text-gray-500">
+								<th class="px-2 py-1 font-medium">#</th>
+								<th class="px-2 py-1 font-medium">Name</th>
+								<th class="px-2 py-1 font-medium">Short</th>
+								<th class="px-2 py-1 font-medium">Stand</th>
+								<th class="px-2 py-1 font-medium">Link</th>
+								<th class="px-2 py-1 font-medium">48V</th>
+								<th class="px-2 py-1 font-medium"></th>
 							</tr>
-						{/each}
-					</tbody>
-				</table>
-			{/if}
-		</section>
+						</thead>
+						<tbody>
+							{#each item.default_inputs as input, i (i)}
+								<tr class="border-b border-gray-100">
+									<td class="px-2 py-1 text-gray-400">{i + 1}</td>
+									<td class="px-2 py-1">
+										<input
+											type="text"
+											placeholder="Kick In"
+											class="w-full min-w-20 rounded border-gray-300 px-1 py-0.5 text-xs"
+											bind:value={input.name}
+										/>
+									</td>
+									<td class="px-2 py-1">
+										<input
+											type="text"
+											placeholder="KikIn"
+											class="w-full min-w-16 rounded border-gray-300 px-1 py-0.5 text-xs"
+											bind:value={input.short_name}
+										/>
+									</td>
+									<td class="px-2 py-1">
+										<select
+											class="rounded border-gray-300 px-1 py-0.5 text-xs"
+											bind:value={input.stand}
+										>
+											{#each STAND_TYPES as stand (stand)}
+												<option value={stand}>{stand.replace(/_/g, ' ')}</option>
+											{/each}
+										</select>
+									</td>
+									<td class="px-2 py-1">
+										<select
+											class="rounded border-gray-300 px-1 py-0.5 text-xs"
+											bind:value={input.link_mode}
+										>
+											{#each LINK_MODES as mode (mode)}
+												<option value={mode}>{mode.replace(/_/g, ' ')}</option>
+											{/each}
+										</select>
+									</td>
+									<td class="px-2 py-1 text-center">
+										<input
+											type="checkbox"
+											class="rounded border-gray-300 text-blue-600"
+											bind:checked={input.phantom_power}
+										/>
+									</td>
+									<td class="px-2 py-1">
+										<button class="text-red-400 hover:text-red-600" onclick={() => removeInput(i)}>
+											&times;
+										</button>
+									</td>
+								</tr>
+							{/each}
+						</tbody>
+					</table>
+				{/if}
+			</section>
+		{/if}
 
-		<!-- Default Outputs -->
-		<section>
-			<div class="mb-2 flex items-center justify-between">
-				<h3 class="text-sm font-medium text-gray-700">Default Outputs</h3>
-				<button
-					class="rounded bg-gray-100 px-2 py-1 text-xs text-gray-600 hover:bg-gray-200"
-					onclick={addOutput}
-				>
-					+ Add Output
-				</button>
-			</div>
-
-			{#if (item.default_outputs ?? []).length === 0}
-				<div
-					class="rounded border border-dashed border-gray-200 p-4 text-center text-sm text-gray-400"
-				>
-					No default outputs. Use this for monitors and output devices.
+		{#if showDefaultOutputs}
+			<!-- Default Outputs -->
+			<section>
+				<div class="mb-2 flex items-center justify-between">
+					<h3 class="text-sm font-medium text-gray-700">Default Outputs</h3>
+					<button
+						class="rounded bg-gray-100 px-2 py-1 text-xs text-gray-600 hover:bg-gray-200"
+						onclick={addOutput}
+					>
+						+ Add Output
+					</button>
 				</div>
-			{:else}
-				<table class="w-full text-xs">
-					<thead>
-						<tr class="border-b border-gray-200 text-left text-gray-500">
-							<th class="px-2 py-1 font-medium">#</th>
-							<th class="px-2 py-1 font-medium">Name</th>
-							<th class="px-2 py-1 font-medium">Short</th>
-							<th class="px-2 py-1 font-medium">Type</th>
-							<th class="px-2 py-1 font-medium">Link</th>
-							<th class="px-2 py-1 font-medium"></th>
-						</tr>
-					</thead>
-					<tbody>
-						{#each item.default_outputs ?? [] as output, i (i)}
-							<tr class="border-b border-gray-100">
-								<td class="px-2 py-1 text-gray-400">{i + 1}</td>
-								<td class="px-2 py-1">
-									<input
-										type="text"
-										placeholder="IEM"
-										class="w-full min-w-20 rounded border-gray-300 px-1 py-0.5 text-xs"
-										bind:value={output.name}
-									/>
-								</td>
-								<td class="px-2 py-1">
-									<input
-										type="text"
-										placeholder="IEM"
-										class="w-full min-w-16 rounded border-gray-300 px-1 py-0.5 text-xs"
-										bind:value={output.short_name}
-									/>
-								</td>
-								<td class="px-2 py-1">
-									<select
-										class="rounded border-gray-300 px-1 py-0.5 text-xs"
-										bind:value={output.type}
-									>
-										{#each OUTPUT_TYPES as type (type)}
-											<option value={type}>{type.replace(/_/g, ' ')}</option>
-										{/each}
-									</select>
-								</td>
-								<td class="px-2 py-1">
-									<select
-										class="rounded border-gray-300 px-1 py-0.5 text-xs"
-										bind:value={output.link_mode}
-									>
-										{#each LINK_MODES as mode (mode)}
-											<option value={mode}>{mode.replace(/_/g, ' ')}</option>
-										{/each}
-									</select>
-								</td>
-								<td class="px-2 py-1">
-									<button class="text-red-400 hover:text-red-600" onclick={() => removeOutput(i)}>
-										&times;
-									</button>
-								</td>
+
+				{#if (item.default_outputs ?? []).length === 0}
+					<div
+						class="rounded border border-dashed border-gray-200 p-4 text-center text-sm text-gray-400"
+					>
+						No default outputs. Use this for monitors and output devices.
+					</div>
+				{:else}
+					<table class="w-full text-xs">
+						<thead>
+							<tr class="border-b border-gray-200 text-left text-gray-500">
+								<th class="px-2 py-1 font-medium">#</th>
+								<th class="px-2 py-1 font-medium">Name</th>
+								<th class="px-2 py-1 font-medium">Short</th>
+								<th class="px-2 py-1 font-medium">Type</th>
+								<th class="px-2 py-1 font-medium">Link</th>
+								<th class="px-2 py-1 font-medium"></th>
 							</tr>
-						{/each}
-					</tbody>
-				</table>
-			{/if}
-		</section>
+						</thead>
+						<tbody>
+							{#each item.default_outputs ?? [] as output, i (i)}
+								<tr class="border-b border-gray-100">
+									<td class="px-2 py-1 text-gray-400">{i + 1}</td>
+									<td class="px-2 py-1">
+										<input
+											type="text"
+											placeholder="IEM"
+											class="w-full min-w-20 rounded border-gray-300 px-1 py-0.5 text-xs"
+											bind:value={output.name}
+										/>
+									</td>
+									<td class="px-2 py-1">
+										<input
+											type="text"
+											placeholder="IEM"
+											class="w-full min-w-16 rounded border-gray-300 px-1 py-0.5 text-xs"
+											bind:value={output.short_name}
+										/>
+									</td>
+									<td class="px-2 py-1">
+										<select
+											class="rounded border-gray-300 px-1 py-0.5 text-xs"
+											bind:value={output.type}
+										>
+											{#each OUTPUT_TYPES as type (type)}
+												<option value={type}>{type.replace(/_/g, ' ')}</option>
+											{/each}
+										</select>
+									</td>
+									<td class="px-2 py-1">
+										<select
+											class="rounded border-gray-300 px-1 py-0.5 text-xs"
+											bind:value={output.link_mode}
+										>
+											{#each LINK_MODES as mode (mode)}
+												<option value={mode}>{mode.replace(/_/g, ' ')}</option>
+											{/each}
+										</select>
+									</td>
+									<td class="px-2 py-1">
+										<button class="text-red-400 hover:text-red-600" onclick={() => removeOutput(i)}>
+											&times;
+										</button>
+									</td>
+								</tr>
+							{/each}
+						</tbody>
+					</table>
+				{/if}
+			</section>
+		{/if}
 
 		<!-- Common Models -->
 		<section>
@@ -640,3 +804,63 @@
 		<div class="h-8"></div>
 	</div>
 </div>
+
+{#if showBrandModal}
+	<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
+		<div class="w-full max-w-lg rounded-lg bg-white p-6 shadow-lg">
+			<h3 class="text-lg font-semibold text-gray-900">Create Brand</h3>
+			<p class="mt-1 text-sm text-gray-500">Add a new brand to the registry.</p>
+			<div class="mt-4 space-y-4">
+				<div>
+					<label class="mb-1 block text-xs font-medium text-gray-500">Name</label>
+					<input
+						type="text"
+						class="w-full rounded border-gray-300 text-sm"
+						bind:value={brandFormName}
+					/>
+				</div>
+				<div>
+					<label class="mb-1 block text-xs font-medium text-gray-500">Website</label>
+					<input
+						type="text"
+						class="w-full rounded border-gray-300 text-sm"
+						placeholder="https://example.com"
+						bind:value={brandFormWebsite}
+					/>
+				</div>
+				<div>
+					<label class="mb-1 block text-xs font-medium text-gray-500">Status</label>
+					<select class="w-full rounded border-gray-300 text-sm" bind:value={brandFormStatus}>
+						<option value="active">active</option>
+						<option value="defunct">defunct</option>
+					</select>
+				</div>
+				<div>
+					<label class="mb-1 block text-xs font-medium text-gray-500">Notes</label>
+					<textarea
+						rows="3"
+						class="w-full rounded border-gray-300 text-sm"
+						bind:value={brandFormNotes}
+					></textarea>
+				</div>
+				{#if brandFormError}
+					<div class="text-sm text-red-500">{brandFormError}</div>
+				{/if}
+			</div>
+			<div class="mt-6 flex items-center justify-end gap-2">
+				<button
+					class="rounded border border-gray-200 px-4 py-2 text-sm"
+					onclick={() => (showBrandModal = false)}
+				>
+					Cancel
+				</button>
+				<button
+					class="rounded bg-blue-600 px-4 py-2 text-sm text-white hover:bg-blue-700"
+					onclick={createBrandFromModal}
+				>
+					Create Brand
+				</button>
+			</div>
+		</div>
+	</div>
+{/if}

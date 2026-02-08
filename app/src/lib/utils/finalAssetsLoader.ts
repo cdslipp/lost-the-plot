@@ -6,8 +6,10 @@ export interface FinalAssetItem {
   name: string;
   item_type: string;
   variants: Record<string, string>;
+  variant_order?: string[];
   default_inputs?: any[];
   default_outputs?: any[];
+  instrument_signal?: 'acoustic' | 'electric' | '';
   path: string; // Path from the consolidate script
 }
 
@@ -20,9 +22,11 @@ export interface ProcessedItem {
   keywords: string[];
   description?: string;
   variants?: Record<string, string>;
+  variant_order?: string[];
   path: string; // Directory path for context
   default_inputs?: any[];
   default_outputs?: any[];
+  instrument_signal?: 'acoustic' | 'electric' | '';
 }
 
 // Map directory paths to human-readable categories
@@ -114,9 +118,11 @@ function processItem(itemData: FinalAssetItem, path: string, categoryPath: strin
     keywords,
     description: `${itemData.name} - ${category}`,
     variants: itemData.variants,
+    variant_order: itemData.variant_order,
     path,
     default_inputs: itemData.default_inputs,
-    default_outputs: itemData.default_outputs
+    default_outputs: itemData.default_outputs,
+    instrument_signal: itemData.instrument_signal
   };
 }
 

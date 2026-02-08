@@ -39,10 +39,12 @@ export interface OriginalItem {
 	name: string;
 	item_type: string;
 	variants: Record<string, string>;
+	variant_order?: string[];
 	path: string;
 	default_inputs?: DefaultInput[];
 	default_outputs?: DefaultOutput[];
 	brands?: string[];
+	instrument_signal?: 'acoustic' | 'electric' | '';
 }
 
 export interface DefaultInput {
@@ -107,6 +109,8 @@ export interface CatalogItem {
 	brands: string[];
 	model: string;
 	common_models: BrandModel[];
+	variant_order?: string[];
+	instrument_signal?: 'acoustic' | 'electric' | '';
 
 	// Enriched fields
 	slug: string;
