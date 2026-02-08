@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { COLOR_CATEGORIES, type ChannelMode } from '@stageplotter/shared';
+	import { getPlotState } from '$lib/state/stagePlotState.svelte';
 
 	const COLOR_CATEGORY_LABELS: Record<string, string> = {
 		vocals: 'Vocals / Mics',
@@ -13,35 +14,12 @@
 		monitors: 'Monitors'
 	};
 
-	type Props = {
-		consoleType: string | null;
-		consoleDef: any | null;
-		consoleOptions: { id: string; name: string }[];
-		categoryColorDefaults: Record<string, string>;
-		inputChannelMode: number;
-		outputChannelMode: number;
-		channelOptions: number[];
-		outputOptions: number[];
-		onConsoleTypeChange: (type: string | null) => void;
-		onCategoryColorDefaultsChange: (defaults: Record<string, string>) => void;
-		onInputChannelModeChange: (mode: number) => void;
-		onOutputChannelModeChange: (mode: number) => void;
-	};
+	const ps = getPlotState();
 
-	let {
-		consoleType,
-		consoleDef,
-		consoleOptions,
-		categoryColorDefaults,
-		inputChannelMode,
-		outputChannelMode,
-		channelOptions,
-		outputOptions,
-		onConsoleTypeChange,
-		onCategoryColorDefaultsChange,
-		onInputChannelModeChange,
-		onOutputChannelModeChange
-	}: Props = $props();
+	const channelOptions = $derived(ps.consoleDef?.channelOptions ?? StagePlotState.CHANNEL_OPTIONS);
+	const outputOptions = $derived(ps.consoleDef?.outputOptions ?? StagePlotState.CHANNEL_OPTIONS);
+
+	import { StagePlotState } from '$lib/state/stagePlotState.svelte';
 </script>
 
 <div class="space-y-6">
@@ -49,24 +27,24 @@
 	<div>
 		<h3 class="mb-2 text-sm font-medium text-text-primary">Mixing Console</h3>
 		<select
-			value={consoleType ?? ''}
+			value={ps.consoleType ?? ''}
 			onchange={(e) => {
 				const val = (e.target as HTMLSelectElement).value;
-				onConsoleTypeChange(val || null);
+				ps.setConsoleType(val || null);
 			}}
 			class="w-full rounded-lg border border-border-primary bg-surface px-3 py-2 text-sm text-text-primary focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
 		>
 			<option value="">None</option>
-			{#each consoleOptions as opt (opt.id)}
+			{#each ps.consoleOptions as opt (opt.id)}
 				<option value={opt.id}>{opt.name}</option>
 			{/each}
 			<option disabled>───────────</option>
 			<option disabled>Allen & Heath dLive (coming soon)</option>
 		</select>
-		{#if consoleDef}
+		{#if ps.consoleDef}
 			<p class="mt-1.5 text-xs text-text-secondary">
-				{consoleDef.inputChannels} input channels &bull; {consoleDef.outputBuses} output buses &bull;
-				{consoleDef.colors.length} scribble strip colors
+				{ps.consoleDef.inputChannels} input channels &bull; {ps.consoleDef.outputBuses} output buses &bull;
+				{ps.consoleDef.colors.length} scribble strip colors
 			</p>
 		{/if}
 	</div>
@@ -76,8 +54,9 @@
 		<div class="flex-1">
 			<h3 class="mb-2 text-sm font-medium text-text-primary">Input Channels</h3>
 			<select
-				value={inputChannelMode}
-				onchange={(e) => onInputChannelModeChange(Number((e.target as HTMLSelectElement).value))}
+				value={ps.inputChannelMode}
+				onchange={(e) =>
+					(ps.inputChannelMode = Number((e.target as HTMLSelectElement).value) as ChannelMode)}
 				class="w-full rounded-lg border border-border-primary bg-surface px-3 py-2 text-sm text-text-primary focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
 			>
 				{#each channelOptions as option (option)}
@@ -88,8 +67,9 @@
 		<div class="flex-1">
 			<h3 class="mb-2 text-sm font-medium text-text-primary">Output Channels</h3>
 			<select
-				value={outputChannelMode}
-				onchange={(e) => onOutputChannelModeChange(Number((e.target as HTMLSelectElement).value))}
+				value={ps.outputChannelMode}
+				onchange={(e) =>
+					(ps.outputChannelMode = Number((e.target as HTMLSelectElement).value) as ChannelMode)}
 				class="w-full rounded-lg border border-border-primary bg-surface px-3 py-2 text-sm text-text-primary focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
 			>
 				{#each outputOptions as option (option)}
@@ -100,7 +80,7 @@
 	</div>
 
 	<!-- Category Color Defaults -->
-	{#if consoleDef}
+	{#if ps.consoleDef}
 		<div>
 			<h3 class="mb-2 text-sm font-medium text-text-primary">Default Colors by Category</h3>
 			<p class="mb-2 text-xs text-text-secondary">
@@ -114,14 +94,16 @@
 							>{COLOR_CATEGORY_LABELS[cat] ?? cat}</span
 						>
 						<div class="flex gap-0.5">
-							{#each consoleDef.colors.filter((c: any) => !c.inverted) as color (color.id)}
+							{#each ps.consoleDef.colors.filter((c: any) => !c.inverted) as color (color.id)}
 								<button
 									type="button"
 									onclick={() =>
-										onCategoryColorDefaultsChange({ ...categoryColorDefaults, [cat]: color.id })}
-									class="h-4 w-4 rounded-sm border transition-all hover:scale-110 {categoryColorDefaults[
-										cat
-									] === color.id
+										ps.setCategoryColorDefaults({
+											...ps.categoryColorDefaults,
+											[cat]: color.id
+										})}
+									class="h-4 w-4 rounded-sm border transition-all hover:scale-110 {ps
+										.categoryColorDefaults[cat] === color.id
 										? 'scale-110 border-white ring-2 ring-blue-500'
 										: 'border-transparent'}"
 									style="background-color: {color.hex};"
