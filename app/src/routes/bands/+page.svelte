@@ -255,6 +255,21 @@
 		</div>
 	{/if}
 
+	<div
+		class="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 dark:border-blue-800 dark:bg-blue-950/40"
+	>
+		<p class="text-center text-sm text-blue-800 dark:text-blue-300">
+			We do not run a cloud service. Your data is stored on THIS device alone. If you want to move
+			to another device, export your data here.
+			<a
+				href="https://plot.slipp.cam/how-it-works"
+				target="_blank"
+				rel="noopener noreferrer"
+				class="underline hover:text-blue-600 dark:hover:text-blue-200">Learn more</a
+			>
+		</p>
+	</div>
+
 	<div class="mt-auto flex flex-wrap items-center justify-between gap-3 pt-4">
 		<input
 			bind:this={fileInput}

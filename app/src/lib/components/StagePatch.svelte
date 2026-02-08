@@ -500,7 +500,9 @@
 												<!-- Combobox cell -->
 												<div class="flex-1 px-1">
 													{#if readonlyMode}
-														<div class="flex h-8 items-center px-2 text-xs text-text-primary truncate">
+														<div
+															class="flex h-8 items-center truncate px-2 text-xs text-text-primary"
+														>
 															{selectedInputItemsByChannel[channelNum]?.name ?? ''}
 														</div>
 													{:else}
@@ -510,7 +512,9 @@
 															name="input-{channelNum}"
 															inputValue={selectedInputItemsByChannel[channelNum]?.name ?? ''}
 															onValueChange={(value) => {
-																const selected = allAvailableItems.find((item) => item.id === value);
+																const selected = allAvailableItems.find(
+																	(item) => item.id === value
+																);
 																handleInputItemSelect(channelNum, selected || null);
 															}}
 														>
@@ -778,7 +782,9 @@
 												<!-- Combobox cell -->
 												<div class="flex-1 px-1">
 													{#if readonlyMode}
-														<div class="flex h-8 items-center px-2 text-xs text-text-primary truncate">
+														<div
+															class="flex h-8 items-center truncate px-2 text-xs text-text-primary"
+														>
 															{selectedOutputItemsByChannel[channelNum]?.name ?? ''}
 														</div>
 													{:else}
@@ -788,7 +794,9 @@
 															name="output-{channelNum}"
 															inputValue={selectedOutputItemsByChannel[channelNum]?.name ?? ''}
 															onValueChange={(value) => {
-																const selected = allAvailableItems.find((item) => item.id === value);
+																const selected = allAvailableItems.find(
+																	(item) => item.id === value
+																);
 																handleOutputItemSelect(channelNum, selected || null);
 															}}
 														>

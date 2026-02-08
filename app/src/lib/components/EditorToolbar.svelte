@@ -171,7 +171,9 @@
 				<button
 					type="button"
 					onclick={() => !viewOnly && (editingDate = true)}
-					class="mt-0.5 px-2 text-[11px] font-medium text-text-tertiary transition-colors {viewOnly ? '' : 'cursor-pointer hover:text-text-secondary'}"
+					class="mt-0.5 px-2 text-[11px] font-medium text-text-tertiary transition-colors {viewOnly
+						? ''
+						: 'cursor-pointer hover:text-text-secondary'}"
 				>
 					Revised: {(() => {
 						try {
@@ -209,7 +211,12 @@
 			{/if}
 			{shareCopied ? 'Copied!' : 'Share'}
 		</button>
-		<ImportExport {onImportComplete} onExportPdf={handleExportPdf} onExportScn={handleExportScn} hideImport={viewOnly} />
+		<ImportExport
+			{onImportComplete}
+			onExportPdf={handleExportPdf}
+			onExportScn={handleExportScn}
+			hideImport={viewOnly}
+		/>
 		{#if !viewOnly}
 			<button
 				onclick={onAddItem}

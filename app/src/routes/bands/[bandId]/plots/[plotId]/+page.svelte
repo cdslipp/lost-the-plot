@@ -104,12 +104,12 @@
 		deleteSelected();
 	}
 
-	keys.onKeys(['ArrowUp'], () => nudgeSelected(0, -1));
-	keys.onKeys(['ArrowDown'], () => nudgeSelected(0, 1));
-	keys.onKeys(['ArrowLeft'], () => nudgeSelected(-1, 0));
-	keys.onKeys(['ArrowRight'], () => nudgeSelected(1, 0));
-	keys.onKeys(['Delete'], handleDeleteHotkey);
-	keys.onKeys(['Backspace'], handleDeleteHotkey);
+	keys.onKeys(['ArrowUp'], () => !viewOnly && nudgeSelected(0, -1));
+	keys.onKeys(['ArrowDown'], () => !viewOnly && nudgeSelected(0, 1));
+	keys.onKeys(['ArrowLeft'], () => !viewOnly && nudgeSelected(-1, 0));
+	keys.onKeys(['ArrowRight'], () => !viewOnly && nudgeSelected(1, 0));
+	keys.onKeys(['Delete'], () => !viewOnly && handleDeleteHotkey());
+	keys.onKeys(['Backspace'], () => !viewOnly && handleDeleteHotkey());
 
 	// --- Selection helpers ---
 	function clearSelections() {
@@ -168,7 +168,8 @@
 	// --- Selecto lifecycle ---
 	$effect(() => {
 		const el = canvasEl;
-		if (!el) {
+		if (!el || viewOnly) {
+			selecto?.destroy();
 			selecto = null;
 			return;
 		}
@@ -702,254 +703,322 @@
 
 	{#snippet canvasContent()}
 		<div class="border border-border-primary bg-surface p-3 shadow-sm">
-			<ContextMenu.Root>
-				<ContextMenu.Trigger>
-					{#snippet child({ props: canvasCtxProps })}
+			{#if viewOnly}
+				<!-- View-only canvas: no context menus, no interactions -->
+				<div
+					bind:this={canvasEl}
+					class="items-container relative mx-auto w-full bg-white dark:bg-gray-800"
+					style="aspect-ratio: {ps.stageWidth}/{ps.stageDepth}; max-width: 1100px;"
+				>
+					<CanvasOverlay
+						showZones={ps.showZones}
+						canvasWidth={ps.canvasWidth}
+						canvasHeight={ps.canvasHeight}
+						itemCount={ps.items.length}
+					/>
+
+					{#each ps.items as item (item.id)}
 						<div
-							{...canvasCtxProps}
-							bind:this={canvasEl}
-							class="items-container relative mx-auto w-full bg-white dark:bg-gray-800"
-							style="aspect-ratio: {ps.stageWidth}/{ps.stageDepth}; max-width: 1100px; cursor: {placingItem
-								? 'copy'
-								: 'default'}"
-							onmousemove={handleCanvasMouseMove}
-							onclick={handleCanvasClick}
+							class="absolute select-none"
+							data-id={item.id}
+							style="left: {item.position.x}px; top: {item.position.y}px; width: {item.position
+								.width}px; height: {item.position.height}px;"
 						>
-							<CanvasOverlay
-								showZones={ps.showZones}
-								canvasWidth={ps.canvasWidth}
-								canvasHeight={ps.canvasHeight}
-								itemCount={ps.items.length}
-							/>
-
-							{#each ps.items as item (item.id)}
-								<ContextMenu.Root>
-									<ContextMenu.Trigger>
-										{#snippet child({ props: itemProps })}
-											<div
-												{...itemProps}
-												class="group selectable-item absolute cursor-move select-none"
-												class:ring-2={selectedIds.has(String(item.id))}
-												class:ring-blue-500={selectedIds.has(String(item.id))}
-												data-id={item.id}
-												style="left: {item.position.x}px; top: {item.position.y}px; width: {item
-													.position.width}px; height: {item.position.height}px; touch-action: none;"
-												draggable="false"
-												ondragstart={(e) => e.preventDefault()}
-												onpointerdown={(e) => handleItemPointerDown(e, item)}
-												onpointermove={handleItemPointerMove}
-												onpointerup={handleItemPointerUp}
-												onclick={(e) => openItemEditor(item, e)}
-											>
-												{#if item.type === 'stageDeck'}
-													<StageDeck size={item.size} x={0} y={0} class="h-full w-full" />
-												{:else if item.type === 'riser'}
-													<div
-														class="flex h-full w-full items-center justify-center rounded border-2 border-gray-500 bg-gray-400/50 dark:border-gray-400 dark:bg-gray-600/50"
-													>
-														<div class="text-center leading-tight">
-															<div class="text-[10px] font-bold text-gray-700 dark:text-gray-200">
-																RISER
-															</div>
-															<div class="text-[8px] text-gray-600 dark:text-gray-300">
-																{item.itemData?.riserWidth ?? '?'}' × {item.itemData?.riserDepth ??
-																	'?'}'
-															</div>
-															{#if item.itemData?.riserHeight}
-																<div class="text-[7px] text-gray-500 dark:text-gray-400">
-																	h: {item.itemData.riserHeight}'
-																</div>
-															{/if}
-														</div>
-													</div>
-												{:else}
-													<img
-														src={getCurrentImageSrc(item)}
-														alt={item.itemData?.name || item.name || 'Stage Item'}
-														draggable="false"
-														style="width: {item.position.width}px; height: {item.position
-															.height}px; pointer-events: none;"
-													/>
-												{/if}
-
-												{#if item.person_id && item.itemData?.item_type === 'person'}
-													{@const person = ps.personsById[item.person_id]}
-													{#if person}
-														<div
-															class="pointer-events-none absolute -top-5 left-1/2 -translate-x-1/2 rounded bg-white/90 px-1.5 py-0.5 text-[10px] font-semibold whitespace-nowrap text-gray-800 shadow-sm dark:bg-gray-800/90 dark:text-gray-200"
-														>
-															{person.name}
-														</div>
-													{/if}
-												{/if}
-
-												{#if selectedItems.some((el) => el.dataset?.id === String(item.id))}
-													{#if getVariantKeys(item).length > 1}
-														<div
-															class="absolute -bottom-8 left-1/2 z-20 flex -translate-x-1/2 transform gap-1"
-														>
-															<button
-																onclick={(e) => {
-																	e.stopPropagation();
-																	ps.rotateItemRight(item);
-																}}
-																class="flex h-6 w-6 items-center justify-center rounded-full bg-blue-500 text-sm text-white shadow-md transition-colors hover:bg-blue-600"
-																title="Rotate Right"
-															>
-																<svg
-																	xmlns="http://www.w3.org/2000/svg"
-																	class="h-4 w-4"
-																	viewBox="0 0 20 20"
-																	fill="currentColor"
-																>
-																	<path
-																		fill-rule="evenodd"
-																		d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z"
-																		clip-rule="evenodd"
-																	/>
-																</svg>
-															</button>
-														</div>
-													{/if}
-												{/if}
-
-												<button
-													onclick={(e) => {
-														e.stopPropagation();
-														ps.deleteItem(item.id);
-													}}
-													class="absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs text-white opacity-0 transition-opacity group-hover:opacity-100"
-												>
-													&times;
-												</button>
-											</div>
-										{/snippet}
-									</ContextMenu.Trigger>
-									<ContextMenu.Portal>
-										<ContextMenu.Content
-											class="z-50 w-[200px] rounded-xl border border-gray-300 bg-white px-1 py-1.5 shadow-lg dark:border-gray-600 dark:bg-gray-800"
-										>
-											<ContextMenu.Item
-												onSelect={() => openReplaceMenu(item.id)}
-												class="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700"
-												>Replace...</ContextMenu.Item
-											>
-											<ContextMenu.Item
-												onSelect={() => ps.duplicateItem(item)}
-												class="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700"
-												>Duplicate</ContextMenu.Item
-											>
-											<ContextMenu.Separator class="-mx-1 my-1 block h-px bg-muted" />
-											<ContextMenu.Item
-												onSelect={() => ps.moveToFront(item.id)}
-												class="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700"
-												>Bring to Front</ContextMenu.Item
-											>
-											<ContextMenu.Item
-												onSelect={() => ps.moveForward(item.id)}
-												class="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700"
-												>Bring Forward</ContextMenu.Item
-											>
-											<ContextMenu.Item
-												onSelect={() => ps.moveBackward(item.id)}
-												class="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700"
-												>Send Backward</ContextMenu.Item
-											>
-											<ContextMenu.Item
-												onSelect={() => ps.moveToBack(item.id)}
-												class="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700"
-												>Send to Back</ContextMenu.Item
-											>
-											<ContextMenu.Separator class="-mx-1 my-1 block h-px bg-muted" />
-											<ContextMenu.Item
-												onSelect={() => ps.deleteItem(item.id)}
-												class="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-red-50 dark:hover:bg-red-600/30"
-												>Delete</ContextMenu.Item
-											>
-										</ContextMenu.Content>
-									</ContextMenu.Portal>
-								</ContextMenu.Root>
-							{/each}
-
-							{#if dragging?.moved && isAltPressed}
+							{#if item.type === 'stageDeck'}
+								<StageDeck size={item.size} x={0} y={0} class="h-full w-full" />
+							{:else if item.type === 'riser'}
 								<div
-									class="ring-dashed pointer-events-none absolute opacity-50 ring-2 ring-blue-400"
-									style="left: {dragging.ghostX}px; top: {dragging.ghostY}px; width: {dragging.item
-										.position.width}px; height: {dragging.item.position.height}px;"
+									class="flex h-full w-full items-center justify-center rounded border-2 border-gray-500 bg-gray-400/50 dark:border-gray-400 dark:bg-gray-600/50"
 								>
-									{#if dragging.item.type === 'stageDeck'}
-										<StageDeck size={dragging.item.size} x={0} y={0} class="h-full w-full" />
-									{:else if dragging.item.type === 'riser'}
-										<div
-											class="flex h-full w-full items-center justify-center rounded border-2 border-dashed border-gray-500 bg-gray-400/40 text-[10px] font-bold text-gray-700"
-										>
-											RISER
+									<div class="text-center leading-tight">
+										<div class="text-[10px] font-bold text-gray-700 dark:text-gray-200">RISER</div>
+										<div class="text-[8px] text-gray-600 dark:text-gray-300">
+											{item.itemData?.riserWidth ?? '?'}' × {item.itemData?.riserDepth ?? '?'}'
 										</div>
-									{:else}
-										<img
-											src={getCurrentImageSrc(dragging.item)}
-											alt="Duplicate preview"
-											draggable="false"
-											style="width: {dragging.item.position.width}px; height: {dragging.item
-												.position.height}px; pointer-events: none;"
-										/>
-									{/if}
+										{#if item.itemData?.riserHeight}
+											<div class="text-[7px] text-gray-500 dark:text-gray-400">
+												h: {item.itemData.riserHeight}'
+											</div>
+										{/if}
+									</div>
 								</div>
+							{:else}
+								<img
+									src={getCurrentImageSrc(item)}
+									alt={item.itemData?.name || item.name || 'Stage Item'}
+									draggable="false"
+									style="width: {item.position.width}px; height: {item.position
+										.height}px; pointer-events: none;"
+								/>
 							{/if}
 
-							{#if placingItem}
-								<div
-									class="pointer-events-none absolute opacity-60"
-									style="left: {placingItem.x}px; top: {placingItem.y}px; width: {placingItem.width}px; height: {placingItem.height}px;"
-								>
-									{#if placingItem.type === 'riser'}
-										<div
-											class="flex h-full w-full items-center justify-center rounded border-2 border-dashed border-gray-500 bg-gray-400/40 text-[10px] font-bold text-gray-700"
-										>
-											RISER
-										</div>
-									{:else}
-										<img
-											src={placingItem.itemData?.image || ''}
-											alt={placingItem.itemData?.name || 'Item Preview'}
-											style="width: {placingItem.width}px; height: {placingItem.height}px;"
-										/>
-									{/if}
-								</div>
+							{#if item.person_id && item.itemData?.item_type === 'person'}
+								{@const person = ps.personsById[item.person_id]}
+								{#if person}
+									<div
+										class="pointer-events-none absolute -top-5 left-1/2 -translate-x-1/2 rounded bg-white/90 px-1.5 py-0.5 text-[10px] font-semibold whitespace-nowrap text-gray-800 shadow-sm dark:bg-gray-800/90 dark:text-gray-200"
+									>
+										{person.name}
+									</div>
+								{/if}
 							{/if}
 						</div>
-					{/snippet}
-				</ContextMenu.Trigger>
-				<ContextMenu.Portal>
-					<ContextMenu.Content
-						class="z-50 w-[200px] rounded-xl border border-gray-300 bg-white px-1 py-1.5 shadow-lg dark:border-gray-600 dark:bg-gray-800"
-					>
-						<ContextMenu.Item
-							onSelect={() => openAddMenu()}
-							class="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700"
-							>Add Item</ContextMenu.Item
+					{/each}
+				</div>
+			{:else}
+				<!-- Full editor canvas with context menus and interactions -->
+				<ContextMenu.Root>
+					<ContextMenu.Trigger>
+						{#snippet child({ props: canvasCtxProps })}
+							<div
+								{...canvasCtxProps}
+								bind:this={canvasEl}
+								class="items-container relative mx-auto w-full bg-white dark:bg-gray-800"
+								style="aspect-ratio: {ps.stageWidth}/{ps.stageDepth}; max-width: 1100px; cursor: {placingItem
+									? 'copy'
+									: 'default'}"
+								onmousemove={handleCanvasMouseMove}
+								onclick={handleCanvasClick}
+							>
+								<CanvasOverlay
+									showZones={ps.showZones}
+									canvasWidth={ps.canvasWidth}
+									canvasHeight={ps.canvasHeight}
+									itemCount={ps.items.length}
+								/>
+
+								{#each ps.items as item (item.id)}
+									<ContextMenu.Root>
+										<ContextMenu.Trigger>
+											{#snippet child({ props: itemProps })}
+												<div
+													{...itemProps}
+													class="group selectable-item absolute cursor-move select-none"
+													class:ring-2={selectedIds.has(String(item.id))}
+													class:ring-blue-500={selectedIds.has(String(item.id))}
+													data-id={item.id}
+													style="left: {item.position.x}px; top: {item.position.y}px; width: {item
+														.position.width}px; height: {item.position
+														.height}px; touch-action: none;"
+													draggable="false"
+													ondragstart={(e) => e.preventDefault()}
+													onpointerdown={(e) => handleItemPointerDown(e, item)}
+													onpointermove={handleItemPointerMove}
+													onpointerup={handleItemPointerUp}
+													onclick={(e) => openItemEditor(item, e)}
+												>
+													{#if item.type === 'stageDeck'}
+														<StageDeck size={item.size} x={0} y={0} class="h-full w-full" />
+													{:else if item.type === 'riser'}
+														<div
+															class="flex h-full w-full items-center justify-center rounded border-2 border-gray-500 bg-gray-400/50 dark:border-gray-400 dark:bg-gray-600/50"
+														>
+															<div class="text-center leading-tight">
+																<div class="text-[10px] font-bold text-gray-700 dark:text-gray-200">
+																	RISER
+																</div>
+																<div class="text-[8px] text-gray-600 dark:text-gray-300">
+																	{item.itemData?.riserWidth ?? '?'}' × {item.itemData
+																		?.riserDepth ?? '?'}'
+																</div>
+																{#if item.itemData?.riserHeight}
+																	<div class="text-[7px] text-gray-500 dark:text-gray-400">
+																		h: {item.itemData.riserHeight}'
+																	</div>
+																{/if}
+															</div>
+														</div>
+													{:else}
+														<img
+															src={getCurrentImageSrc(item)}
+															alt={item.itemData?.name || item.name || 'Stage Item'}
+															draggable="false"
+															style="width: {item.position.width}px; height: {item.position
+																.height}px; pointer-events: none;"
+														/>
+													{/if}
+
+													{#if item.person_id && item.itemData?.item_type === 'person'}
+														{@const person = ps.personsById[item.person_id]}
+														{#if person}
+															<div
+																class="pointer-events-none absolute -top-5 left-1/2 -translate-x-1/2 rounded bg-white/90 px-1.5 py-0.5 text-[10px] font-semibold whitespace-nowrap text-gray-800 shadow-sm dark:bg-gray-800/90 dark:text-gray-200"
+															>
+																{person.name}
+															</div>
+														{/if}
+													{/if}
+
+													{#if selectedItems.some((el) => el.dataset?.id === String(item.id))}
+														{#if getVariantKeys(item).length > 1}
+															<div
+																class="absolute -bottom-8 left-1/2 z-20 flex -translate-x-1/2 transform gap-1"
+															>
+																<button
+																	onclick={(e) => {
+																		e.stopPropagation();
+																		ps.rotateItemRight(item);
+																	}}
+																	class="flex h-6 w-6 items-center justify-center rounded-full bg-blue-500 text-sm text-white shadow-md transition-colors hover:bg-blue-600"
+																	title="Rotate Right"
+																>
+																	<svg
+																		xmlns="http://www.w3.org/2000/svg"
+																		class="h-4 w-4"
+																		viewBox="0 0 20 20"
+																		fill="currentColor"
+																	>
+																		<path
+																			fill-rule="evenodd"
+																			d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z"
+																			clip-rule="evenodd"
+																		/>
+																	</svg>
+																</button>
+															</div>
+														{/if}
+													{/if}
+
+													<button
+														onclick={(e) => {
+															e.stopPropagation();
+															ps.deleteItem(item.id);
+														}}
+														class="absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs text-white opacity-0 transition-opacity group-hover:opacity-100"
+													>
+														&times;
+													</button>
+												</div>
+											{/snippet}
+										</ContextMenu.Trigger>
+										<ContextMenu.Portal>
+											<ContextMenu.Content
+												class="z-50 w-[200px] rounded-xl border border-gray-300 bg-white px-1 py-1.5 shadow-lg dark:border-gray-600 dark:bg-gray-800"
+											>
+												<ContextMenu.Item
+													onSelect={() => openReplaceMenu(item.id)}
+													class="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700"
+													>Replace...</ContextMenu.Item
+												>
+												<ContextMenu.Item
+													onSelect={() => ps.duplicateItem(item)}
+													class="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700"
+													>Duplicate</ContextMenu.Item
+												>
+												<ContextMenu.Separator class="-mx-1 my-1 block h-px bg-muted" />
+												<ContextMenu.Item
+													onSelect={() => ps.moveToFront(item.id)}
+													class="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700"
+													>Bring to Front</ContextMenu.Item
+												>
+												<ContextMenu.Item
+													onSelect={() => ps.moveForward(item.id)}
+													class="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700"
+													>Bring Forward</ContextMenu.Item
+												>
+												<ContextMenu.Item
+													onSelect={() => ps.moveBackward(item.id)}
+													class="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700"
+													>Send Backward</ContextMenu.Item
+												>
+												<ContextMenu.Item
+													onSelect={() => ps.moveToBack(item.id)}
+													class="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700"
+													>Send to Back</ContextMenu.Item
+												>
+												<ContextMenu.Separator class="-mx-1 my-1 block h-px bg-muted" />
+												<ContextMenu.Item
+													onSelect={() => ps.deleteItem(item.id)}
+													class="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-red-50 dark:hover:bg-red-600/30"
+													>Delete</ContextMenu.Item
+												>
+											</ContextMenu.Content>
+										</ContextMenu.Portal>
+									</ContextMenu.Root>
+								{/each}
+
+								{#if dragging?.moved && isAltPressed}
+									<div
+										class="ring-dashed pointer-events-none absolute opacity-50 ring-2 ring-blue-400"
+										style="left: {dragging.ghostX}px; top: {dragging.ghostY}px; width: {dragging
+											.item.position.width}px; height: {dragging.item.position.height}px;"
+									>
+										{#if dragging.item.type === 'stageDeck'}
+											<StageDeck size={dragging.item.size} x={0} y={0} class="h-full w-full" />
+										{:else if dragging.item.type === 'riser'}
+											<div
+												class="flex h-full w-full items-center justify-center rounded border-2 border-dashed border-gray-500 bg-gray-400/40 text-[10px] font-bold text-gray-700"
+											>
+												RISER
+											</div>
+										{:else}
+											<img
+												src={getCurrentImageSrc(dragging.item)}
+												alt="Duplicate preview"
+												draggable="false"
+												style="width: {dragging.item.position.width}px; height: {dragging.item
+													.position.height}px; pointer-events: none;"
+											/>
+										{/if}
+									</div>
+								{/if}
+
+								{#if placingItem}
+									<div
+										class="pointer-events-none absolute opacity-60"
+										style="left: {placingItem.x}px; top: {placingItem.y}px; width: {placingItem.width}px; height: {placingItem.height}px;"
+									>
+										{#if placingItem.type === 'riser'}
+											<div
+												class="flex h-full w-full items-center justify-center rounded border-2 border-dashed border-gray-500 bg-gray-400/40 text-[10px] font-bold text-gray-700"
+											>
+												RISER
+											</div>
+										{:else}
+											<img
+												src={placingItem.itemData?.image || ''}
+												alt={placingItem.itemData?.name || 'Item Preview'}
+												style="width: {placingItem.width}px; height: {placingItem.height}px;"
+											/>
+										{/if}
+									</div>
+								{/if}
+							</div>
+						{/snippet}
+					</ContextMenu.Trigger>
+					<ContextMenu.Portal>
+						<ContextMenu.Content
+							class="z-50 w-[200px] rounded-xl border border-gray-300 bg-white px-1 py-1.5 shadow-lg dark:border-gray-600 dark:bg-gray-800"
 						>
-						<ContextMenu.Item
-							onSelect={() => (ps.snapping = !ps.snapping)}
-							class="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700"
-							>Snapping: {ps.snapping ? 'On' : 'Off'}</ContextMenu.Item
-						>
-					</ContextMenu.Content>
-				</ContextMenu.Portal>
-			</ContextMenu.Root>
+							<ContextMenu.Item
+								onSelect={() => openAddMenu()}
+								class="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700"
+								>Add Item</ContextMenu.Item
+							>
+							<ContextMenu.Item
+								onSelect={() => (ps.snapping = !ps.snapping)}
+								class="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700"
+								>Snapping: {ps.snapping ? 'On' : 'Off'}</ContextMenu.Item
+							>
+						</ContextMenu.Content>
+					</ContextMenu.Portal>
+				</ContextMenu.Root>
+			{/if}
 		</div>
 
-		<div class="mt-1.5 flex justify-between text-xs text-text-tertiary">
-			<div class="flex items-center gap-3">
-				Items: {ps.items.length} | People: {ps.plotPersonIds.size}
-				{#if isAltPressed}
-					<span class="animate-bounce font-semibold text-blue-600">(Duplicate)</span>
-				{/if}
+		{#if !viewOnly}
+			<div class="mt-1.5 flex justify-between text-xs text-text-tertiary">
+				<div class="flex items-center gap-3">
+					Items: {ps.items.length} | People: {ps.plotPersonIds.size}
+					{#if isAltPressed}
+						<span class="animate-bounce font-semibold text-blue-600">(Duplicate)</span>
+					{/if}
+				</div>
+				<div>
+					{#if placingItem}Click on canvas to place item. Press 'Escape' to cancel.{/if}
+				</div>
 			</div>
-			<div>
-				{#if placingItem}Click on canvas to place item. Press 'Escape' to cancel.{/if}
-			</div>
-		</div>
+		{/if}
 	{/snippet}
 
 	{#if layoutMode === 'desktop'}
@@ -962,7 +1031,7 @@
 					{@render canvasContent()}
 				</div>
 
-				<div class="min-h-0 flex-1 max-h-[500px] overflow-hidden">
+				<div class="max-h-[500px] min-h-0 flex-1 overflow-hidden">
 					{@render patchContent(6)}
 				</div>
 			</div>
@@ -1025,69 +1094,84 @@
 			</div>
 		</div>
 	{:else}
-		<div class="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden">
-			<div
-				class="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-border-primary bg-surface shadow-sm"
-			>
-				<div class="border-b border-border-primary bg-muted/30 px-0 pt-0">
-					<div class="flex w-full">
-						<button
-							type="button"
-							onclick={() => (mobileMainTab = 'canvas')}
-							class={`flex-1 border-b-2 px-4 py-3 text-center text-sm font-medium transition-colors ${mobileMainTab === 'canvas' ? 'border-text-primary bg-surface text-text-primary' : 'border-transparent text-text-secondary hover:text-text-primary'}`}
-						>
-							Canvas
-						</button>
-						<button
-							type="button"
-							onclick={() => (mobileMainTab = 'patch')}
-							class={`flex-1 border-b-2 px-4 py-3 text-center text-sm font-medium transition-colors ${mobileMainTab === 'patch' ? 'border-text-primary bg-surface text-text-primary' : 'border-transparent text-text-secondary hover:text-text-primary'}`}
-						>
-							Patch List
-						</button>
-						<button
-							type="button"
-							onclick={() => (mobileMainTab = 'panel')}
-							class={`flex-1 border-b-2 px-4 py-3 text-center text-sm font-medium transition-colors ${mobileMainTab === 'panel' ? 'border-text-primary bg-surface text-text-primary' : 'border-transparent text-text-secondary hover:text-text-primary'}`}
-						>
-							Panel
-						</button>
-					</div>
+		<!-- Mobile view-only layout with bottom navigation -->
+		<div class="relative flex min-h-0 flex-1 flex-col overflow-hidden pb-14">
+			{#if mobileMainTab === 'canvas'}
+				<div class="min-h-0 flex-1 overflow-auto p-2">
+					{@render canvasContent()}
 				</div>
-				{#if mobileMainTab === 'canvas'}
-					<div class="min-h-0 flex-1 overflow-hidden p-4">
-						{@render canvasContent()}
-					</div>
-				{:else if mobileMainTab === 'patch'}
-					<div class="min-h-0 flex-1 overflow-hidden p-4">
-						{@render patchContent(4)}
-					</div>
-				{:else}
-					<div class="min-h-0 flex-1 overflow-hidden p-4">
-						<EditorSidePanel
-							bind:activeTab={mobilePanelTab}
-							bind:selectedItems
-							onPlaceRiser={placeRiser}
-							onAddPersonToPlot={addPersonToPlot}
+			{:else if mobileMainTab === 'patch'}
+				<div class="min-h-0 flex-1 overflow-auto p-2">
+					{@render patchContent(2)}
+				</div>
+			{/if}
+
+			<!-- Bottom navigation bar -->
+			<nav
+				class="fixed right-0 bottom-0 left-0 z-30 flex border-t border-border-primary bg-surface"
+			>
+				<button
+					type="button"
+					onclick={() => (mobileMainTab = 'canvas')}
+					class="flex flex-1 flex-col items-center gap-0.5 py-2 text-xs transition-colors {mobileMainTab ===
+					'canvas'
+						? 'text-text-primary'
+						: 'text-text-tertiary'}"
+				>
+					<!-- Stage/canvas icon -->
+					<svg
+						xmlns="http://www.w3.org/2000/svg"
+						class="h-5 w-5"
+						viewBox="0 0 20 20"
+						fill="currentColor"
+					>
+						<path
+							d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z"
 						/>
-					</div>
-				{/if}
-			</div>
+					</svg>
+					Canvas
+				</button>
+				<button
+					type="button"
+					onclick={() => (mobileMainTab = 'patch')}
+					class="flex flex-1 flex-col items-center gap-0.5 py-2 text-xs transition-colors {mobileMainTab ===
+					'patch'
+						? 'text-text-primary'
+						: 'text-text-tertiary'}"
+				>
+					<!-- List icon -->
+					<svg
+						xmlns="http://www.w3.org/2000/svg"
+						class="h-5 w-5"
+						viewBox="0 0 20 20"
+						fill="currentColor"
+					>
+						<path
+							fill-rule="evenodd"
+							d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z"
+							clip-rule="evenodd"
+						/>
+					</svg>
+					Patch
+				</button>
+			</nav>
 		</div>
 	{/if}
 </div>
 
-<!-- Command Palette for Adding Items -->
-<div data-command-palette>
-	<ItemCommandPalette
-		bind:open={isAddingItem}
-		onselect={handleItemSelect}
-		onclose={() => {
-			isAddingItem = false;
-			replacingItemId = null;
-		}}
-	/>
-</div>
+{#if !viewOnly}
+	<!-- Command Palette for Adding Items -->
+	<div data-command-palette>
+		<ItemCommandPalette
+			bind:open={isAddingItem}
+			onselect={handleItemSelect}
+			onclose={() => {
+				isAddingItem = false;
+				replacingItemId = null;
+			}}
+		/>
+	</div>
+{/if}
 
 <style>
 	.selectable-item:active {
