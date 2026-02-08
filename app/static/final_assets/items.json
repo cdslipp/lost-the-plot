@@ -2221,22 +2221,35 @@
 		"common_models": []
 	},
 	{
-		"name": "Straight Mic Stand",
+		"name": "Straight Mic Stand (Short)",
 		"item_type": "stand",
 		"variants": {
-			"_short": "Straight_short.png",
-			"_VocalR": "Straight_VocalR.png",
-			"_shortLA": "Straight_shortLA.png",
-			"_shortRA": "Straight_shortRA.png",
-			"_shortL": "Straight_shortL.png",
-			"_Vocal": "Straight_Vocal.png",
-			"_shortR": "Straight_shortR.png",
-			"_VocalRA": "Straight_VocalRA.png",
-			"_shortBack": "Straight_shortBack.png",
-			"_VocalLA": "Straight_VocalLA.png",
-			"_VocalL": "Straight_VocalL.png"
+			"default": "Straight_short.png",
+			"L": "Straight_shortL.png",
+			"R": "Straight_shortR.png",
+			"LA": "Straight_shortLA.png",
+			"RA": "Straight_shortRA.png",
+			"back": "Straight_shortBack.png"
 		},
-		"path": "mics/stands/straight",
+		"path": "mics/stands/straight_short",
+		"is_backline": false,
+		"auto_number_prefix": "",
+		"person_subcategory": "",
+		"brand": "",
+		"model": "",
+		"common_models": []
+	},
+	{
+		"name": "Straight Mic Stand (Vocal Round Base)",
+		"item_type": "stand",
+		"variants": {
+			"default": "Straight_Vocal.png",
+			"L": "Straight_VocalL.png",
+			"R": "Straight_VocalR.png",
+			"LA": "Straight_VocalLA.png",
+			"RA": "Straight_VocalRA.png"
+		},
+		"path": "mics/stands/straight_vocal",
 		"is_backline": false,
 		"auto_number_prefix": "",
 		"person_subcategory": "",
@@ -3329,7 +3342,7 @@
 		"common_models": []
 	},
 	{
-		"name": "Drummer",
+		"name": "Drummer 2",
 		"item_type": "person",
 		"variants": {
 			"default": "drummer.png",
@@ -3347,7 +3360,7 @@
 		"common_models": []
 	},
 	{
-		"name": "Drummerafrican",
+		"name": "Drummer 1",
 		"item_type": "person",
 		"variants": {
 			"LA": "DrummerAfricanLA.png",
@@ -3940,6 +3953,24 @@
 		"common_models": []
 	},
 	{
+		"name": "Vibraphone",
+		"item_type": "instrument",
+		"variants": {
+			"R": "MarimbaR.png",
+			"LA": "MarimbaLA.png",
+			"default": "Marimba.png",
+			"RA": "MarimbaRA.png",
+			"L": "MarimbaL.png"
+		},
+		"path": "percussion/vibraphone",
+		"is_backline": true,
+		"auto_number_prefix": "",
+		"person_subcategory": "",
+		"brand": "",
+		"model": "",
+		"common_models": []
+	},
+	{
 		"name": "Percussionpad",
 		"item_type": "instrument",
 		"variants": {
@@ -4337,6 +4368,20 @@
 			"default": "cello.png"
 		},
 		"path": "strings/cello",
+		"is_backline": true,
+		"auto_number_prefix": "Str",
+		"person_subcategory": "",
+		"brand": "",
+		"model": "",
+		"common_models": []
+	},
+	{
+		"name": "Double Bass",
+		"item_type": "instrument",
+		"variants": {
+			"default": "stringbass.png"
+		},
+		"path": "strings/double_bass",
 		"is_backline": true,
 		"auto_number_prefix": "Str",
 		"person_subcategory": "",

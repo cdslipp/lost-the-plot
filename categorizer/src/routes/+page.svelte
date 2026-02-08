@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { CatalogItem } from '$lib/types';
+	import type { CatalogItem, Brand } from '$lib/types';
 	import { ITEM_TYPES, CATEGORIES, PROVISION_TYPES } from '$lib/schema';
 	import { SvelteSet } from 'svelte/reactivity';
 	import ItemSidebar from '$lib/components/ItemSidebar.svelte';
@@ -9,9 +9,15 @@
 	// $state wraps items with deep reactivity so bind:value works in the editor.
 	// This intentionally captures the initial load — we manage mutations locally.
 	let items: CatalogItem[] = $state(data.items);
+	let brands: Brand[] = $state(data.brands ?? []);
 	let selectedPath = $state('');
 	let multiSelected = new SvelteSet<string>();
 	let sidebar: ItemSidebar | undefined = $state();
+	let duplicateItem = $state<CatalogItem | null>(null);
+	let showDuplicateModal = $state(false);
+	let duplicateName = $state('');
+	let duplicatePath = $state('');
+	let duplicateError = $state('');
 
 	// Batch edit state
 	let showBatchPanel = $state(false);

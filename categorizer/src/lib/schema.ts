@@ -59,6 +59,18 @@ export const STAND_TYPES = ['none', 'short_boom', 'tall_boom', 'straight'] as co
 
 export const LINK_MODES = ['mono', 'stereo_pair', 'stereo_sum'] as const;
 
+export const OUTPUT_TYPES = [
+	'wedge',
+	'iem_stereo',
+	'iem_mono',
+	'sidefill',
+	'sub',
+	'pa_speaker',
+	'line_array',
+	'column_speaker',
+	'personal_system'
+] as const;
+
 export const PERSON_SUBCATEGORIES = ['player', 'crew', 'generic', ''] as const;
 
 /** Types that generate audio inputs when placed on a stage plot */

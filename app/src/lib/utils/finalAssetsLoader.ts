@@ -7,6 +7,7 @@ export interface FinalAssetItem {
   item_type: string;
   variants: Record<string, string>;
   default_inputs?: any[];
+  default_outputs?: any[];
   path: string; // Path from the consolidate script
 }
 
@@ -21,6 +22,7 @@ export interface ProcessedItem {
   variants?: Record<string, string>;
   path: string; // Directory path for context
   default_inputs?: any[];
+  default_outputs?: any[];
 }
 
 // Map directory paths to human-readable categories
@@ -42,6 +44,7 @@ const CATEGORY_MAP: Record<string, string> = {
   'drums/individual_drums': 'Drums - Individual',
   'drums/drum_kits': 'Drum Kits',
   'guitars': 'Guitars',
+  'guitars/bass': 'Bass',
   'keys': 'Keyboards & Piano',
   'amps': 'Amplifiers',
   'amps/bass': 'Bass Amplifiers',
@@ -112,7 +115,8 @@ function processItem(itemData: FinalAssetItem, path: string, categoryPath: strin
     description: `${itemData.name} - ${category}`,
     variants: itemData.variants,
     path,
-    default_inputs: itemData.default_inputs
+    default_inputs: itemData.default_inputs,
+    default_outputs: itemData.default_outputs
   };
 }
 

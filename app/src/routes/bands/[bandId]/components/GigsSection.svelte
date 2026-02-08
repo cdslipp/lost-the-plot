@@ -197,16 +197,8 @@
 
 	function formatDate(dateStr: string | null): string {
 		if (!dateStr) return '';
-		try {
-			return new Date(dateStr + 'T00:00:00').toLocaleDateString(undefined, {
-				weekday: 'short',
-				month: 'short',
-				day: 'numeric',
-				year: 'numeric'
-			});
-		} catch {
-			return dateStr;
-		}
+		// Already in YYYY-MM-DD format from the DB
+		return dateStr;
 	}
 
 	function formatTime(timeStr: string | null): string {

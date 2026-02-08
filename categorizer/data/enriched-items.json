@@ -6,17 +6,28 @@
 			"default": "electric.png"
 		},
 		"path": "ac/electric/electric",
-		"is_backline": false,
-		"auto_number_prefix": "",
-		"person_subcategory": "",
 		"brand": "",
 		"model": "",
 		"common_models": [],
+		"slug": "ac-electric-electric",
 		"category": "power",
 		"subcategory": "power_outlet",
+		"tags": ["power", "power_outlet", "electric"],
+		"default_inputs": [],
+		"dimensions": {
+			"width_in": 0,
+			"depth_in": 0,
+			"height_in": 0
+		},
 		"provision_default": "venue_provided",
-		"connectors": ["IEC"],
-		"tags": ["power", "power_outlet", "electric"]
+		"is_backline": false,
+		"connectors": [],
+		"power_requirements": "",
+		"notes": "",
+		"auto_number_prefix": "",
+		"person_subcategory": "",
+		"_enriched": true,
+		"_original_name": "Power Outlet"
 	},
 	{
 		"name": "UK 240V Outlet",
@@ -25,17 +36,28 @@
 			"default": "electric240_uk_electric240UK.png"
 		},
 		"path": "ac/electric/electric240_uk",
-		"is_backline": false,
-		"auto_number_prefix": "",
-		"person_subcategory": "",
 		"brand": "",
 		"model": "",
 		"common_models": [],
+		"slug": "ac-electric-electric240-uk",
 		"category": "power",
 		"subcategory": "power_outlet",
+		"tags": ["power", "power_outlet", "electric"],
+		"default_inputs": [],
+		"dimensions": {
+			"width_in": 0,
+			"depth_in": 0,
+			"height_in": 0
+		},
 		"provision_default": "venue_provided",
+		"is_backline": false,
 		"connectors": ["IEC"],
-		"tags": ["power", "power_outlet", "electric"]
+		"power_requirements": "",
+		"notes": "",
+		"auto_number_prefix": "",
+		"person_subcategory": "",
+		"_enriched": true,
+		"_original_name": "UK 240V Outlet"
 	},
 	{
 		"name": "UK 240V Quad Outlet",
@@ -44,17 +66,28 @@
 			"default": "electric240_uk4_electric240UK4.png"
 		},
 		"path": "ac/electric/electric240_uk4",
-		"is_backline": false,
-		"auto_number_prefix": "",
-		"person_subcategory": "",
 		"brand": "",
 		"model": "",
 		"common_models": [],
+		"slug": "ac-electric-electric240-uk4",
 		"category": "power",
 		"subcategory": "power_outlet",
+		"tags": ["power", "power_outlet", "electric"],
+		"default_inputs": [],
+		"dimensions": {
+			"width_in": 0,
+			"depth_in": 0,
+			"height_in": 0
+		},
 		"provision_default": "venue_provided",
+		"is_backline": false,
 		"connectors": ["IEC"],
-		"tags": ["power", "power_outlet", "electric"]
+		"power_requirements": "",
+		"notes": "",
+		"auto_number_prefix": "",
+		"person_subcategory": "",
+		"_enriched": true,
+		"_original_name": "UK 240V Quad Outlet"
 	},
 	{
 		"name": "Quad Power Outlet",
@@ -63,17 +96,28 @@
 			"default": "electric4.png"
 		},
 		"path": "ac/electric/electric4",
-		"is_backline": false,
-		"auto_number_prefix": "",
-		"person_subcategory": "",
 		"brand": "",
 		"model": "",
 		"common_models": [],
+		"slug": "ac-electric-electric4",
 		"category": "power",
 		"subcategory": "power_outlet",
+		"tags": ["power", "power_outlet", "electric"],
+		"default_inputs": [],
+		"dimensions": {
+			"width_in": 0,
+			"depth_in": 0,
+			"height_in": 0
+		},
 		"provision_default": "venue_provided",
+		"is_backline": false,
 		"connectors": ["IEC"],
-		"tags": ["power", "power_outlet", "electric"]
+		"power_requirements": "",
+		"notes": "",
+		"auto_number_prefix": "",
+		"person_subcategory": "",
+		"_enriched": true,
+		"_original_name": "Quad Power Outlet"
 	},
 	{
 		"name": "Euro Outlet",
@@ -83,17 +127,28 @@
 			"default": "euro.png"
 		},
 		"path": "ac/electric/euro",
-		"is_backline": false,
-		"auto_number_prefix": "",
-		"person_subcategory": "",
 		"brand": "",
 		"model": "",
 		"common_models": [],
+		"slug": "ac-electric-euro",
 		"category": "power",
 		"subcategory": "power_outlet",
+		"tags": ["power", "power_outlet", "electric"],
+		"default_inputs": [],
+		"dimensions": {
+			"width_in": 0,
+			"depth_in": 0,
+			"height_in": 0
+		},
 		"provision_default": "venue_provided",
+		"is_backline": false,
 		"connectors": ["IEC"],
-		"tags": ["power", "power_outlet", "electric"]
+		"power_requirements": "",
+		"notes": "",
+		"auto_number_prefix": "",
+		"person_subcategory": "",
+		"_enriched": true,
+		"_original_name": "Euro Outlet"
 	},
 	{
 		"name": "Bass Amp",
@@ -106,28 +161,37 @@
 			"default": "BassAmp.png"
 		},
 		"path": "amps/bass/bassamp",
-		"is_backline": true,
-		"auto_number_prefix": "Bass",
-		"person_subcategory": "",
 		"brand": "",
 		"model": "",
 		"common_models": ["Ampeg SVT", "Fender Rumble", "GK 800RB"],
+		"slug": "amps-bass-bassamp",
 		"category": "amps",
 		"subcategory": "bass_amp",
-		"provision_default": "artist_provided",
-		"connectors": ["TS", "speakon"],
-		"tags": ["amps", "amp", "bass_amp", "bass", "backline"],
+		"tags": ["amps", "amp", "bass_amp", "bass", "backline", "markbass"],
+		"default_inputs": [
+			{
+				"name": "Amp",
+				"connector": "XLR",
+				"stand": "none",
+				"link_mode": "mono",
+				"phantom_power": false
+			}
+		],
+		"default_outputs": [],
 		"dimensions": {
 			"width": 24,
 			"depth": 12,
 			"height": 20
 		},
-		"default_inputs": [
-			{
-				"name": "Amp",
-				"connector": "XLR"
-			}
-		]
+		"provision_default": "artist_provided",
+		"is_backline": true,
+		"connectors": ["TS", "speakon"],
+		"power_requirements": "",
+		"notes": "",
+		"auto_number_prefix": "Bass",
+		"person_subcategory": "",
+		"_enriched": true,
+		"_original_name": "Bass Amp"
 	},
 	{
 		"name": "Blonde Bassman",
@@ -140,28 +204,33 @@
 			"LA": "BlondeBassmanLA.png"
 		},
 		"path": "amps/bass/blondebassman",
-		"is_backline": true,
-		"auto_number_prefix": "Bass",
-		"person_subcategory": "",
 		"brand": "Fender",
 		"model": "Bassman (Blonde)",
 		"common_models": [],
+		"slug": "amps-bass-blondebassman",
 		"category": "amps",
 		"subcategory": "bass_amp",
-		"provision_default": "artist_provided",
-		"connectors": ["TS", "speakon"],
 		"tags": ["amps", "amp", "bass_amp", "bass", "backline"],
-		"dimensions": {
-			"width": 24,
-			"depth": 12,
-			"height": 20
-		},
 		"default_inputs": [
 			{
 				"name": "Amp",
 				"connector": "XLR"
 			}
-		]
+		],
+		"dimensions": {
+			"width": 24,
+			"depth": 12,
+			"height": 20
+		},
+		"provision_default": "artist_provided",
+		"is_backline": true,
+		"connectors": ["TS", "speakon"],
+		"power_requirements": "",
+		"notes": "",
+		"auto_number_prefix": "Bass",
+		"person_subcategory": "",
+		"_enriched": true,
+		"_original_name": "Blonde Bassman"
 	},
 	{
 		"name": "Ampeg SVT",
@@ -174,28 +243,33 @@
 			"default": "Ampeg.png"
 		},
 		"path": "amps/bass/ampeg",
-		"is_backline": true,
-		"auto_number_prefix": "Bass",
-		"person_subcategory": "",
 		"brand": "Ampeg",
 		"model": "SVT",
 		"common_models": [],
+		"slug": "amps-bass-ampeg",
 		"category": "amps",
 		"subcategory": "bass_amp",
-		"provision_default": "artist_provided",
-		"connectors": ["TS", "speakon"],
 		"tags": ["amps", "amp", "bass_amp", "bass", "ampeg", "backline"],
-		"dimensions": {
-			"width": 24,
-			"depth": 12,
-			"height": 20
-		},
 		"default_inputs": [
 			{
 				"name": "Amp",
 				"connector": "XLR"
 			}
-		]
+		],
+		"dimensions": {
+			"width": 24,
+			"depth": 12,
+			"height": 20
+		},
+		"provision_default": "artist_provided",
+		"is_backline": true,
+		"connectors": ["TS", "speakon"],
+		"power_requirements": "",
+		"notes": "",
+		"auto_number_prefix": "Bass",
+		"person_subcategory": "",
+		"_enriched": true,
+		"_original_name": "Ampeg SVT"
 	},
 	{
 		"name": "Fender Deluxe Reverb",
@@ -209,28 +283,33 @@
 			"LA": "FenderAmpLA.png"
 		},
 		"path": "amps/guitar/fender_amp",
-		"is_backline": true,
-		"auto_number_prefix": "Gtr",
-		"person_subcategory": "",
 		"brand": "Fender",
 		"model": "Deluxe Reverb",
 		"common_models": [],
+		"slug": "amps-guitar-fender-amp",
 		"category": "amps",
 		"subcategory": "guitar_amp",
-		"provision_default": "artist_provided",
-		"connectors": ["TS", "speakon"],
 		"tags": ["amps", "amp", "guitar_amp", "guitar", "fender", "backline"],
-		"dimensions": {
-			"width": 24,
-			"depth": 10,
-			"height": 18
-		},
 		"default_inputs": [
 			{
 				"name": "Amp",
 				"connector": "XLR"
 			}
-		]
+		],
+		"dimensions": {
+			"width": 24,
+			"depth": 10,
+			"height": 18
+		},
+		"provision_default": "artist_provided",
+		"is_backline": true,
+		"connectors": ["TS", "speakon"],
+		"power_requirements": "",
+		"notes": "",
+		"auto_number_prefix": "Gtr",
+		"person_subcategory": "",
+		"_enriched": true,
+		"_original_name": "Fender Deluxe Reverb"
 	},
 	{
 		"name": "Keyboard Amp",
@@ -1341,23 +1420,33 @@
 			"L": "sixbassL.png"
 		},
 		"path": "drums/hardware/sixbass",
-		"is_backline": true,
-		"auto_number_prefix": "Drums",
-		"person_subcategory": "",
 		"brand": "",
 		"model": "",
 		"common_models": [],
+		"slug": "drums-hardware-sixbass",
 		"category": "drums",
 		"subcategory": "hardware",
-		"provision_default": "artist_provided",
-		"connectors": ["XLR"],
-		"tags": ["drums", "instrument", "hardware", "backline"],
+		"tags": ["drums", "instrument", "hardware", "backline", "steelpan"],
 		"default_inputs": [
 			{
 				"name": "Drum",
 				"connector": "XLR"
 			}
-		]
+		],
+		"dimensions": {
+			"width_in": 0,
+			"depth_in": 0,
+			"height_in": 0
+		},
+		"provision_default": "artist_provided",
+		"is_backline": true,
+		"connectors": ["XLR"],
+		"power_requirements": "",
+		"notes": "",
+		"auto_number_prefix": "Drums",
+		"person_subcategory": "",
+		"_enriched": true,
+		"_original_name": "Six Bass Drums"
 	},
 	{
 		"name": "Throne",
@@ -1366,17 +1455,28 @@
 			"default": "throne.png"
 		},
 		"path": "drums/hardware/throne",
-		"is_backline": false,
-		"auto_number_prefix": "Drums",
-		"person_subcategory": "",
 		"brand": "",
 		"model": "",
 		"common_models": [],
+		"slug": "drums-hardware-throne",
 		"category": "drums",
 		"subcategory": "hardware",
+		"tags": ["drums", "furniture", "hardware"],
+		"default_inputs": [],
+		"dimensions": {
+			"width_in": 0,
+			"depth_in": 0,
+			"height_in": 0
+		},
 		"provision_default": "venue_provided",
+		"is_backline": false,
 		"connectors": [],
-		"tags": ["drums", "furniture", "hardware"]
+		"power_requirements": "",
+		"notes": "",
+		"auto_number_prefix": "Drums",
+		"person_subcategory": "",
+		"_enriched": true,
+		"_original_name": "Throne"
 	},
 	{
 		"name": "Kick Drum",
@@ -1385,28 +1485,36 @@
 			"default": "kick.png"
 		},
 		"path": "drums/individual_drums/kick",
-		"is_backline": true,
-		"auto_number_prefix": "Drums",
-		"person_subcategory": "",
 		"brand": "",
 		"model": "",
 		"common_models": [],
+		"slug": "drums-individual-drums-kick",
 		"category": "drums",
 		"subcategory": "individual_drum",
-		"provision_default": "artist_provided",
-		"connectors": ["XLR"],
 		"tags": ["drums", "instrument", "individual_drum", "backline"],
+		"default_inputs": [
+			{
+				"name": "Drum",
+				"connector": "XLR",
+				"stand": "none",
+				"link_mode": "mono",
+				"phantom_power": false
+			}
+		],
 		"dimensions": {
 			"width": 22,
 			"depth": 16,
 			"height": 22
 		},
-		"default_inputs": [
-			{
-				"name": "Drum",
-				"connector": "XLR"
-			}
-		]
+		"provision_default": "artist_provided",
+		"is_backline": true,
+		"connectors": ["XLR"],
+		"power_requirements": "",
+		"notes": "",
+		"auto_number_prefix": "Drums",
+		"person_subcategory": "",
+		"_enriched": true,
+		"_original_name": "Kick Drum"
 	},
 	{
 		"name": "Snare Drum",
@@ -1415,28 +1523,33 @@
 			"default": "snare.png"
 		},
 		"path": "drums/individual_drums/snare",
-		"is_backline": true,
-		"auto_number_prefix": "Drums",
-		"person_subcategory": "",
 		"brand": "",
 		"model": "",
 		"common_models": [],
+		"slug": "drums-individual-drums-snare",
 		"category": "drums",
 		"subcategory": "individual_drum",
-		"provision_default": "artist_provided",
-		"connectors": ["XLR"],
 		"tags": ["drums", "instrument", "individual_drum", "backline"],
-		"dimensions": {
-			"width": 14,
-			"depth": 14,
-			"height": 6
-		},
 		"default_inputs": [
 			{
 				"name": "Drum",
 				"connector": "XLR"
 			}
-		]
+		],
+		"dimensions": {
+			"width": 14,
+			"depth": 14,
+			"height": 6
+		},
+		"provision_default": "artist_provided",
+		"is_backline": true,
+		"connectors": ["XLR"],
+		"power_requirements": "",
+		"notes": "",
+		"auto_number_prefix": "Drums",
+		"person_subcategory": "",
+		"_enriched": true,
+		"_original_name": "Snare Drum"
 	},
 	{
 		"name": "Floor Tom",
@@ -1445,28 +1558,33 @@
 			"default": "floortom.png"
 		},
 		"path": "drums/individual_drums/floortom",
-		"is_backline": true,
-		"auto_number_prefix": "Drums",
-		"person_subcategory": "",
 		"brand": "",
 		"model": "",
 		"common_models": [],
+		"slug": "drums-individual-drums-floortom",
 		"category": "drums",
 		"subcategory": "individual_drum",
-		"provision_default": "artist_provided",
-		"connectors": ["XLR"],
 		"tags": ["drums", "instrument", "individual_drum", "backline"],
-		"dimensions": {
-			"width": 16,
-			"depth": 16,
-			"height": 16
-		},
 		"default_inputs": [
 			{
 				"name": "Drum",
 				"connector": "XLR"
 			}
-		]
+		],
+		"dimensions": {
+			"width": 16,
+			"depth": 16,
+			"height": 16
+		},
+		"provision_default": "artist_provided",
+		"is_backline": true,
+		"connectors": ["XLR"],
+		"power_requirements": "",
+		"notes": "",
+		"auto_number_prefix": "Drums",
+		"person_subcategory": "",
+		"_enriched": true,
+		"_original_name": "Floor Tom"
 	},
 	{
 		"name": "Rack Tom 1",
@@ -1475,28 +1593,33 @@
 			"default": "tom1.png"
 		},
 		"path": "drums/individual_drums/tom1",
-		"is_backline": true,
-		"auto_number_prefix": "Drums",
-		"person_subcategory": "",
 		"brand": "",
 		"model": "",
 		"common_models": [],
+		"slug": "drums-individual-drums-tom1",
 		"category": "drums",
 		"subcategory": "individual_drum",
-		"provision_default": "artist_provided",
-		"connectors": ["XLR"],
 		"tags": ["drums", "instrument", "individual_drum", "backline"],
-		"dimensions": {
-			"width": 12,
-			"depth": 12,
-			"height": 10
-		},
 		"default_inputs": [
 			{
 				"name": "Drum",
 				"connector": "XLR"
 			}
-		]
+		],
+		"dimensions": {
+			"width": 12,
+			"depth": 12,
+			"height": 10
+		},
+		"provision_default": "artist_provided",
+		"is_backline": true,
+		"connectors": ["XLR"],
+		"power_requirements": "",
+		"notes": "",
+		"auto_number_prefix": "Drums",
+		"person_subcategory": "",
+		"_enriched": true,
+		"_original_name": "Rack Tom 1"
 	},
 	{
 		"name": "Rack Tom 2",
@@ -1505,28 +1628,33 @@
 			"default": "tom2.png"
 		},
 		"path": "drums/individual_drums/tom2",
-		"is_backline": true,
-		"auto_number_prefix": "Drums",
-		"person_subcategory": "",
 		"brand": "",
 		"model": "",
 		"common_models": [],
+		"slug": "drums-individual-drums-tom2",
 		"category": "drums",
 		"subcategory": "individual_drum",
-		"provision_default": "artist_provided",
-		"connectors": ["XLR"],
 		"tags": ["drums", "instrument", "individual_drum", "backline"],
-		"dimensions": {
-			"width": 13,
-			"depth": 13,
-			"height": 11
-		},
 		"default_inputs": [
 			{
 				"name": "Drum",
 				"connector": "XLR"
 			}
-		]
+		],
+		"dimensions": {
+			"width": 13,
+			"depth": 13,
+			"height": 11
+		},
+		"provision_default": "artist_provided",
+		"is_backline": true,
+		"connectors": ["XLR"],
+		"power_requirements": "",
+		"notes": "",
+		"auto_number_prefix": "Drums",
+		"person_subcategory": "",
+		"_enriched": true,
+		"_original_name": "Rack Tom 2"
 	},
 	{
 		"name": "Boss Pedal",
@@ -1539,22 +1667,28 @@
 			"L": "BossPedalL.png"
 		},
 		"path": "equipment/bosspedal",
-		"is_backline": false,
-		"auto_number_prefix": "",
-		"person_subcategory": "",
 		"brand": "",
 		"model": "",
 		"common_models": [],
+		"slug": "equipment-bosspedal",
 		"category": "equipment",
 		"subcategory": "pedal",
-		"provision_default": "artist_provided",
-		"connectors": ["TS"],
 		"tags": ["equipment", "pedal", "signal_chain"],
+		"default_inputs": [],
 		"dimensions": {
 			"width": 6,
 			"depth": 4,
 			"height": 2
-		}
+		},
+		"provision_default": "artist_provided",
+		"is_backline": false,
+		"connectors": ["TS"],
+		"power_requirements": "",
+		"notes": "",
+		"auto_number_prefix": "",
+		"person_subcategory": "",
+		"_enriched": true,
+		"_original_name": "Boss Pedal"
 	},
 	{
 		"name": "CD Player",
@@ -1563,17 +1697,28 @@
 			"default": "CDplayer.png"
 		},
 		"path": "equipment/cdplayer",
-		"is_backline": false,
-		"auto_number_prefix": "",
-		"person_subcategory": "",
 		"brand": "",
 		"model": "",
 		"common_models": [],
+		"slug": "equipment-cdplayer",
 		"category": "equipment",
 		"subcategory": "signal_processor",
+		"tags": ["equipment", "signal_processor"],
+		"default_inputs": [],
+		"dimensions": {
+			"width_in": 0,
+			"depth_in": 0,
+			"height_in": 0
+		},
 		"provision_default": "venue_provided",
+		"is_backline": false,
 		"connectors": [],
-		"tags": ["equipment", "signal_processor"]
+		"power_requirements": "",
+		"notes": "",
+		"auto_number_prefix": "",
+		"person_subcategory": "",
+		"_enriched": true,
+		"_original_name": "CD Player"
 	},
 	{
 		"name": "DI Box",
@@ -1582,22 +1727,28 @@
 			"default": "DI.png"
 		},
 		"path": "equipment/di",
-		"is_backline": false,
-		"auto_number_prefix": "DI",
-		"person_subcategory": "",
-		"brand": "",
+		"brand": "Radial, Digiflex",
 		"model": "",
 		"common_models": ["Radial J48", "Countryman Type 85"],
+		"slug": "equipment-di",
 		"category": "equipment",
 		"subcategory": "di_box",
-		"provision_default": "venue_provided",
-		"connectors": ["TS", "XLR"],
 		"tags": ["equipment", "di_box", "signal_chain"],
+		"default_inputs": [],
 		"dimensions": {
 			"width": 5,
 			"depth": 4,
 			"height": 2
-		}
+		},
+		"provision_default": "venue_provided",
+		"is_backline": false,
+		"connectors": ["TS", "XLR"],
+		"power_requirements": "",
+		"notes": "",
+		"auto_number_prefix": "DI",
+		"person_subcategory": "",
+		"_enriched": true,
+		"_original_name": "DI Box"
 	},
 	{
 		"name": "EQ",
@@ -1792,7 +1943,7 @@
 		"brand": "",
 		"model": "",
 		"common_models": [],
-		"category": "furniture",
+		"category": "equipment",
 		"subcategory": "music_stand",
 		"provision_default": "venue_provided",
 		"connectors": [],
@@ -1816,7 +1967,7 @@
 		"brand": "",
 		"model": "",
 		"common_models": [],
-		"category": "furniture",
+		"category": "equipment",
 		"subcategory": "chair",
 		"provision_default": "venue_provided",
 		"connectors": [],
@@ -1847,7 +1998,7 @@
 		"brand": "",
 		"model": "",
 		"common_models": [],
-		"category": "furniture",
+		"category": "equipment",
 		"subcategory": "bench",
 		"provision_default": "venue_provided",
 		"connectors": [],
@@ -2045,7 +2196,7 @@
 		"brand": "",
 		"model": "",
 		"common_models": ["Fender Precision Bass", "Fender Jazz Bass"],
-		"category": "guitars",
+		"category": "bass",
 		"subcategory": "bass",
 		"provision_default": "artist_provided",
 		"connectors": ["TS"],
@@ -2070,7 +2221,7 @@
 		"brand": "",
 		"model": "",
 		"common_models": [],
-		"category": "guitars",
+		"category": "bass",
 		"subcategory": "bass",
 		"provision_default": "artist_provided",
 		"connectors": ["TS"],
@@ -3644,7 +3795,7 @@
 		"tags": ["mics", "stand"]
 	},
 	{
-		"name": "K&M Mic Stand",
+		"name": "Boom Mic Stand",
 		"item_type": "stand",
 		"variants": {
 			"RA": "K&MstandRA.png",
@@ -3657,46 +3808,98 @@
 			"B": "K&MstandB.png"
 		},
 		"path": "mics/stands/kmstand",
-		"is_backline": false,
-		"auto_number_prefix": "",
-		"person_subcategory": "",
 		"brand": "",
 		"model": "",
 		"common_models": [],
+		"slug": "mics-stands-kmstand",
 		"category": "mics",
 		"subcategory": "stand",
+		"tags": ["mics", "stand"],
+		"default_inputs": [],
+		"default_outputs": [],
+		"dimensions": {
+			"width_in": 0,
+			"depth_in": 0,
+			"height_in": 0
+		},
 		"provision_default": "venue_provided",
+		"is_backline": false,
 		"connectors": [],
-		"tags": ["mics", "stand"]
+		"power_requirements": "",
+		"notes": "",
+		"auto_number_prefix": "",
+		"person_subcategory": "",
+		"_enriched": true,
+		"_original_name": "K&M Mic Stand"
 	},
 	{
-		"name": "Straight Mic Stand",
+		"name": "Straight Mic Stand (Short)",
 		"item_type": "stand",
 		"variants": {
-			"_short": "Straight_short.png",
-			"_VocalR": "Straight_VocalR.png",
-			"_shortLA": "Straight_shortLA.png",
-			"_shortRA": "Straight_shortRA.png",
-			"_shortL": "Straight_shortL.png",
-			"_Vocal": "Straight_Vocal.png",
-			"_shortR": "Straight_shortR.png",
-			"_VocalRA": "Straight_VocalRA.png",
-			"_shortBack": "Straight_shortBack.png",
-			"_VocalLA": "Straight_VocalLA.png",
-			"_VocalL": "Straight_VocalL.png"
+			"default": "Straight_short.png",
+			"L": "Straight_shortL.png",
+			"R": "Straight_shortR.png",
+			"LA": "Straight_shortLA.png",
+			"RA": "Straight_shortRA.png",
+			"back": "Straight_shortBack.png"
 		},
-		"path": "mics/stands/straight",
+		"path": "mics/stands/straight_short",
 		"is_backline": false,
 		"auto_number_prefix": "",
 		"person_subcategory": "",
-		"brand": "",
+		"brands": [],
 		"model": "",
 		"common_models": [],
 		"category": "mics",
 		"subcategory": "stand",
 		"provision_default": "venue_provided",
 		"connectors": [],
-		"tags": ["mics", "stand"]
+		"tags": ["mics", "stand"],
+		"default_inputs": [],
+		"default_outputs": [],
+		"dimensions": {
+			"width_in": 0,
+			"depth_in": 0,
+			"height_in": 0
+		},
+		"power_requirements": "",
+		"notes": "",
+		"_enriched": true,
+		"_original_name": "Straight Mic Stand"
+	},
+	{
+		"name": "Straight Mic Stand (Vocal Round Base)",
+		"item_type": "stand",
+		"variants": {
+			"default": "Straight_Vocal.png",
+			"L": "Straight_VocalL.png",
+			"R": "Straight_VocalR.png",
+			"LA": "Straight_VocalLA.png",
+			"RA": "Straight_VocalRA.png"
+		},
+		"path": "mics/stands/straight_vocal",
+		"is_backline": false,
+		"auto_number_prefix": "",
+		"person_subcategory": "",
+		"brands": [],
+		"model": "",
+		"common_models": [],
+		"category": "mics",
+		"subcategory": "stand",
+		"provision_default": "venue_provided",
+		"connectors": [],
+		"tags": ["mics", "stand"],
+		"default_inputs": [],
+		"default_outputs": [],
+		"dimensions": {
+			"width_in": 0,
+			"depth_in": 0,
+			"height_in": 0
+		},
+		"power_requirements": "",
+		"notes": "",
+		"_enriched": true,
+		"_original_name": "Straight Mic Stand"
 	},
 	{
 		"name": "Straight Stand (No Mic)",
@@ -4125,7 +4328,7 @@
 		"brand": "",
 		"model": "",
 		"common_models": [],
-		"category": "equipment",
+		"category": "furniture",
 		"subcategory": "stage_utility",
 		"provision_default": "venue_provided",
 		"connectors": [],
@@ -4144,7 +4347,7 @@
 		"brand": "",
 		"model": "",
 		"common_models": [],
-		"category": "equipment",
+		"category": "furniture",
 		"subcategory": "signal_processor",
 		"provision_default": "venue_provided",
 		"connectors": [],
@@ -4297,7 +4500,7 @@
 		"brand": "Technics",
 		"model": "SL-1200",
 		"common_models": [],
-		"category": "equipment",
+		"category": "furniture",
 		"subcategory": "dj",
 		"provision_default": "artist_provided",
 		"connectors": [],
@@ -4323,7 +4526,7 @@
 		"brand": "",
 		"model": "",
 		"common_models": [],
-		"category": "equipment",
+		"category": "furniture",
 		"subcategory": "utility",
 		"provision_default": "venue_provided",
 		"connectors": [],
@@ -4349,7 +4552,7 @@
 		"brand": "",
 		"model": "",
 		"common_models": [],
-		"category": "equipment",
+		"category": "furniture",
 		"subcategory": "furniture",
 		"provision_default": "venue_provided",
 		"connectors": [],
@@ -4375,7 +4578,7 @@
 		"brand": "",
 		"model": "",
 		"common_models": [],
-		"category": "equipment",
+		"category": "furniture",
 		"subcategory": "furniture",
 		"provision_default": "venue_provided",
 		"connectors": [],
@@ -4398,7 +4601,7 @@
 		"brand": "",
 		"model": "",
 		"common_models": [],
-		"category": "equipment",
+		"category": "furniture",
 		"subcategory": "furniture",
 		"provision_default": "venue_provided",
 		"connectors": [],
@@ -4419,7 +4622,7 @@
 		"brand": "",
 		"model": "",
 		"common_models": [],
-		"category": "equipment",
+		"category": "furniture",
 		"subcategory": "furniture",
 		"provision_default": "venue_provided",
 		"connectors": [],
@@ -4442,7 +4645,7 @@
 		"brand": "",
 		"model": "",
 		"common_models": [],
-		"category": "equipment",
+		"category": "furniture",
 		"subcategory": "furniture",
 		"provision_default": "venue_provided",
 		"connectors": [],
@@ -4461,7 +4664,7 @@
 		"brand": "",
 		"model": "",
 		"common_models": [],
-		"category": "equipment",
+		"category": "furniture",
 		"subcategory": "furniture",
 		"provision_default": "venue_provided",
 		"connectors": [],
@@ -4482,7 +4685,7 @@
 		"brand": "",
 		"model": "",
 		"common_models": [],
-		"category": "equipment",
+		"category": "furniture",
 		"subcategory": "furniture",
 		"provision_default": "venue_provided",
 		"connectors": [],
@@ -4609,7 +4812,7 @@
 		"brand": "",
 		"model": "",
 		"common_models": [],
-		"category": "equipment",
+		"category": "furniture",
 		"subcategory": "furniture",
 		"provision_default": "venue_provided",
 		"connectors": [],
@@ -4635,7 +4838,7 @@
 		"brand": "",
 		"model": "",
 		"common_models": [],
-		"category": "equipment",
+		"category": "furniture",
 		"subcategory": "furniture",
 		"provision_default": "venue_provided",
 		"connectors": [],
@@ -5125,7 +5328,7 @@
 		"tags": ["people", "person", "player"]
 	},
 	{
-		"name": "Drummer",
+		"name": "Drummer 2",
 		"item_type": "person",
 		"variants": {
 			"default": "drummer.png",
@@ -5148,7 +5351,7 @@
 		"tags": ["people", "person", "player"]
 	},
 	{
-		"name": "African Drummer",
+		"name": "Drummer 1",
 		"item_type": "person",
 		"variants": {
 			"LA": "DrummerAfricanLA.png",
@@ -5954,6 +6157,34 @@
 		}
 	},
 	{
+		"name": "Vibraphone",
+		"item_type": "instrument",
+		"variants": {
+			"R": "MarimbaR.png",
+			"LA": "MarimbaLA.png",
+			"default": "Marimba.png",
+			"RA": "MarimbaRA.png",
+			"L": "MarimbaL.png"
+		},
+		"path": "percussion/vibraphone",
+		"is_backline": true,
+		"auto_number_prefix": "Perc",
+		"person_subcategory": "",
+		"brand": "",
+		"model": "",
+		"common_models": [],
+		"category": "percussion",
+		"subcategory": "vibraphone",
+		"provision_default": "artist_provided",
+		"connectors": [],
+		"tags": ["percussion", "instrument", "vibraphone", "backline"],
+		"dimensions": {
+			"width": 96,
+			"depth": 30,
+			"height": 36
+		}
+	},
+	{
 		"name": "Percussion Pad",
 		"item_type": "instrument",
 		"variants": {
@@ -6598,6 +6829,30 @@
 			"default": "cello.png"
 		},
 		"path": "strings/cello",
+		"is_backline": true,
+		"auto_number_prefix": "Str",
+		"person_subcategory": "",
+		"brand": "",
+		"model": "",
+		"common_models": [],
+		"category": "strings",
+		"subcategory": "orchestral_string",
+		"provision_default": "artist_provided",
+		"connectors": [],
+		"tags": ["strings", "instrument", "orchestral_string", "backline"],
+		"dimensions": {
+			"width": 24,
+			"depth": 12,
+			"height": 48
+		}
+	},
+	{
+		"name": "Double Bass",
+		"item_type": "instrument",
+		"variants": {
+			"default": "stringbass.png"
+		},
+		"path": "strings/double_bass",
 		"is_backline": true,
 		"auto_number_prefix": "Str",
 		"person_subcategory": "",

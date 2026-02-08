@@ -1,0 +1,7 @@
+{
+	"name": "Double Bass",
+	"item_type": "accessory",
+	"variants": {
+		"default": "stringbass.png"
+	}
+}

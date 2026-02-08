@@ -1,10 +1,8 @@
 <script lang="ts">
 	// SPDX-License-Identifier: AGPL-3.0-only
 	import { onMount } from 'svelte';
-	import { toggleMode } from 'mode-watcher';
 	import { MusicianCombobox, ItemCommandPalette, StagePatch, ImportExport } from '$lib';
 	import Selecto from 'selecto';
-	import Inspector from '$lib/components/Inspector.svelte';
 	import { onClickOutside, PressedKeys } from 'runed';
 	import StageDeck from '$lib/components/StageDeck.svelte';
 	import { ContextMenu } from 'bits-ui';
@@ -12,11 +10,23 @@
 	import { page } from '$app/stores';
 	import { goto, beforeNavigate } from '$app/navigation';
 	import EditorToolbar from '$lib/components/EditorToolbar.svelte';
-	import MusicianPanel from '$lib/components/MusicianPanel.svelte';
+	import EditorSidePanel from '$lib/components/EditorSidePanel.svelte';
 	import CanvasOverlay from '$lib/components/CanvasOverlay.svelte';
 	import { exportToPdf } from '$lib/utils/pdf';
 	import { feetToPixels, type UnitSystem } from '$lib/utils/scale';
 	import { browser } from '$app/environment';
+	import {
+		getZones,
+		rectIntersectionArea,
+		getItemZone as _getItemZone,
+		getItemPosition as _getItemPosition,
+		snapToGrid as _snapToGrid,
+		getItemVariants,
+		getVariantKeys,
+		buildImagePath,
+		getCurrentImageSrc
+	} from '$lib/utils/canvasUtils';
+	import { PlotHistory } from '$lib/utils/plotHistory.svelte';
 
 	let plotId = $derived($page.params.plotId);
 	let bandId = $derived($page.params.bandId);
@@ -38,30 +48,78 @@
 		}[]
 	>([]);
 
+	import {
+		CATALOG_TO_COLOR_CATEGORY,
+		getDefaultCategoryColors,
+		type ColorCategory,
+		CONSOLES,
+		getConsoleIds
+	} from '@stageplotter/shared';
+
 	// Reactive stage plot state — initialized in-memory, persisted to SQLite
 	let stagePlot = $state({
 		plot_name: 'Untitled Plot',
 		revision_date: new Date().toISOString().split('T')[0],
 		canvas: { width: 1100, height: 850 },
 		items: [] as any[],
+		outputs: [] as any[],
 		musicians: [] as any[],
 		stage_width: 24,
 		stage_depth: 16
 	});
 
+	// Console integration state — persisted to dedicated DB columns
+	let consoleType = $state<string | null>(null);
+	let channelColors = $state<Record<number, string>>({});
+	let stereoLinks = $state<number[]>([]);
+	let outputStereoLinks = $state<number[]>([]);
+	let categoryColorDefaults = $state<Record<string, string>>({});
+
 	let layoutMode = $state<'mobile' | 'medium' | 'desktop'>('desktop');
-	let sidePanelTab = $state<'inspector' | 'musicians'>('inspector');
+	let sidePanelTab = $state<'inspector' | 'musicians' | 'settings'>('inspector');
 	let mediumMainTab = $state<'canvas' | 'patch'>('canvas');
 	let mobileMainTab = $state<'canvas' | 'patch' | 'panel'>('canvas');
-	let mobilePanelTab = $state<'inspector' | 'musicians'>('inspector');
+	let mobilePanelTab = $state<'inspector' | 'musicians' | 'settings'>('inspector');
+
+	// Snapping
+	let snapping = $state(true);
+
+	// Channel mode state (lifted from StagePatch for settings tab)
+	type ChannelMode = 8 | 16 | 24 | 32 | 48;
+	const CHANNEL_OPTIONS: ChannelMode[] = [8, 16, 24, 32, 48];
+	let inputChannelMode = $state<ChannelMode>(48);
+	let outputChannelMode = $state<ChannelMode>(16);
+
+	// Console-derived values for settings UI
+	const consoleDef = $derived(consoleType ? CONSOLES[consoleType] ?? null : null);
+	const consoleOptions = $derived(
+		getConsoleIds().map((id) => ({
+			id,
+			name: CONSOLES[id].name
+		}))
+	);
+
+	// Auto-set channel mode when console changes
+	$effect(() => {
+		if (consoleDef) {
+			const maxIn = consoleDef.inputChannels as ChannelMode;
+			if (CHANNEL_OPTIONS.includes(maxIn) && inputChannelMode > maxIn) {
+				inputChannelMode = maxIn;
+			}
+			const maxOut = consoleDef.outputBuses as ChannelMode;
+			if (CHANNEL_OPTIONS.includes(maxOut) && outputChannelMode > maxOut) {
+				outputChannelMode = maxOut;
+			}
+		}
+	});
 
 	// Persist reactive state to SQLite
 	async function write() {
 		if (!db.isReady) return;
 		try {
 			await db.run(
-				`INSERT OR REPLACE INTO stage_plots (id, name, revision_date, canvas_width, canvas_height, metadata, band_id, stage_width, stage_depth)
-				 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+				`INSERT OR REPLACE INTO stage_plots (id, name, revision_date, canvas_width, canvas_height, metadata, band_id, stage_width, stage_depth, console_type, channel_colors, stereo_links, category_color_defaults)
+				 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 				[
 					plotId,
 					stagePlot.plot_name,
@@ -70,13 +128,19 @@
 					stagePlot.canvas.height,
 					JSON.stringify({
 					items: $state.snapshot(stagePlot.items),
+					outputs: $state.snapshot(stagePlot.outputs),
 					musicians: $state.snapshot(stagePlot.musicians),
+					outputStereoLinks: $state.snapshot(outputStereoLinks),
 					undoLog: $state.snapshot(history.log),
 					redoStack: $state.snapshot(history.redoStack)
 				}),
 					bandId,
 					stagePlot.stage_width,
-					stagePlot.stage_depth
+					stagePlot.stage_depth,
+					consoleType,
+					JSON.stringify(channelColors),
+					JSON.stringify(stereoLinks),
+					JSON.stringify(categoryColorDefaults)
 				]
 			);
 		} catch (e) {
@@ -123,6 +187,10 @@
 				metadata: string;
 				stage_width: number | null;
 				stage_depth: number | null;
+				console_type: string | null;
+				channel_colors: string | null;
+				stereo_links: string | null;
+				category_color_defaults: string | null;
 			}>('SELECT * FROM stage_plots WHERE id = ?', [plotId]);
 
 			if (row) {
@@ -132,15 +200,34 @@
 				stagePlot.canvas.height = row.canvas_height;
 				stagePlot.stage_width = row.stage_width ?? 24;
 				stagePlot.stage_depth = row.stage_depth ?? 16;
+
+				// Load console settings
+				consoleType = row.console_type ?? null;
+				try {
+					channelColors = row.channel_colors ? JSON.parse(row.channel_colors) : {};
+				} catch { channelColors = {}; }
+				try {
+					stereoLinks = row.stereo_links ? JSON.parse(row.stereo_links) : [];
+				} catch { stereoLinks = []; }
+				try {
+					categoryColorDefaults = row.category_color_defaults ? JSON.parse(row.category_color_defaults) : {};
+				} catch { categoryColorDefaults = {}; }
+				// If console is set but no category defaults, initialize from console defaults
+				if (consoleType && Object.keys(categoryColorDefaults).length === 0) {
+					categoryColorDefaults = getDefaultCategoryColors(consoleType) as Record<string, string>;
+				}
+
 				let savedUndoLog: { snapshot: any[]; timestamp: number }[] | undefined;
 				let savedRedoStack: any[][] | undefined;
 				if (row.metadata) {
 					try {
 						const meta = JSON.parse(row.metadata);
-						if (meta.items) stagePlot.items = meta.items;
-						if (meta.musicians) stagePlot.musicians = meta.musicians;
-						if (meta.undoLog) savedUndoLog = meta.undoLog;
-						if (meta.redoStack) savedRedoStack = meta.redoStack;
+					if (meta.items) stagePlot.items = meta.items;
+					if (meta.outputs) stagePlot.outputs = meta.outputs;
+					if (meta.musicians) stagePlot.musicians = meta.musicians;
+					if (meta.outputStereoLinks) outputStereoLinks = meta.outputStereoLinks;
+					if (meta.undoLog) savedUndoLog = meta.undoLog;
+					if (meta.redoStack) savedRedoStack = meta.redoStack;
 					} catch { /* ignore parse errors */ }
 				}
 				history.startRecording(savedUndoLog, savedRedoStack);
@@ -184,69 +271,7 @@
 	}
 
 	// --- Undo / Redo with persistent PlotHistory ---
-	const MAX_HISTORY = 50;
-
-	class PlotHistory {
-		log = $state<{ snapshot: any[]; timestamp: number }[]>([]);
-		#redoStack = $state<any[][]>([]);
-		#pointer = $state(-1);
-		#recording = false;
-
-		get redoStack() { return this.#redoStack; }
-		get canUndo() { return this.#pointer > 0; }
-		get canRedo() { return this.#redoStack.length > 0; }
-
-		startRecording(savedLog?: { snapshot: any[]; timestamp: number }[], savedRedoStack?: any[][]) {
-			if (savedLog?.length) {
-				this.log = savedLog;
-				this.#pointer = savedLog.length - 1;
-			} else {
-				// Seed with current state
-				this.log = [{ snapshot: $state.snapshot(stagePlot.items) as any[], timestamp: Date.now() }];
-				this.#pointer = 0;
-			}
-			this.#redoStack = savedRedoStack ?? [];
-			this.#recording = true;
-		}
-
-		record(items: any[]) {
-			if (!this.#recording) return;
-			const snapshot = $state.snapshot(items) as any[];
-			// Trim any forward entries if we recorded after undoing
-			this.log = this.log.slice(0, this.#pointer + 1);
-			this.log.push({ snapshot, timestamp: Date.now() });
-			// Cap at MAX_HISTORY
-			if (this.log.length > MAX_HISTORY) {
-				this.log = this.log.slice(this.log.length - MAX_HISTORY);
-			}
-			this.#pointer = this.log.length - 1;
-			this.#redoStack = [];
-		}
-
-		undo() {
-			if (!this.canUndo) return;
-			// Push current state onto redo stack
-			this.#redoStack.push($state.snapshot(stagePlot.items) as any[]);
-			this.#pointer--;
-			const entry = this.log[this.#pointer];
-			stagePlot.items.splice(0, stagePlot.items.length, ...structuredClone(entry.snapshot));
-			debouncedWrite();
-		}
-
-		redo() {
-			if (!this.canRedo) return;
-			const snapshot = this.#redoStack.pop()!;
-			this.#pointer++;
-			// Update log pointer entry to match
-			if (this.#pointer >= this.log.length) {
-				this.log.push({ snapshot: $state.snapshot(snapshot) as any[], timestamp: Date.now() });
-			}
-			stagePlot.items.splice(0, stagePlot.items.length, ...structuredClone(snapshot));
-			debouncedWrite();
-		}
-	}
-
-	const history = new PlotHistory();
+	const history = new PlotHistory(stagePlot.items, () => debouncedWrite());
 
 	// Canvas state
 	let canvasEl = $state<HTMLElement | null>(null);
@@ -306,6 +331,7 @@
 	let editingItem = $state<any>(null);
 	let isAddingItem = $state(false);
 	let showZones = $state(true);
+	let pdfPageFormat = $state<'letter' | 'a4'>('letter');
 
 	// Unit preference (persisted to localStorage)
 	let unit = $state<UnitSystem>(
@@ -316,45 +342,13 @@
 		if (browser) localStorage.setItem('stageplotter-units', unit);
 	});
 
-	// --- Stage Zones ---
-	function getZones(cw: number, ch: number) {
-		const colWidth = cw / 3;
-		const rowHeight = ch / 2;
-		return [
-			{ key: 'DSR', x: 0, y: rowHeight, w: colWidth, h: rowHeight },
-			{ key: 'DSC', x: colWidth, y: rowHeight, w: colWidth, h: rowHeight },
-			{ key: 'DSL', x: colWidth * 2, y: rowHeight, w: colWidth, h: rowHeight },
-			{ key: 'USR', x: 0, y: 0, w: colWidth, h: rowHeight },
-			{ key: 'USC', x: colWidth, y: 0, w: colWidth, h: rowHeight },
-			{ key: 'USL', x: colWidth * 2, y: 0, w: colWidth, h: rowHeight }
-		];
-	}
-
-	function rectIntersectionArea(ax: number, ay: number, aw: number, ah: number, bx: number, by: number, bw: number, bh: number) {
-		const xOverlap = Math.max(0, Math.min(ax + aw, bx + bw) - Math.max(ax, bx));
-		const yOverlap = Math.max(0, Math.min(ay + ah, by + bh) - Math.max(ay, by));
-		return xOverlap * yOverlap;
-	}
-
+	// Closures around canvasWidth/canvasHeight for the imported pure functions
 	function getItemZone(item: any) {
-		const zones = getZones(canvasWidth, canvasHeight);
-		let maxArea = 0;
-		let chosen = zones[0].key;
-		for (const z of zones) {
-			const area = rectIntersectionArea(
-				item.position.x, item.position.y, item.position.width, item.position.height,
-				z.x, z.y, z.w, z.h
-			);
-			if (area > maxArea) { maxArea = area; chosen = z.key; }
-		}
-		return chosen;
+		return _getItemZone(item, canvasWidth, canvasHeight);
 	}
 
 	function getItemPosition(item: any) {
-		if (!canvasWidth || !canvasHeight) return { x: 0, y: 0 };
-		const relativeX = item.position.x + item.position.width / 2 - canvasWidth / 2;
-		const relativeY = canvasHeight - (item.position.y + item.position.height / 2);
-		return { x: Math.round(relativeX), y: Math.round(relativeY) };
+		return _getItemPosition(item, canvasWidth, canvasHeight);
 	}
 
 	function updateItemPosition(itemId: number, relativeX: number, relativeY: number) {
@@ -558,8 +552,11 @@
 	function handleCanvasMouseMove(event: MouseEvent) {
 		if (placingItem && canvasEl) {
 			const rect = canvasEl.getBoundingClientRect();
-			placingItem.x = event.clientX - rect.left - placingItem.width / 2;
-			placingItem.y = event.clientY - rect.top - placingItem.height / 2;
+			let x = event.clientX - rect.left - placingItem.width / 2;
+			let y = event.clientY - rect.top - placingItem.height / 2;
+			const snapped = snapToGrid(x, y, placingItem.width, placingItem.height);
+			placingItem.x = snapped.x;
+			placingItem.y = snapped.y;
 		}
 	}
 
@@ -567,8 +564,9 @@
 		if (justSelected) { justSelected = false; return; }
 		if (placingItem && canvasEl) {
 			const rect = canvasEl.getBoundingClientRect();
-			const x = event.clientX - rect.left - placingItem.width / 2;
-			const y = event.clientY - rect.top - placingItem.height / 2;
+			const rawX = event.clientX - rect.left - placingItem.width / 2;
+			const rawY = event.clientY - rect.top - placingItem.height / 2;
+			const snapped = snapToGrid(rawX, rawY, placingItem.width, placingItem.height);
 
 			const newItem: any = {
 				id: Date.now(),
@@ -578,8 +576,8 @@
 				position: {
 					width: placingItem.width,
 					height: placingItem.height,
-					x: Math.max(0, Math.min(x, canvasWidth - placingItem.width)),
-					y: Math.max(0, Math.min(y, canvasHeight - placingItem.height))
+					x: Math.max(0, Math.min(snapped.x, canvasWidth - placingItem.width)),
+					y: Math.max(0, Math.min(snapped.y, canvasHeight - placingItem.height))
 				},
 				name: placingItem.itemData?.name || '',
 				channel: '',
@@ -593,7 +591,8 @@
 			newItem.channel = ch != null ? String(ch) : '';
 			stagePlot.items.push(newItem);
 
-			const defaultInputs = placingItem.itemData?.default_inputs;
+			const isMonitor = isMonitorItem(placingItem.itemData);
+			const defaultInputs = isMonitor ? null : placingItem.itemData?.default_inputs;
 			if (defaultInputs && Array.isArray(defaultInputs)) {
 				defaultInputs.forEach((inputDef: any, idx: number) => {
 					stagePlot.items.push({
@@ -608,6 +607,8 @@
 					});
 				});
 			}
+
+			addDefaultOutputs(placingItem.itemData);
 
 			placingItem = null;
 			commitChange();
@@ -779,8 +780,11 @@
 		const item = stagePlot.items.find((i: any) => i.id === data.id);
 		if (item && canvasEl) {
 			const rect = canvasEl.getBoundingClientRect();
-			const x = Math.max(0, Math.min(event.clientX - rect.left - data.offsetX, canvasWidth - item.position.width));
-			const y = Math.max(0, Math.min(event.clientY - rect.top - data.offsetY, canvasHeight - item.position.height));
+			const rawX = Math.max(0, Math.min(event.clientX - rect.left - data.offsetX, canvasWidth - item.position.width));
+			const rawY = Math.max(0, Math.min(event.clientY - rect.top - data.offsetY, canvasHeight - item.position.height));
+			const snapped = snapToGrid(rawX, rawY, item.position.width, item.position.height);
+			const x = Math.max(0, Math.min(snapped.x, canvasWidth - item.position.width));
+			const y = Math.max(0, Math.min(snapped.y, canvasHeight - item.position.height));
 
 			if (isAltPressed) {
 				duplicateItem(item, { position: { ...item.position, x, y } });
@@ -796,17 +800,6 @@
 		(event.currentTarget as HTMLElement).style.opacity = '1';
 	}
 
-	function getItemVariants(item: any) {
-		if (!item.itemData) return null;
-		if (item.itemData.variants) return item.itemData.variants;
-		return null;
-	}
-
-	function getVariantKeys(item: any) {
-		const variants = getItemVariants(item);
-		if (!variants) return ['default'];
-		return Object.keys(variants);
-	}
 
 	function rotateItemRight(item: any) {
 		const variants = getItemVariants(item);
@@ -826,20 +819,6 @@
 		updateItemProperty(item.id, 'currentVariant', item.currentVariant);
 	}
 
-	function getCurrentImageSrc(item: any) {
-		const variants = getItemVariants(item);
-		if (!variants) return item.itemData?.image || '';
-		const variant = item.currentVariant || 'default';
-		const imagePath = variants[variant] || variants.default || Object.values(variants)[0];
-		return buildImagePath(item, imagePath as string);
-	}
-
-	function buildImagePath(item: any, imagePath: string) {
-		if (item.itemData?.path) {
-			return `/final_assets/${item.itemData.path}/${imagePath}`;
-		}
-		return imagePath.startsWith('/') ? imagePath : '/' + imagePath;
-	}
 
 	function handlePatchItemUpdate(itemId: number, property: string, value: string) {
 		const item = stagePlot.items.find((i: any) => i.id === itemId);
@@ -880,14 +859,180 @@
 		return ch;
 	}
 
+	function getUsedOutputChannels() {
+		return new Set(
+			stagePlot.outputs
+				.filter((o: any) => o.channel)
+				.map((o: any) => parseInt(o.channel))
+		);
+	}
+
+	function getNextAvailableOutputChannel(start = 1) {
+		const used = getUsedOutputChannels();
+		for (let ch = start; ch <= outputChannelMode; ch++) {
+			if (!used.has(ch)) return ch;
+		}
+		return null;
+	}
+
+	function getNextAvailableOutputStereoStart() {
+		const used = getUsedOutputChannels();
+		for (let ch = 1; ch < outputChannelMode; ch++) {
+			if (ch % 2 === 0) continue;
+			if (!used.has(ch) && !used.has(ch + 1)) return ch;
+		}
+		return null;
+	}
+
+	function isMonitorItem(itemData: any) {
+		const category = (itemData?.category ?? '').toString().toLowerCase();
+		const path = (itemData?.path ?? '').toString().toLowerCase();
+		return category.includes('monitor') || path.startsWith('monitors/') || path.startsWith('outputs/monitors');
+	}
+
+	function inferOutputType(itemData: any) {
+		const path = (itemData?.path ?? '').toString().toLowerCase();
+		if (path.includes('inear')) return 'iem_stereo';
+		if (path.includes('sidefill')) return 'sidefill';
+		if (path.includes('subwoofer')) return 'sub';
+		if (path.includes('linearray')) return 'line_array';
+		if (path.includes('bosel1')) return 'column_speaker';
+		if (path.includes('personalsys')) return 'personal_system';
+		if (path.includes('speakerwstand') || path.includes('speaknsubwstand')) return 'pa_speaker';
+		if (path.includes('lowprofile') || path.includes('wedge')) return 'wedge';
+		return 'monitor';
+	}
+
+	function inferOutputLinkMode(itemData: any) {
+		const path = (itemData?.path ?? '').toString().toLowerCase();
+		if (path.includes('inear') || path.includes('sidefill')) return 'stereo_pair';
+		return 'mono';
+	}
+
+	function addDefaultOutputs(itemData: any) {
+		const defaults = itemData?.default_outputs;
+		const derivedDefaults = isMonitorItem(itemData)
+			? [
+					{
+						name: itemData?.name || 'Monitor',
+						type: inferOutputType(itemData),
+						link_mode: inferOutputLinkMode(itemData)
+					}
+				]
+			: [];
+		const outputs = Array.isArray(defaults) && defaults.length > 0 ? defaults : derivedDefaults;
+		if (!outputs.length) return;
+
+		outputs.forEach((outputDef: any, idx: number) => {
+			const linkMode = outputDef?.link_mode ?? inferOutputLinkMode(itemData);
+			const baseName = outputDef?.name || itemData?.name || 'Output';
+			if (linkMode === 'stereo_pair') {
+				const start = getNextAvailableOutputStereoStart();
+				if (start == null) return;
+				stagePlot.outputs = stagePlot.outputs.filter(
+					(o: any) => o.channel !== String(start) && o.channel !== String(start + 1)
+				);
+				stagePlot.outputs.push(
+					{
+						id: Date.now() + idx * 2,
+						name: `${baseName} L`,
+						channel: String(start),
+						itemData,
+						link_mode: 'stereo_pair'
+					},
+					{
+						id: Date.now() + idx * 2 + 1,
+						name: `${baseName} R`,
+						channel: String(start + 1),
+						itemData,
+						link_mode: 'stereo_pair'
+					}
+				);
+				outputStereoLinks = Array.from(new Set([...outputStereoLinks, start])).sort((a, b) => a - b);
+			} else {
+				const ch = getNextAvailableOutputChannel();
+				if (ch == null) return;
+				stagePlot.outputs = stagePlot.outputs.filter((o: any) => o.channel !== String(ch));
+				stagePlot.outputs.push({
+					id: Date.now() + idx,
+					name: baseName,
+					channel: String(ch),
+					itemData,
+					link_mode: linkMode
+				});
+			}
+		});
+		debouncedWrite();
+	}
+
 	function handlePatchAddItem(item: any, channel: number) {
 		stagePlot.items = stagePlot.items.filter((i: any) => i.channel !== String(channel));
+		// Auto-apply category color when placing an item
+		if (consoleType && item.category) {
+			const colorCat = CATALOG_TO_COLOR_CATEGORY[item.category] as ColorCategory | undefined;
+			if (colorCat && categoryColorDefaults[colorCat]) {
+				channelColors = { ...channelColors, [channel]: categoryColorDefaults[colorCat] };
+				debouncedWrite();
+			}
+		}
 		preparePlacingItem(item, channel);
 	}
 
 	function handlePatchRemoveItem(channel: number) {
 		stagePlot.items = stagePlot.items.filter((i: any) => i.channel !== String(channel));
 		commitChange();
+	}
+
+	function handlePatchOutputSelect(item: any, channel: number) {
+		stagePlot.outputs = stagePlot.outputs.filter((o: any) => o.channel !== String(channel));
+		if (item) {
+			stagePlot.outputs.push({
+				id: Date.now(),
+				name: item.name,
+				channel: String(channel),
+				itemData: item
+			});
+		}
+		debouncedWrite();
+	}
+
+	function handlePatchOutputRemove(channel: number) {
+		stagePlot.outputs = stagePlot.outputs.filter((o: any) => o.channel !== String(channel));
+		debouncedWrite();
+	}
+
+	// Console settings handlers
+	function handleConsoleTypeChange(newType: string | null) {
+		consoleType = newType;
+		// Initialize category defaults when console is first set
+		if (newType && Object.keys(categoryColorDefaults).length === 0) {
+			categoryColorDefaults = getDefaultCategoryColors(newType) as Record<string, string>;
+		}
+		debouncedWrite();
+	}
+
+	function handleChannelColorChange(channel: number, colorId: string) {
+		channelColors = { ...channelColors, [channel]: colorId };
+		debouncedWrite();
+	}
+
+	function handleStereoLinksChange(links: number[]) {
+		stereoLinks = links;
+		debouncedWrite();
+	}
+
+	function handleOutputStereoLinksChange(links: number[]) {
+		outputStereoLinks = links;
+		debouncedWrite();
+	}
+
+	function handleCategoryColorDefaultsChange(defaults: Record<string, string>) {
+		categoryColorDefaults = defaults;
+		debouncedWrite();
+	}
+
+	function snapToGrid(x: number, y: number, w: number, h: number) {
+		return _snapToGrid(x, y, w, h, snapping, canvasWidth, canvasHeight);
 	}
 
 	function placeRiser(riserWidth: number, riserDepth: number, riserHeight: number) {
@@ -927,7 +1072,8 @@
 			plotName: stagePlot.plot_name,
 			canvasEl,
 			items: stagePlot.items,
-			musicians: stagePlot.musicians
+			musicians: stagePlot.musicians,
+			pageFormat: pdfPageFormat
 		});
 	}
 
@@ -945,7 +1091,7 @@
 	<div class="shrink-0">
 		<EditorToolbar
 			bind:title={stagePlot.plot_name}
-			revisionDate={stagePlot.revision_date}
+			bind:revisionDate={stagePlot.revision_date}
 			onAddItem={openAddMenu}
 			onImportComplete={handleImportComplete}
 			onExportPdf={handleExportPdf}
@@ -958,33 +1104,65 @@
 			{getItemZone}
 			{getItemPosition}
 			onTitleChange={() => debouncedWrite()}
+			onRevisionDateChange={() => debouncedWrite()}
 			{bandName}
 			persons={bandPersonsFull}
 			stageWidth={stagePlot.stage_width}
 			stageDepth={stagePlot.stage_depth}
+			{consoleType}
+			{channelColors}
+			{stereoLinks}
 		/>
 	</div>
 
-	{#if layoutMode === 'desktop'}
-		<div class="flex flex-1 min-h-0 gap-5 overflow-hidden">
-			<div class="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden" bind:this={stagePlotContainer}>
-				<div class="flex min-h-0 flex-1 flex-col overflow-hidden">
-					<div class="border border-border-primary bg-surface p-2.5 shadow-sm">
-						<div
-							bind:this={canvasEl}
-							class="items-container relative mx-auto w-full bg-white dark:bg-gray-800"
-							style="aspect-ratio: {stagePlot.stage_width}/{stagePlot.stage_depth}; max-width: 1100px; cursor: {placingItem ? 'copy' : 'default'}"
-							onmousemove={handleCanvasMouseMove}
-							onclick={handleCanvasClick}
-							ondragover={handleDragOver}
-							ondrop={handleDrop}
-						>
-							<CanvasOverlay {showZones} {canvasWidth} {canvasHeight} itemCount={stagePlot.items.length} />
+	{#snippet patchContent(columnCount: number)}
+		<StagePatch
+			items={stagePlot.items}
+			outputs={stagePlot.outputs}
+			{columnCount}
+			onUpdateItem={handlePatchItemUpdate}
+			onReorderPatch={handlePatchReorder}
+			onSelectItem={openItemEditor}
+			onAddItem={handlePatchAddItem}
+			onRemoveItem={handlePatchRemoveItem}
+			onOutputSelect={handlePatchOutputSelect}
+			onOutputRemove={handlePatchOutputRemove}
+			{consoleType}
+			{channelColors}
+			onChannelColorChange={handleChannelColorChange}
+			{stereoLinks}
+			onStereoLinksChange={handleStereoLinksChange}
+			outputStereoLinks={outputStereoLinks}
+			onOutputStereoLinksChange={handleOutputStereoLinksChange}
+			{categoryColorDefaults}
+			{inputChannelMode}
+			{outputChannelMode}
+		/>
+	{/snippet}
 
-							{#each stagePlot.items as item (item.id)}
-							<ContextMenu.Root>
-								<ContextMenu.Trigger>
+	{#snippet canvasContent()}
+		<div class="border border-border-primary bg-surface p-3 shadow-sm">
+			<ContextMenu.Root>
+				<ContextMenu.Trigger>
+					{#snippet child({ props: canvasCtxProps })}
+					<div
+						{...canvasCtxProps}
+						bind:this={canvasEl}
+						class="items-container relative mx-auto w-full bg-white dark:bg-gray-800"
+						style="aspect-ratio: {stagePlot.stage_width}/{stagePlot.stage_depth}; max-width: 1100px; cursor: {placingItem ? 'copy' : 'default'}"
+						onmousemove={handleCanvasMouseMove}
+						onclick={handleCanvasClick}
+						ondragover={handleDragOver}
+						ondrop={handleDrop}
+					>
+						<CanvasOverlay {showZones} {canvasWidth} {canvasHeight} itemCount={stagePlot.items.length} />
+
+						{#each stagePlot.items as item (item.id)}
+						<ContextMenu.Root>
+							<ContextMenu.Trigger>
+								{#snippet child({ props: itemProps })}
 								<div
+									{...itemProps}
 									class="group selectable-item absolute transition-all cursor-move {editingItem?.id === item.id ? 'ring-2 ring-blue-500' : ''}"
 									class:selected={selectedItems.includes(item)}
 									data-id={item.id}
@@ -1033,143 +1211,111 @@
 										&times;
 									</button>
 								</div>
+								{/snippet}
 							</ContextMenu.Trigger>
 							<ContextMenu.Portal>
 								<ContextMenu.Content class="z-50 w-[200px] rounded-xl border border-gray-300 bg-white px-1 py-1.5 shadow-lg dark:border-gray-600 dark:bg-gray-800">
-									<ContextMenu.Item onSelect={(e) => openItemEditor(item, e)} class="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700">
-										Edit
-									</ContextMenu.Item>
-									<ContextMenu.Item onSelect={() => duplicateItem(item)} class="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700">
-										Duplicate
-									</ContextMenu.Item>
+									<ContextMenu.Item onSelect={(e) => openItemEditor(item, e)} class="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700">Edit</ContextMenu.Item>
+									<ContextMenu.Item onSelect={() => duplicateItem(item)} class="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700">Duplicate</ContextMenu.Item>
 									<ContextMenu.Separator class="bg-muted -mx-1 my-1 block h-px" />
-									<ContextMenu.Item onSelect={() => moveToFront(item.id)} class="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700">
-										Bring to Front
-									</ContextMenu.Item>
-									<ContextMenu.Item onSelect={() => moveForward(item.id)} class="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700">
-										Bring Forward
-									</ContextMenu.Item>
-									<ContextMenu.Item onSelect={() => moveBackward(item.id)} class="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700">
-										Send Backward
-									</ContextMenu.Item>
-									<ContextMenu.Item onSelect={() => moveToBack(item.id)} class="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700">
-										Send to Back
-									</ContextMenu.Item>
+									<ContextMenu.Item onSelect={() => moveToFront(item.id)} class="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700">Bring to Front</ContextMenu.Item>
+									<ContextMenu.Item onSelect={() => moveForward(item.id)} class="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700">Bring Forward</ContextMenu.Item>
+									<ContextMenu.Item onSelect={() => moveBackward(item.id)} class="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700">Send Backward</ContextMenu.Item>
+									<ContextMenu.Item onSelect={() => moveToBack(item.id)} class="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700">Send to Back</ContextMenu.Item>
 									<ContextMenu.Separator class="bg-muted -mx-1 my-1 block h-px" />
-									<ContextMenu.Item onSelect={() => deleteItem(item.id)} class="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-red-50 dark:hover:bg-red-600/30">
-										Delete
-									</ContextMenu.Item>
+									<ContextMenu.Item onSelect={() => deleteItem(item.id)} class="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-red-50 dark:hover:bg-red-600/30">Delete</ContextMenu.Item>
 								</ContextMenu.Content>
 							</ContextMenu.Portal>
-							</ContextMenu.Root>
-							{/each}
+						</ContextMenu.Root>
+						{/each}
 
-							{#if placingItem}
-								<div
-									class="pointer-events-none absolute opacity-60"
-									style="left: {placingItem.x}px; top: {placingItem.y}px; width: {placingItem.width}px; height: {placingItem.height}px;"
-								>
-									{#if placingItem.type === 'riser'}
-										<div class="flex h-full w-full items-center justify-center rounded border-2 border-dashed border-gray-500 bg-gray-400/40 text-[10px] font-bold text-gray-700">
-											RISER
-										</div>
-									{:else}
-										<img
-											src={placingItem.itemData?.image || ''}
-											alt={placingItem.itemData?.name || 'Item Preview'}
-											style="width: {placingItem.width}px; height: {placingItem.height}px;"
-										/>
-									{/if}
-								</div>
-							{/if}
-						</div>
+						{#if placingItem}
+							<div
+								class="pointer-events-none absolute opacity-60"
+								style="left: {placingItem.x}px; top: {placingItem.y}px; width: {placingItem.width}px; height: {placingItem.height}px;"
+							>
+								{#if placingItem.type === 'riser'}
+									<div class="flex h-full w-full items-center justify-center rounded border-2 border-dashed border-gray-500 bg-gray-400/40 text-[10px] font-bold text-gray-700">RISER</div>
+								{:else}
+									<img src={placingItem.itemData?.image || ''} alt={placingItem.itemData?.name || 'Item Preview'} style="width: {placingItem.width}px; height: {placingItem.height}px;" />
+								{/if}
+							</div>
+						{/if}
 					</div>
+					{/snippet}
+				</ContextMenu.Trigger>
+				<ContextMenu.Portal>
+					<ContextMenu.Content class="z-50 w-[200px] rounded-xl border border-gray-300 bg-white px-1 py-1.5 shadow-lg dark:border-gray-600 dark:bg-gray-800">
+						<ContextMenu.Item onSelect={() => openAddMenu()} class="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700">Add Item</ContextMenu.Item>
+						<ContextMenu.Item onSelect={() => (snapping = !snapping)} class="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700">Snapping: {snapping ? 'On' : 'Off'}</ContextMenu.Item>
+					</ContextMenu.Content>
+				</ContextMenu.Portal>
+			</ContextMenu.Root>
+		</div>
 
-					<div class="mt-1.5 flex justify-between text-xs text-text-tertiary">
-						<div class="flex items-center gap-3">Items: {stagePlot.items.length} | Musicians: {stagePlot.musicians.length}
-							{#if isAltPressed}
-								<span class="text-blue-600 font-semibold animate-bounce">(Duplicate)</span>
-							{/if}
-						</div>
-						<div>
-							{#if placingItem}Click on canvas to place item. Press 'Escape' to cancel.{/if}
-						</div>
-					</div>
+		<div class="mt-1.5 flex justify-between text-xs text-text-tertiary">
+			<div class="flex items-center gap-3">Items: {stagePlot.items.length} | Musicians: {stagePlot.musicians.length}
+				{#if isAltPressed}
+					<span class="text-blue-600 font-semibold animate-bounce">(Duplicate)</span>
+				{/if}
+			</div>
+			<div>
+				{#if placingItem}Click on canvas to place item. Press 'Escape' to cancel.{/if}
+			</div>
+		</div>
+	{/snippet}
+
+	{#if layoutMode === 'desktop'}
+		<div class="flex flex-1 min-h-0 gap-5 overflow-hidden">
+			<div class="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden" bind:this={stagePlotContainer}>
+				<div class="flex min-h-0 flex-1 flex-col overflow-hidden">
+					{@render canvasContent()}
 				</div>
 
 				<div class="min-h-0 flex-1 overflow-hidden">
-					<StagePatch
-						items={stagePlot.items}
-						columnCount={6}
-						onUpdateItem={handlePatchItemUpdate}
-						onReorderPatch={handlePatchReorder}
-						onSelectItem={openItemEditor}
-						onAddItem={handlePatchAddItem}
-						onRemoveItem={handlePatchRemoveItem}
-					/>
+					{@render patchContent(6)}
 				</div>
 			</div>
 
 			<div class="flex w-80 shrink-0 flex-col overflow-hidden">
-				<div class="inspector-panel flex h-full flex-col overflow-hidden rounded-xl border border-border-primary bg-surface shadow-sm">
-					<div class="border-b border-border-primary bg-muted/30 px-3 pt-3">
-						<div class="flex gap-1">
-							<button
-								type="button"
-								onclick={() => (sidePanelTab = 'inspector')}
-								class={`px-3 py-2 text-sm font-medium rounded-t-lg transition-colors ${sidePanelTab === 'inspector' ? 'bg-surface text-text-primary' : 'text-text-secondary hover:text-text-primary'}`}
-							>
-								Inspector
-							</button>
-							<button
-								type="button"
-								onclick={() => (sidePanelTab = 'musicians')}
-								class={`px-3 py-2 text-sm font-medium rounded-t-lg transition-colors ${sidePanelTab === 'musicians' ? 'bg-surface text-text-primary' : 'text-text-secondary hover:text-text-primary'}`}
-							>
-								Musicians
-							</button>
-						</div>
-					</div>
-					{#if sidePanelTab === 'inspector'}
-						<div class="flex-1 min-h-0 overflow-hidden p-4">
-							<Inspector
-								bind:selectedItems
-								bind:items={stagePlot.items}
-								bind:musicians={stagePlot.musicians}
-								bind:title={stagePlot.plot_name}
-								bind:lastModified={stagePlot.revision_date}
-								bind:showZones
-								bind:stageWidth={stagePlot.stage_width}
-								bind:stageDepth={stagePlot.stage_depth}
-								bind:unit
-								onPlaceRiser={placeRiser}
-								onUpdateItem={updateItemProperty}
-								onAddMusician={(name: string, instrument: string) => {
-									newMusician.name = name;
-									newMusician.instrument = instrument;
-									addMusician();
-								}}
-								{getItemZone}
-								{getItemPosition}
-								{updateItemPosition}
-							/>
-						</div>
-					{:else}
-						<div class="flex-1 min-h-0 overflow-hidden p-4">
-							<MusicianPanel
-								musicians={stagePlot.musicians}
-								onAdd={(name, instrument) => {
-									newMusician.name = name;
-									newMusician.instrument = instrument || '';
-									addMusician();
-								}}
-								onDelete={deleteMusician}
-								{bandPersons}
-								onImportFromBand={importMusiciansFromBand}
-							/>
-						</div>
-					{/if}
-				</div>
+				<EditorSidePanel
+					bind:activeTab={sidePanelTab}
+					bind:selectedItems
+					bind:items={stagePlot.items}
+					bind:musicians={stagePlot.musicians}
+					bind:title={stagePlot.plot_name}
+					bind:lastModified={stagePlot.revision_date}
+					bind:showZones
+					bind:stageWidth={stagePlot.stage_width}
+					bind:stageDepth={stagePlot.stage_depth}
+					bind:unit
+					bind:pdfPageFormat
+					onPlaceRiser={placeRiser}
+					onUpdateItem={updateItemProperty}
+					onAddMusician={(name, instrument) => {
+						newMusician.name = name;
+						newMusician.instrument = instrument;
+						addMusician();
+					}}
+					{getItemZone}
+					{getItemPosition}
+					{updateItemPosition}
+					{bandPersons}
+					onImportFromBand={importMusiciansFromBand}
+					onDeleteMusician={deleteMusician}
+					{consoleType}
+					{consoleDef}
+					{consoleOptions}
+					{categoryColorDefaults}
+					{inputChannelMode}
+					{outputChannelMode}
+					channelOptions={consoleDef?.channelOptions ?? CHANNEL_OPTIONS}
+					outputOptions={consoleDef?.outputOptions ?? CHANNEL_OPTIONS}
+					onConsoleTypeChange={handleConsoleTypeChange}
+					onCategoryColorDefaultsChange={handleCategoryColorDefaultsChange}
+					onInputChannelModeChange={(m) => (inputChannelMode = m as ChannelMode)}
+					onOutputChannelModeChange={(m) => (outputChannelMode = m as ChannelMode)}
+				/>
 			</div>
 		</div>
 	{:else if layoutMode === 'medium'}
@@ -1196,209 +1342,55 @@
 			</div>
 				{#if mediumMainTab === 'canvas'}
 					<div class="flex-1 min-h-0 overflow-hidden p-4">
-						<div class="border border-border-primary bg-surface p-3 shadow-sm">
-							<div
-								bind:this={canvasEl}
-								class="items-container relative mx-auto w-full bg-white dark:bg-gray-800"
-								style="aspect-ratio: {stagePlot.stage_width}/{stagePlot.stage_depth}; max-width: 1100px; cursor: {placingItem ? 'copy' : 'default'}"
-								onmousemove={handleCanvasMouseMove}
-								onclick={handleCanvasClick}
-								ondragover={handleDragOver}
-								ondrop={handleDrop}
-							>
-								<CanvasOverlay {showZones} {canvasWidth} {canvasHeight} itemCount={stagePlot.items.length} />
-
-								{#each stagePlot.items as item (item.id)}
-								<ContextMenu.Root>
-									<ContextMenu.Trigger>
-									<div
-										class="group selectable-item absolute transition-all cursor-move {editingItem?.id === item.id ? 'ring-2 ring-blue-500' : ''}"
-										class:selected={selectedItems.includes(item)}
-										data-id={item.id}
-										style="left: {item.position.x}px; top: {item.position.y}px; width: {item.position.width}px; height: {item.position.height}px;"
-										draggable="true"
-										ondragstart={(e) => handleDragStart(e, item)}
-										ondragend={handleDragEnd}
-										onclick={(e) => openItemEditor(item, e)}
-									>
-										{#if item.type === 'stageDeck'}
-											<StageDeck size={item.size} x={0} y={0} class="w-full h-full" />
-										{:else if item.type === 'riser'}
-											<div class="flex h-full w-full items-center justify-center rounded border-2 border-gray-500 bg-gray-400/50 dark:border-gray-400 dark:bg-gray-600/50">
-												<div class="text-center leading-tight">
-													<div class="text-[10px] font-bold text-gray-700 dark:text-gray-200">RISER</div>
-													<div class="text-[8px] text-gray-600 dark:text-gray-300">{item.itemData?.riserWidth ?? '?'}' × {item.itemData?.riserDepth ?? '?'}'</div>
-													{#if item.itemData?.riserHeight}
-														<div class="text-[7px] text-gray-500 dark:text-gray-400">h: {item.itemData.riserHeight}'</div>
-													{/if}
-												</div>
-											</div>
-										{:else}
-											<img src={getCurrentImageSrc(item)} alt={item.itemData?.name || item.name || 'Stage Item'} style="width: {item.position.width}px; height: {item.position.height}px;" />
-										{/if}
-
-										{#if selectedItems.some((el) => el.dataset?.id === String(item.id))}
-											{#if getVariantKeys(item).length > 1}
-												<div class="absolute -bottom-8 left-1/2 z-20 flex -translate-x-1/2 transform gap-1">
-													<button
-													onclick={(e) => { e.stopPropagation(); rotateItemRight(item); }}
-													class="flex h-6 w-6 items-center justify-center rounded-full bg-blue-500 text-sm text-white shadow-md transition-colors hover:bg-blue-600"
-													title="Rotate Right"
-												>
-													<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-														<path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd" />
-													</svg>
-												</button>
-											</div>
-										{/if}
-									{/if}
-
-									<button
-										onclick={(e) => { e.stopPropagation(); deleteItem(item.id); }}
-										class="absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs text-white opacity-0 transition-opacity group-hover:opacity-100"
-									>
-										&times;
-									</button>
-								</div>
-							</ContextMenu.Trigger>
-							<ContextMenu.Portal>
-								<ContextMenu.Content class="z-50 w-[200px] rounded-xl border border-gray-300 bg-white px-1 py-1.5 shadow-lg dark:border-gray-600 dark:bg-gray-800">
-									<ContextMenu.Item onSelect={(e) => openItemEditor(item, e)} class="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700">
-										Edit
-									</ContextMenu.Item>
-									<ContextMenu.Item onSelect={() => duplicateItem(item)} class="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700">
-										Duplicate
-									</ContextMenu.Item>
-									<ContextMenu.Separator class="bg-muted -mx-1 my-1 block h-px" />
-									<ContextMenu.Item onSelect={() => moveToFront(item.id)} class="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700">
-										Bring to Front
-									</ContextMenu.Item>
-									<ContextMenu.Item onSelect={() => moveForward(item.id)} class="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700">
-										Bring Forward
-									</ContextMenu.Item>
-									<ContextMenu.Item onSelect={() => moveBackward(item.id)} class="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700">
-										Send Backward
-									</ContextMenu.Item>
-									<ContextMenu.Item onSelect={() => moveToBack(item.id)} class="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700">
-										Send to Back
-									</ContextMenu.Item>
-									<ContextMenu.Separator class="bg-muted -mx-1 my-1 block h-px" />
-									<ContextMenu.Item onSelect={() => deleteItem(item.id)} class="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-red-50 dark:hover:bg-red-600/30">
-										Delete
-									</ContextMenu.Item>
-								</ContextMenu.Content>
-							</ContextMenu.Portal>
-							</ContextMenu.Root>
-							{/each}
-
-							{#if placingItem}
-								<div
-									class="pointer-events-none absolute opacity-60"
-									style="left: {placingItem.x}px; top: {placingItem.y}px; width: {placingItem.width}px; height: {placingItem.height}px;"
-								>
-									{#if placingItem.type === 'riser'}
-										<div class="flex h-full w-full items-center justify-center rounded border-2 border-dashed border-gray-500 bg-gray-400/40 text-[10px] font-bold text-gray-700">
-											RISER
-										</div>
-									{:else}
-										<img
-											src={placingItem.itemData?.image || ''}
-											alt={placingItem.itemData?.name || 'Item Preview'}
-											style="width: {placingItem.width}px; height: {placingItem.height}px;"
-										/>
-									{/if}
-								</div>
-							{/if}
-						</div>
-					</div>
-
-						<div class="mt-1.5 flex justify-between text-xs text-text-tertiary">
-						<div class="flex items-center gap-3">Items: {stagePlot.items.length} | Musicians: {stagePlot.musicians.length}
-							{#if isAltPressed}
-								<span class="text-blue-600 font-semibold animate-bounce">(Duplicate)</span>
-							{/if}
-						</div>
-						<div>
-							{#if placingItem}Click on canvas to place item. Press 'Escape' to cancel.{/if}
-						</div>
-					</div>
+						{@render canvasContent()}
 				</div>
 			{:else}
 				<div class="flex-1 min-h-0 overflow-hidden p-4">
-					<StagePatch
-						items={stagePlot.items}
-						columnCount={4}
-						onUpdateItem={handlePatchItemUpdate}
-						onReorderPatch={handlePatchReorder}
-						onSelectItem={openItemEditor}
-						onAddItem={handlePatchAddItem}
-						onRemoveItem={handlePatchRemoveItem}
-					/>
+					{@render patchContent(4)}
 				</div>
 			{/if}
 		</div>
 			</div>
 
 			<div class="flex w-80 shrink-0 flex-col">
-				<div class="inspector-panel flex h-full flex-col overflow-hidden rounded-xl border border-border-primary bg-surface shadow-sm">
-					<div class="border-b border-border-primary bg-muted/30 px-3 pt-3">
-						<div class="flex gap-1">
-							<button
-								type="button"
-								onclick={() => (sidePanelTab = 'inspector')}
-								class={`px-3 py-2 text-sm font-medium rounded-t-lg transition-colors ${sidePanelTab === 'inspector' ? 'bg-surface text-text-primary' : 'text-text-secondary hover:text-text-primary'}`}
-							>
-								Inspector
-							</button>
-							<button
-								type="button"
-								onclick={() => (sidePanelTab = 'musicians')}
-								class={`px-3 py-2 text-sm font-medium rounded-t-lg transition-colors ${sidePanelTab === 'musicians' ? 'bg-surface text-text-primary' : 'text-text-secondary hover:text-text-primary'}`}
-							>
-								Musicians
-							</button>
-						</div>
-					</div>
-					{#if sidePanelTab === 'inspector'}
-						<div class="flex-1 min-h-0 overflow-hidden p-4">
-							<Inspector
-								bind:selectedItems
-								bind:items={stagePlot.items}
-								bind:musicians={stagePlot.musicians}
-								bind:title={stagePlot.plot_name}
-								bind:lastModified={stagePlot.revision_date}
-								bind:showZones
-								bind:stageWidth={stagePlot.stage_width}
-								bind:stageDepth={stagePlot.stage_depth}
-								bind:unit
-								onPlaceRiser={placeRiser}
-								onUpdateItem={updateItemProperty}
-								onAddMusician={(name: string, instrument: string) => {
-									newMusician.name = name;
-									newMusician.instrument = instrument;
-									addMusician();
-								}}
-								{getItemZone}
-								{getItemPosition}
-								{updateItemPosition}
-							/>
-						</div>
-					{:else}
-						<div class="flex-1 min-h-0 overflow-auto p-4">
-							<MusicianPanel
-								musicians={stagePlot.musicians}
-								onAdd={(name, instrument) => {
-									newMusician.name = name;
-									newMusician.instrument = instrument || '';
-									addMusician();
-								}}
-								onDelete={deleteMusician}
-								{bandPersons}
-								onImportFromBand={importMusiciansFromBand}
-							/>
-						</div>
-					{/if}
-				</div>
+				<EditorSidePanel
+					bind:activeTab={sidePanelTab}
+					bind:selectedItems
+					bind:items={stagePlot.items}
+					bind:musicians={stagePlot.musicians}
+					bind:title={stagePlot.plot_name}
+					bind:lastModified={stagePlot.revision_date}
+					bind:showZones
+					bind:stageWidth={stagePlot.stage_width}
+					bind:stageDepth={stagePlot.stage_depth}
+					bind:unit
+					bind:pdfPageFormat
+					onPlaceRiser={placeRiser}
+					onUpdateItem={updateItemProperty}
+					onAddMusician={(name, instrument) => {
+						newMusician.name = name;
+						newMusician.instrument = instrument;
+						addMusician();
+					}}
+					{getItemZone}
+					{getItemPosition}
+					{updateItemPosition}
+					{bandPersons}
+					onImportFromBand={importMusiciansFromBand}
+					onDeleteMusician={deleteMusician}
+					{consoleType}
+					{consoleDef}
+					{consoleOptions}
+					{categoryColorDefaults}
+					{inputChannelMode}
+					{outputChannelMode}
+					channelOptions={consoleDef?.channelOptions ?? CHANNEL_OPTIONS}
+					outputOptions={consoleDef?.outputOptions ?? CHANNEL_OPTIONS}
+					onConsoleTypeChange={handleConsoleTypeChange}
+					onCategoryColorDefaultsChange={handleCategoryColorDefaultsChange}
+					onInputChannelModeChange={(m) => (inputChannelMode = m as ChannelMode)}
+					onOutputChannelModeChange={(m) => (outputChannelMode = m as ChannelMode)}
+				/>
 			</div>
 		</div>
 	{:else}
@@ -1431,206 +1423,52 @@
 		</div>
 			{#if mobileMainTab === 'canvas'}
 				<div class="flex-1 min-h-0 overflow-hidden p-4">
-					<div class="border border-border-primary bg-surface p-2.5 shadow-sm">
-						<div
-							bind:this={canvasEl}
-							class="items-container relative mx-auto w-full bg-white dark:bg-gray-800"
-							style="aspect-ratio: {stagePlot.stage_width}/{stagePlot.stage_depth}; max-width: 1100px; cursor: {placingItem ? 'copy' : 'default'}"
-							onmousemove={handleCanvasMouseMove}
-							onclick={handleCanvasClick}
-							ondragover={handleDragOver}
-							ondrop={handleDrop}
-						>
-							<CanvasOverlay {showZones} {canvasWidth} {canvasHeight} itemCount={stagePlot.items.length} />
-
-							{#each stagePlot.items as item (item.id)}
-							<ContextMenu.Root>
-								<ContextMenu.Trigger>
-								<div
-									class="group selectable-item absolute transition-all cursor-move {editingItem?.id === item.id ? 'ring-2 ring-blue-500' : ''}"
-									class:selected={selectedItems.includes(item)}
-									data-id={item.id}
-									style="left: {item.position.x}px; top: {item.position.y}px; width: {item.position.width}px; height: {item.position.height}px;"
-									draggable="true"
-									ondragstart={(e) => handleDragStart(e, item)}
-									ondragend={handleDragEnd}
-									onclick={(e) => openItemEditor(item, e)}
-								>
-									{#if item.type === 'stageDeck'}
-										<StageDeck size={item.size} x={0} y={0} class="w-full h-full" />
-									{:else if item.type === 'riser'}
-										<div class="flex h-full w-full items-center justify-center rounded border-2 border-gray-500 bg-gray-400/50 dark:border-gray-400 dark:bg-gray-600/50">
-											<div class="text-center leading-tight">
-												<div class="text-[10px] font-bold text-gray-700 dark:text-gray-200">RISER</div>
-												<div class="text-[8px] text-gray-600 dark:text-gray-300">{item.itemData?.riserWidth ?? '?'}' × {item.itemData?.riserDepth ?? '?'}'</div>
-												{#if item.itemData?.riserHeight}
-													<div class="text-[7px] text-gray-500 dark:text-gray-400">h: {item.itemData.riserHeight}'</div>
-												{/if}
-											</div>
-										</div>
-									{:else}
-										<img src={getCurrentImageSrc(item)} alt={item.itemData?.name || item.name || 'Stage Item'} style="width: {item.position.width}px; height: {item.position.height}px;" />
-									{/if}
-
-									{#if selectedItems.some((el) => el.dataset?.id === String(item.id))}
-										{#if getVariantKeys(item).length > 1}
-											<div class="absolute -bottom-8 left-1/2 z-20 flex -translate-x-1/2 transform gap-1">
-												<button
-												onclick={(e) => { e.stopPropagation(); rotateItemRight(item); }}
-												class="flex h-6 w-6 items-center justify-center rounded-full bg-blue-500 text-sm text-white shadow-md transition-colors hover:bg-blue-600"
-												title="Rotate Right"
-											>
-												<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-													<path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd" />
-												</svg>
-											</button>
-										</div>
-									{/if}
-								{/if}
-
-								<button
-									onclick={(e) => { e.stopPropagation(); deleteItem(item.id); }}
-									class="absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs text-white opacity-0 transition-opacity group-hover:opacity-100"
-								>
-									&times;
-								</button>
-							</div>
-						</ContextMenu.Trigger>
-						<ContextMenu.Portal>
-							<ContextMenu.Content class="z-50 w-[200px] rounded-xl border border-gray-300 bg-white px-1 py-1.5 shadow-lg dark:border-gray-600 dark:bg-gray-800">
-								<ContextMenu.Item onSelect={(e) => openItemEditor(item, e)} class="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700">
-									Edit
-								</ContextMenu.Item>
-								<ContextMenu.Item onSelect={() => duplicateItem(item)} class="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700">
-									Duplicate
-								</ContextMenu.Item>
-								<ContextMenu.Separator class="bg-muted -mx-1 my-1 block h-px" />
-								<ContextMenu.Item onSelect={() => moveToFront(item.id)} class="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700">
-									Bring to Front
-								</ContextMenu.Item>
-								<ContextMenu.Item onSelect={() => moveForward(item.id)} class="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700">
-									Bring Forward
-								</ContextMenu.Item>
-								<ContextMenu.Item onSelect={() => moveBackward(item.id)} class="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700">
-									Send Backward
-								</ContextMenu.Item>
-								<ContextMenu.Item onSelect={() => moveToBack(item.id)} class="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700">
-									Send to Back
-								</ContextMenu.Item>
-								<ContextMenu.Separator class="bg-muted -mx-1 my-1 block h-px" />
-								<ContextMenu.Item onSelect={() => deleteItem(item.id)} class="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-red-50 dark:hover:bg-red-600/30">
-									Delete
-								</ContextMenu.Item>
-							</ContextMenu.Content>
-						</ContextMenu.Portal>
-						</ContextMenu.Root>
-						{/each}
-
-						{#if placingItem}
-							<div
-								class="pointer-events-none absolute opacity-60"
-								style="left: {placingItem.x}px; top: {placingItem.y}px; width: {placingItem.width}px; height: {placingItem.height}px;"
-							>
-								{#if placingItem.type === 'riser'}
-									<div class="flex h-full w-full items-center justify-center rounded border-2 border-dashed border-gray-500 bg-gray-400/40 text-[10px] font-bold text-gray-700">
-										RISER
-									</div>
-								{:else}
-									<img
-										src={placingItem.itemData?.image || ''}
-										alt={placingItem.itemData?.name || 'Item Preview'}
-										style="width: {placingItem.width}px; height: {placingItem.height}px;"
-									/>
-								{/if}
-							</div>
-						{/if}
-					</div>
+					{@render canvasContent()}
 				</div>
-
-					<div class="mt-1.5 flex justify-between text-xs text-text-tertiary">
-					<div class="flex items-center gap-3">Items: {stagePlot.items.length} | Musicians: {stagePlot.musicians.length}
-						{#if isAltPressed}
-							<span class="text-blue-600 font-semibold animate-bounce">(Duplicate)</span>
-						{/if}
-					</div>
-					<div>
-						{#if placingItem}Click on canvas to place item. Press 'Escape' to cancel.{/if}
-					</div>
-				</div>
-			</div>
 			{:else if mobileMainTab === 'patch'}
 				<div class="flex-1 min-h-0 overflow-hidden p-4">
-					<StagePatch
-						items={stagePlot.items}
-						columnCount={4}
-						onUpdateItem={handlePatchItemUpdate}
-						onReorderPatch={handlePatchReorder}
-						onSelectItem={openItemEditor}
-						onAddItem={handlePatchAddItem}
-						onRemoveItem={handlePatchRemoveItem}
-					/>
+					{@render patchContent(4)}
 				</div>
 			{:else}
 				<div class="flex-1 min-h-0 overflow-hidden p-4">
-					<div class="inspector-panel flex h-full flex-col overflow-hidden rounded-xl border border-border-primary bg-surface shadow-sm">
-						<div class="border-b border-border-primary bg-muted/30 px-3 pt-3">
-							<div class="flex gap-1">
-								<button
-									type="button"
-									onclick={() => (mobilePanelTab = 'inspector')}
-									class={`px-3 py-2 text-sm font-medium rounded-t-lg transition-colors ${mobilePanelTab === 'inspector' ? 'bg-surface text-text-primary' : 'text-text-secondary hover:text-text-primary'}`}
-								>
-									Inspector
-								</button>
-								<button
-									type="button"
-									onclick={() => (mobilePanelTab = 'musicians')}
-									class={`px-3 py-2 text-sm font-medium rounded-t-lg transition-colors ${mobilePanelTab === 'musicians' ? 'bg-surface text-text-primary' : 'text-text-secondary hover:text-text-primary'}`}
-								>
-									Musicians
-								</button>
-							</div>
-						</div>
-						{#if mobilePanelTab === 'inspector'}
-							<div class="flex-1 min-h-0 overflow-auto p-4">
-								<Inspector
-									bind:selectedItems
-									bind:items={stagePlot.items}
-									bind:musicians={stagePlot.musicians}
-									bind:title={stagePlot.plot_name}
-									bind:lastModified={stagePlot.revision_date}
-									bind:showZones
-									bind:stageWidth={stagePlot.stage_width}
-									bind:stageDepth={stagePlot.stage_depth}
-									bind:unit
-									onPlaceRiser={placeRiser}
-									onUpdateItem={updateItemProperty}
-									onAddMusician={(name: string, instrument: string) => {
-										newMusician.name = name;
-										newMusician.instrument = instrument;
-										addMusician();
-									}}
-									{getItemZone}
-									{getItemPosition}
-									{updateItemPosition}
-								/>
-							</div>
-						{:else}
-							<div class="flex-1 min-h-0 overflow-auto p-4">
-								<MusicianPanel
-									musicians={stagePlot.musicians}
-									onAdd={(name, instrument) => {
-										newMusician.name = name;
-										newMusician.instrument = instrument || '';
-										addMusician();
-									}}
-									onDelete={deleteMusician}
-									{bandPersons}
-									onImportFromBand={importMusiciansFromBand}
-								/>
-							</div>
-						{/if}
-					</div>
+					<EditorSidePanel
+						bind:activeTab={mobilePanelTab}
+						bind:selectedItems
+						bind:items={stagePlot.items}
+						bind:musicians={stagePlot.musicians}
+						bind:title={stagePlot.plot_name}
+						bind:lastModified={stagePlot.revision_date}
+						bind:showZones
+						bind:stageWidth={stagePlot.stage_width}
+						bind:stageDepth={stagePlot.stage_depth}
+						bind:unit
+						bind:pdfPageFormat
+						onPlaceRiser={placeRiser}
+						onUpdateItem={updateItemProperty}
+						onAddMusician={(name, instrument) => {
+							newMusician.name = name;
+							newMusician.instrument = instrument;
+							addMusician();
+						}}
+						{getItemZone}
+						{getItemPosition}
+						{updateItemPosition}
+						{bandPersons}
+						onImportFromBand={importMusiciansFromBand}
+						onDeleteMusician={deleteMusician}
+						{consoleType}
+						{consoleDef}
+						{consoleOptions}
+						{categoryColorDefaults}
+						{inputChannelMode}
+						{outputChannelMode}
+						channelOptions={consoleDef?.channelOptions ?? CHANNEL_OPTIONS}
+						outputOptions={consoleDef?.outputOptions ?? CHANNEL_OPTIONS}
+						onConsoleTypeChange={handleConsoleTypeChange}
+						onCategoryColorDefaultsChange={handleCategoryColorDefaultsChange}
+						onInputChannelModeChange={(m) => (inputChannelMode = m as ChannelMode)}
+						onOutputChannelModeChange={(m) => (outputChannelMode = m as ChannelMode)}
+					/>
 				</div>
 			{/if}
 		</div>

@@ -2,11 +2,12 @@ import { readFile, writeFile, mkdir } from 'fs/promises';
 import { existsSync } from 'fs';
 import { join } from 'path';
 import type { PageServerLoad } from './$types';
-import type { CatalogItem, OriginalItem, ItemType, PersonSubcategory } from '$lib/types';
+import type { CatalogItem, OriginalItem, ItemType, PersonSubcategory, Brand } from '$lib/types';
 import { CATEGORY_MAP } from '$lib/schema';
 
 const ASSETS_DIR = join(process.cwd(), '..', 'app', 'static', 'final_assets');
 const ITEMS_PATH = join(ASSETS_DIR, 'items.json');
+const BRANDS_PATH = join(ASSETS_DIR, 'brands.json');
 const DATA_DIR = join(process.cwd(), 'data');
 const ENRICHED_PATH = join(DATA_DIR, 'enriched-items.json');
 
@@ -153,7 +154,7 @@ function initializeItem(original: OriginalItem): CatalogItem {
 		item_type: itemType,
 		variants: original.variants,
 		path: original.path,
-		brand: '',
+		brands: original.brands ?? [],
 		model: '',
 		common_models: [],
 		slug: slugify(original.path),
@@ -161,6 +162,7 @@ function initializeItem(original: OriginalItem): CatalogItem {
 		subcategory: '',
 		tags: [],
 		default_inputs: original.default_inputs || [],
+		default_outputs: original.default_outputs || [],
 		dimensions: { width_in: 0, depth_in: 0, height_in: 0 },
 		provision_default: '',
 		is_backline: isBackline,
@@ -183,7 +185,7 @@ function normalizeItem(
 		item_type: item.item_type,
 		variants: item.variants,
 		path: item.path,
-		brand: item.brand ?? '',
+		brands: item.brands ?? (item.brand ? [item.brand].filter(Boolean) : []),
 		model: item.model ?? '',
 		common_models: item.common_models ?? [],
 		slug: item.slug ?? slugify(item.path),
@@ -191,6 +193,7 @@ function normalizeItem(
 		subcategory: item.subcategory ?? '',
 		tags: item.tags ?? [],
 		default_inputs: item.default_inputs ?? [],
+		default_outputs: item.default_outputs ?? [],
 		dimensions: item.dimensions ?? { width_in: 0, depth_in: 0, height_in: 0 },
 		provision_default: item.provision_default ?? '',
 		is_backline: item.is_backline ?? false,
@@ -205,6 +208,15 @@ function normalizeItem(
 }
 
 export const load: PageServerLoad = async () => {
+	let brands: Brand[] = [];
+	if (existsSync(BRANDS_PATH)) {
+		try {
+			const brandData = await readFile(BRANDS_PATH, 'utf-8');
+			brands = JSON.parse(brandData);
+		} catch {
+			brands = [];
+		}
+	}
 	// Try enriched data first, filtering out any items whose assets are missing
 	if (existsSync(ENRICHED_PATH)) {
 		const data = await readFile(ENRICHED_PATH, 'utf-8');
@@ -212,7 +224,7 @@ export const load: PageServerLoad = async () => {
 		const items: CatalogItem[] = parsed
 			.filter((i: any) => existsSync(join(ASSETS_DIR, i.path)))
 			.map(normalizeItem);
-		return { items };
+		return { items, brands };
 	}
 
 	// Initialize from original items.json, filtering out items with missing asset dirs
@@ -224,5 +236,5 @@ export const load: PageServerLoad = async () => {
 	await mkdir(DATA_DIR, { recursive: true });
 	await writeFile(ENRICHED_PATH, JSON.stringify(items, null, 2));
 
-	return { items };
+	return { items, brands };
 };

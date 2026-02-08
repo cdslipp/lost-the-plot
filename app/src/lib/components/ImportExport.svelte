@@ -60,7 +60,10 @@
 		canvasHeight = $bindable<number>(850),
 		getItemZone = $bindable<((item: Item) => string) | undefined>(undefined),
 		getItemPosition = $bindable<((item: Item) => { x: number; y: number }) | undefined>(undefined),
-		onImportComplete = $bindable<(() => void) | undefined>(undefined)
+		onImportComplete = $bindable<(() => void) | undefined>(undefined),
+		onExportPdf = $bindable<(() => Promise<void>) | undefined>(undefined),
+		onExportScn = $bindable<(() => void) | undefined>(undefined),
+		consoleType = $bindable<string | null>(null)
 	} = $props();
 
 	let fileInput: HTMLInputElement;
@@ -136,6 +139,18 @@
 		isMenuOpen = false;
 	}
 
+	async function handleExportPdf() {
+		if (!onExportPdf) return;
+		await onExportPdf();
+		isMenuOpen = false;
+	}
+
+	function handleExportScn() {
+		if (!onExportScn) return;
+		onExportScn();
+		isMenuOpen = false;
+	}
+
 	function handleFileImport(event: Event) {
 		const target = event.target as HTMLInputElement;
 		const file = target.files?.[0];
@@ -159,7 +174,7 @@
 
 				// Load the data
 				if (jsonData.plot_name) title = jsonData.plot_name;
-				if (jsonData.revision_date) lastModified = new Date(jsonData.revision_date).toLocaleDateString();
+				if (jsonData.revision_date) lastModified = new Date(jsonData.revision_date).toISOString().split('T')[0];
 				
 				// Load canvas dimensions (enforce standard format)
 				const standardConfig = getStandardConfig();
@@ -188,7 +203,7 @@
 				}
 
 				// Update last modified to now since we just imported
-				lastModified = new Date().toLocaleDateString();
+				lastModified = new Date().toISOString().split('T')[0];
 				
 				// Notify parent component
 				if (onImportComplete) onImportComplete();
@@ -267,7 +282,7 @@
 			>
 				<path
 					fill-rule="evenodd"
-					d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM6.293 6.707a1 1 0 010-1.414l3-3a1 1 0 011.414 0l3 3a1 1 0 01-1.414 1.414L11 5.414V13a1 1 0 11-2 0V5.414L7.707 6.707a1 1 0 01-1.414 0z"
+					d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z"
 					clip-rule="evenodd"
 				/>
 			</svg>
@@ -283,29 +298,30 @@
 			>
 				<path
 					fill-rule="evenodd"
-					d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z"
+					d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM6.293 6.707a1 1 0 010-1.414l3-3a1 1 0 011.414 0l3 3a1 1 0 01-1.414 1.414L11 5.414V13a1 1 0 11-2 0V5.414L7.707 6.707a1 1 0 01-1.414 0z"
 					clip-rule="evenodd"
 				/>
 			</svg>
 			Import Plot
 		</DropdownMenu.Item>
 
-		<DropdownMenu.Separator class="my-1 h-px bg-border-secondary" />
+		{#if onExportPdf}
+			<DropdownMenu.Item onSelect={handleExportPdf} class="flex cursor-pointer items-start gap-3 rounded-md px-3 py-2 text-sm text-text-primary hover:bg-surface-hover">
+				<div>
+					<div>Export PDF</div>
+					<div class="text-xs text-text-tertiary">Stage plot + input list</div>
+				</div>
+			</DropdownMenu.Item>
+		{/if}
 
-		<DropdownMenu.Item onSelect={() => window.open('/specs/stage-plot-1.0.0.json', '_blank')} class="flex cursor-pointer items-center gap-3 rounded-md px-3 py-2 text-sm text-text-secondary hover:bg-surface-hover">
-			<svg
-				xmlns="http://www.w3.org/2000/svg"
-				class="h-4 w-4"
-				viewBox="0 0 20 20"
-				fill="currentColor"
-			>
-				<path
-					fill-rule="evenodd"
-					d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
-					clip-rule="evenodd"
-				/>
-			</svg>
-			File Format
-		</DropdownMenu.Item>
+		{#if onExportScn && consoleType === 'x32'}
+			<DropdownMenu.Item onSelect={handleExportScn} class="flex cursor-pointer items-start gap-3 rounded-md px-3 py-2 text-sm text-text-primary hover:bg-surface-hover">
+				<div>
+					<div>Export Console Scene</div>
+					<div class="text-xs text-text-tertiary">X32 .scn file</div>
+				</div>
+			</DropdownMenu.Item>
+		{/if}
+
 	</DropdownMenu.Content>
 </DropdownMenu.Root>

@@ -1,0 +1,11 @@
+{
+	"name": "Straight Mic Stand (Vocal Round Base)",
+	"item_type": "stand",
+	"variants": {
+		"default": "Straight_Vocal.png",
+		"L": "Straight_VocalL.png",
+		"R": "Straight_VocalR.png",
+		"LA": "Straight_VocalLA.png",
+		"RA": "Straight_VocalRA.png"
+	}
+}

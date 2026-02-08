@@ -1,0 +1,12 @@
+{
+	"name": "Straight Mic Stand (Short)",
+	"item_type": "stand",
+	"variants": {
+		"default": "Straight_short.png",
+		"L": "Straight_shortL.png",
+		"R": "Straight_shortR.png",
+		"LA": "Straight_shortLA.png",
+		"RA": "Straight_shortRA.png",
+		"back": "Straight_shortBack.png"
+	}
+}

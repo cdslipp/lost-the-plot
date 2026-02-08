@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { MusicianCombobox } from '$lib';
 	import { displayValue, toFeet, unitLabel } from '$lib/utils/scale';
+	import { toggleMode } from 'mode-watcher';
 
 	type Item = {
 		id: number;
@@ -32,6 +33,7 @@
 		stageWidth = $bindable(24),
 		stageDepth = $bindable(16),
 		unit = $bindable('imperial'),
+		pdfPageFormat = $bindable<'letter' | 'a4'>('letter'),
 		onPlaceRiser = $bindable<
 			((riserWidth: number, riserDepth: number, riserHeight: number) => void) | undefined
 		>(undefined),
@@ -219,31 +221,90 @@
 
 <div class="flex h-full flex-col">
 	{#if selectedItemsData.length === 0}
-		<!-- Document Properties -->
-		<div class="flex flex-1 flex-col">
-			<h3 class="mb-4 font-serif font-semibold text-text-primary">Document Properties</h3>
-			<div class="space-y-4">
-				<div>
-					<label class="mb-1 block text-xs text-text-secondary">Title</label>
-					<input
-						type="text"
-						bind:value={title}
-						class="w-full rounded-lg border border-border-primary bg-surface px-2 py-1.5 text-sm text-text-primary focus:border-stone-500 focus:ring-2 focus:ring-stone-500"
-						placeholder="Band Name"
-					/>
+		<!-- Plot overview when nothing selected -->
+		<div class="space-y-4">
+			<!-- Quick stats -->
+			<div class="grid grid-cols-2 gap-2">
+				<div class="rounded-lg bg-muted/50 px-3 py-2">
+					<div class="text-lg font-semibold text-text-primary">{items.length}</div>
+					<div class="text-[10px] text-text-tertiary">{items.length === 1 ? 'Item' : 'Items'}</div>
 				</div>
-				<div>
-					<label class="mb-1 block text-xs text-text-secondary">Revision Date</label>
-					<input
-						type="date"
-						value={new Date(lastModified).toISOString().split('T')[0]}
-						onchange={(e) => { const target = e.target as HTMLInputElement; lastModified = new Date(target.value).toLocaleDateString(); }}
-						class="w-full rounded-lg border border-border-primary bg-surface px-2 py-1.5 text-sm text-text-primary focus:border-stone-500 focus:ring-2 focus:ring-stone-500"
-					/>
+				<div class="rounded-lg bg-muted/50 px-3 py-2">
+					<div class="text-lg font-semibold text-text-primary">{musicians.length}</div>
+					<div class="text-[10px] text-text-tertiary">{musicians.length === 1 ? 'Musician' : 'Musicians'}</div>
+				</div>
+				<div class="rounded-lg bg-muted/50 px-3 py-2">
+					<div class="text-lg font-semibold text-text-primary">{items.filter(i => i.channel).length}</div>
+					<div class="text-[10px] text-text-tertiary">Patched</div>
+				</div>
+				<div class="rounded-lg bg-muted/50 px-3 py-2">
+					<div class="text-lg font-semibold text-text-primary">{items.filter(i => !i.channel).length}</div>
+					<div class="text-[10px] text-text-tertiary">Unpatched</div>
 				</div>
 			</div>
-			<div class="mt-6 text-center text-xs text-text-secondary">
-				<p>Select items on the stage plot to view and edit their properties.</p>
+
+			<div class="rounded-lg border border-border-primary bg-surface px-3 py-2">
+				<div class="mb-2 text-[10px] font-medium uppercase tracking-wider text-text-tertiary">
+					PDF Paper
+				</div>
+				<div class="flex items-center justify-between">
+					<span class="text-xs text-text-secondary">Page Size</span>
+					<div class="flex rounded-md border border-border-primary text-xs">
+						<button
+							onclick={() => (pdfPageFormat = 'letter')}
+							class="px-2 py-0.5 transition {pdfPageFormat === 'letter' ? 'bg-stone-900 text-white dark:bg-stone-100 dark:text-stone-900' : 'text-text-secondary hover:bg-surface-hover'}"
+							style="border-radius: 0.3rem 0 0 0.3rem;"
+						>
+							Letter
+						</button>
+						<button
+							onclick={() => (pdfPageFormat = 'a4')}
+							class="px-2 py-0.5 transition {pdfPageFormat === 'a4' ? 'bg-stone-900 text-white dark:bg-stone-100 dark:text-stone-900' : 'text-text-secondary hover:bg-surface-hover'}"
+							style="border-radius: 0 0.3rem 0.3rem 0;"
+						>
+							A4
+						</button>
+					</div>
+				</div>
+			</div>
+
+			{#if items.length > 0}
+				<!-- Item breakdown by category -->
+				{@const categoryCounts: Record<string, number> = items.reduce<Record<string, number>>((acc, item) => {
+					const cat = item.itemData?.category || item.category || 'Other';
+					acc[cat] = (acc[cat] || 0) + 1;
+					return acc;
+				}, {})}
+				<div>
+					<h4 class="mb-1.5 text-[10px] font-medium uppercase tracking-wider text-text-tertiary">Items on Stage</h4>
+					<div class="space-y-1">
+						{#each Object.entries(categoryCounts).sort((a: [string, number], b: [string, number]) => b[1] - a[1]) as [cat, count]}
+							<div class="flex items-center justify-between text-xs">
+								<span class="text-text-secondary truncate">{cat}</span>
+								<span class="text-text-tertiary tabular-nums">{count}</span>
+							</div>
+						{/each}
+					</div>
+				</div>
+			{/if}
+
+			{#if musicians.length > 0}
+				<!-- Musicians list -->
+				<div>
+					<h4 class="mb-1.5 text-[10px] font-medium uppercase tracking-wider text-text-tertiary">Musicians</h4>
+					<div class="space-y-1">
+						{#each musicians as m}
+							<div class="flex items-center justify-between text-xs">
+								<span class="text-text-primary truncate">{m.name}</span>
+								<span class="text-text-tertiary truncate ml-2">{m.instrument}</span>
+							</div>
+						{/each}
+					</div>
+				</div>
+			{/if}
+
+			<div class="text-center text-[10px] text-text-tertiary">
+				Select items to edit properties
 			</div>
 		</div>
 	{:else if selectedItemsData.length === 1}
@@ -516,8 +577,8 @@
 		</div>
 	{/if}
 
-	<!-- Stage Settings (bottom of panel) -->
-	<div class="mt-auto border-t border-border-primary pt-4 space-y-3">
+	<!-- Stage Settings -->
+	<div class="mt-4 border-t border-border-primary pt-4 space-y-3">
 		<!-- Unit toggle -->
 		<div class="flex items-center justify-between">
 			<span class="text-xs text-text-secondary">Units</span>
@@ -662,6 +723,38 @@
 				></span>
 			</button>
 		</div>
+	</div>
+
+	<!-- Dark mode toggle at bottom center -->
+	<div class="mt-auto flex justify-center border-t border-border-primary pt-3 pb-1">
+		<button
+			onclick={toggleMode}
+			class="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs text-text-tertiary transition hover:bg-surface-hover hover:text-text-secondary"
+			title="Toggle dark mode"
+		>
+			<svg
+				xmlns="http://www.w3.org/2000/svg"
+				class="h-3.5 w-3.5 block dark:hidden"
+				viewBox="0 0 20 20"
+				fill="currentColor"
+			>
+				<path
+					fill-rule="evenodd"
+					d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z"
+					clip-rule="evenodd"
+				/>
+			</svg>
+			<svg
+				xmlns="http://www.w3.org/2000/svg"
+				class="h-3.5 w-3.5 hidden dark:block"
+				viewBox="0 0 20 20"
+				fill="currentColor"
+			>
+				<path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z" />
+			</svg>
+			<span class="block dark:hidden">Dark mode</span>
+			<span class="hidden dark:block">Light mode</span>
+		</button>
 	</div>
 </div>
 

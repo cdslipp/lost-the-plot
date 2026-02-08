@@ -48,6 +48,7 @@ See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the full architecture guide
 - [Scale System](docs/scale-system.md) — Real-world measurement scale
 - [Data Model](docs/DATA_MODEL.md) — Entity relationships and JSON schemas
 - [Import/Export](docs/import-export.md) — JSON file format specification
+- [Items Library](docs/ITEMS_LIBRARY.md) — Catalog data and asset workflow
 
 ## Tech Stack
 

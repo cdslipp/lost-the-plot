@@ -41,6 +41,8 @@ export interface OriginalItem {
 	variants: Record<string, string>;
 	path: string;
 	default_inputs?: DefaultInput[];
+	default_outputs?: DefaultOutput[];
+	brands?: string[];
 }
 
 export interface DefaultInput {
@@ -49,6 +51,13 @@ export interface DefaultInput {
 	ideal_device?: GearPreference;
 	stand: StandType;
 	phantom_power: boolean;
+	link_mode: LinkMode;
+}
+
+export interface DefaultOutput {
+	name: string;
+	short_name: string;
+	type?: string;
 	link_mode: LinkMode;
 }
 
@@ -79,6 +88,14 @@ export interface BrandModel {
 	model: string;
 }
 
+export interface Brand {
+	name: string;
+	slug: string;
+	website?: string;
+	status?: 'active' | 'defunct';
+	notes?: string;
+}
+
 export interface CatalogItem {
 	// Original fields (preserved)
 	name: string;
@@ -87,7 +104,7 @@ export interface CatalogItem {
 	path: string;
 
 	// Brand/model identification
-	brand: string;
+	brands: string[];
 	model: string;
 	common_models: BrandModel[];
 
@@ -97,6 +114,7 @@ export interface CatalogItem {
 	subcategory: string;
 	tags: string[];
 	default_inputs: DefaultInput[];
+	default_outputs: DefaultOutput[];
 	dimensions: Dimensions;
 	provision_default: ProvisionType | '';
 	is_backline: boolean;

@@ -82,12 +82,20 @@ export interface ItemData {
 	path?: string;
 	keywords?: string[];
 	default_inputs?: DefaultInput[];
+	default_outputs?: DefaultOutput[];
 }
 
 export interface DefaultInput {
 	name: string;
 	ch?: number;
 	source?: string;
+}
+
+export interface DefaultOutput {
+	name: string;
+	short_name?: string;
+	type?: Output['type'] | string;
+	link_mode?: 'mono' | 'stereo_pair' | 'stereo_sum';
 }
 
 export interface Musician {

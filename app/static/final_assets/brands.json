@@ -1,0 +1,23 @@
+[
+	{
+		"name": "Fender",
+		"slug": "fender",
+		"website": "https://www.fender.com",
+		"status": "active",
+		"notes": "Founded 1946. Also owns brands like Squier, Gretsch, and Jackson."
+	},
+	{
+		"name": "Marshall",
+		"slug": "marshall",
+		"website": "https://www.marshall.com",
+		"status": "active",
+		"notes": "Founded 1962. Known for guitar amplifiers and cabinets."
+	},
+	{
+		"name": "Yamaha",
+		"slug": "yamaha",
+		"website": "https://www.yamaha.com",
+		"status": "active",
+		"notes": "Founded 1887. Broad portfolio: instruments, pro audio, and more."
+	}
+]

@@ -246,9 +246,7 @@
 										<span class="mx-1">&middot;</span>
 									{/if}
 									<span
-										>Modified {new Date(
-											plot.revision_date
-										).toLocaleDateString()}</span
+										>Modified {plot.revision_date}</span
 									>
 								</div>
 							</a>

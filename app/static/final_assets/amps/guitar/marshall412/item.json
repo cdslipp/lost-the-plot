@@ -2,6 +2,10 @@
 	"name": "Marshall412",
 	"item_type": "output",
 	"variants": {
-		"A": "Marshall412A.png"
+		"default": "Marshall412A.png",
+		"R": "Marshall412AR.png",
+		"L": "Marshall412AL.png",
+		"LA": "Marshall412ALA.png",
+		"RA": "Marshall412ARA.png"
 	}
 }

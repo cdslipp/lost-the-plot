@@ -10,12 +10,28 @@
 		PERSON_SUBCATEGORIES
 	} from '$lib/schema';
 
+	type EditorItem = CatalogItem & {
+		default_outputs?: Array<{ name: string; short_name: string; type?: string; link_mode: string }>;
+	};
+
 	interface Props {
-		item: CatalogItem;
+		item: EditorItem;
 		onsave: (item: CatalogItem) => Promise<void>;
 	}
 
 	let { item = $bindable(), onsave }: Props = $props();
+
+	const OUTPUT_TYPES = [
+		'wedge',
+		'iem_stereo',
+		'iem_mono',
+		'sidefill',
+		'sub',
+		'pa_speaker',
+		'line_array',
+		'column_speaker',
+		'personal_system'
+	] as const;
 
 	let saving = $state(false);
 	let saved = $state(false);
@@ -48,6 +64,24 @@
 
 	function removeInput(index: number) {
 		item.default_inputs = item.default_inputs.filter((_, i) => i !== index);
+	}
+
+	function addOutput() {
+		item.default_outputs = [
+			...(item.default_outputs ?? []),
+			{
+				name: '',
+				short_name: '',
+				type: 'wedge',
+				link_mode: 'mono'
+			}
+		];
+	}
+
+	function removeOutput(index: number) {
+		item.default_outputs = (item.default_outputs ?? []).filter(
+			(_: unknown, i: number) => i !== index
+		);
 	}
 
 	function addCommonModel() {
@@ -452,6 +486,88 @@
 								</td>
 								<td class="px-2 py-1">
 									<button class="text-red-400 hover:text-red-600" onclick={() => removeInput(i)}>
+										&times;
+									</button>
+								</td>
+							</tr>
+						{/each}
+					</tbody>
+				</table>
+			{/if}
+		</section>
+
+		<!-- Default Outputs -->
+		<section>
+			<div class="mb-2 flex items-center justify-between">
+				<h3 class="text-sm font-medium text-gray-700">Default Outputs</h3>
+				<button
+					class="rounded bg-gray-100 px-2 py-1 text-xs text-gray-600 hover:bg-gray-200"
+					onclick={addOutput}
+				>
+					+ Add Output
+				</button>
+			</div>
+
+			{#if (item.default_outputs ?? []).length === 0}
+				<div
+					class="rounded border border-dashed border-gray-200 p-4 text-center text-sm text-gray-400"
+				>
+					No default outputs. Use this for monitors and output devices.
+				</div>
+			{:else}
+				<table class="w-full text-xs">
+					<thead>
+						<tr class="border-b border-gray-200 text-left text-gray-500">
+							<th class="px-2 py-1 font-medium">#</th>
+							<th class="px-2 py-1 font-medium">Name</th>
+							<th class="px-2 py-1 font-medium">Short</th>
+							<th class="px-2 py-1 font-medium">Type</th>
+							<th class="px-2 py-1 font-medium">Link</th>
+							<th class="px-2 py-1 font-medium"></th>
+						</tr>
+					</thead>
+					<tbody>
+						{#each item.default_outputs ?? [] as output, i (i)}
+							<tr class="border-b border-gray-100">
+								<td class="px-2 py-1 text-gray-400">{i + 1}</td>
+								<td class="px-2 py-1">
+									<input
+										type="text"
+										placeholder="IEM"
+										class="w-full min-w-20 rounded border-gray-300 px-1 py-0.5 text-xs"
+										bind:value={output.name}
+									/>
+								</td>
+								<td class="px-2 py-1">
+									<input
+										type="text"
+										placeholder="IEM"
+										class="w-full min-w-16 rounded border-gray-300 px-1 py-0.5 text-xs"
+										bind:value={output.short_name}
+									/>
+								</td>
+								<td class="px-2 py-1">
+									<select
+										class="rounded border-gray-300 px-1 py-0.5 text-xs"
+										bind:value={output.type}
+									>
+										{#each OUTPUT_TYPES as type (type)}
+											<option value={type}>{type.replace(/_/g, ' ')}</option>
+										{/each}
+									</select>
+								</td>
+								<td class="px-2 py-1">
+									<select
+										class="rounded border-gray-300 px-1 py-0.5 text-xs"
+										bind:value={output.link_mode}
+									>
+										{#each LINK_MODES as mode (mode)}
+											<option value={mode}>{mode.replace(/_/g, ' ')}</option>
+										{/each}
+									</select>
+								</td>
+								<td class="px-2 py-1">
+									<button class="text-red-400 hover:text-red-600" onclick={() => removeOutput(i)}>
 										&times;
 									</button>
 								</td>

@@ -11,7 +11,7 @@
 	<header
 		class="flex shrink-0 items-center justify-between border-b border-gray-200 bg-white px-4 py-2"
 	>
-		<h1 class="text-lg font-semibold text-gray-900">StagePlotter Categorizer</h1>
+		<h1 class="text-lg font-semibold text-gray-900">Lost the Plot Categorizer</h1>
 		<div class="text-sm text-gray-500">
 			<kbd class="rounded bg-gray-100 px-1.5 py-0.5 text-xs">j/k</kbd> navigate
 			<kbd class="ml-2 rounded bg-gray-100 px-1.5 py-0.5 text-xs">⌘S</kbd> save
