@@ -1090,8 +1090,8 @@
 		if (!item) return;
 		// Handle riser dimension properties stored in itemData
 		if (['riserWidth', 'riserDepth', 'riserHeight'].includes(property)) {
-			if (!item.itemData) item.itemData = {};
-			item.itemData[property] = parseFloat(value);
+			if (!item.itemData) item.itemData = { name: '' };
+			(item.itemData as Record<string, unknown>)[property] = parseFloat(value);
 			if (property === 'riserWidth') {
 				item.position.width = feetToPixels(parseFloat(value));
 			} else if (property === 'riserDepth') {
@@ -1259,7 +1259,7 @@
 	function handleClearPatch() {
 		for (const item of stagePlot.items) {
 			item.channel = '';
-			item.musician = '';
+			item.person_id = null;
 		}
 		commitChange();
 	}
