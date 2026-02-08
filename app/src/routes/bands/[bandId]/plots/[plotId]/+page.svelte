@@ -778,6 +778,8 @@
 		offsetY: number;
 		startX: number;
 		startY: number;
+		ghostX: number;
+		ghostY: number;
 		moved: boolean;
 	} | null>(null);
 
@@ -796,6 +798,8 @@
 			offsetY: event.clientY - canvasRect.top - item.position.y,
 			startX: item.position.x,
 			startY: item.position.y,
+			ghostX: item.position.x,
+			ghostY: item.position.y,
 			moved: false
 		};
 	}
@@ -814,26 +818,41 @@
 			dragging.moved = true;
 		}
 
-		dragging.item.position.x = Math.max(0, Math.min(rawX, canvasWidth - dragging.item.position.width));
-		dragging.item.position.y = Math.max(0, Math.min(rawY, canvasHeight - dragging.item.position.height));
+		const clampedX = Math.max(0, Math.min(rawX, canvasWidth - dragging.item.position.width));
+		const clampedY = Math.max(0, Math.min(rawY, canvasHeight - dragging.item.position.height));
+
+		if (isAltPressed) {
+			// Alt+drag: keep original in place, move ghost
+			dragging.item.position.x = dragging.startX;
+			dragging.item.position.y = dragging.startY;
+			dragging.ghostX = clampedX;
+			dragging.ghostY = clampedY;
+		} else {
+			// Normal drag: move the item directly
+			dragging.item.position.x = clampedX;
+			dragging.item.position.y = clampedY;
+		}
 	}
 
 	function handleItemPointerUp(event: PointerEvent) {
 		if (!dragging) return;
 
 		if (dragging.moved) {
-			const snapped = snapToGrid(
-				dragging.item.position.x, dragging.item.position.y,
-				dragging.item.position.width, dragging.item.position.height
-			);
-			const x = Math.max(0, Math.min(snapped.x, canvasWidth - dragging.item.position.width));
-			const y = Math.max(0, Math.min(snapped.y, canvasHeight - dragging.item.position.height));
-
 			if (isAltPressed) {
-				dragging.item.position.x = dragging.startX;
-				dragging.item.position.y = dragging.startY;
+				const snapped = snapToGrid(
+					dragging.ghostX, dragging.ghostY,
+					dragging.item.position.width, dragging.item.position.height
+				);
+				const x = Math.max(0, Math.min(snapped.x, canvasWidth - dragging.item.position.width));
+				const y = Math.max(0, Math.min(snapped.y, canvasHeight - dragging.item.position.height));
 				duplicateItem(dragging.item, { position: { ...dragging.item.position, x, y } });
 			} else {
+				const snapped = snapToGrid(
+					dragging.item.position.x, dragging.item.position.y,
+					dragging.item.position.width, dragging.item.position.height
+				);
+				const x = Math.max(0, Math.min(snapped.x, canvasWidth - dragging.item.position.width));
+				const y = Math.max(0, Math.min(snapped.y, canvasHeight - dragging.item.position.height));
 				dragging.item.position.x = x;
 				dragging.item.position.y = y;
 				commitChange();
@@ -1204,7 +1223,7 @@
 								{#snippet child({ props: itemProps })}
 								<div
 									{...itemProps}
-									class="group selectable-item absolute cursor-move"
+									class="group selectable-item absolute cursor-move select-none"
 									class:ring-2={editingItem?.id === item.id || selectedIds.has(String(item.id))}
 									class:ring-blue-500={editingItem?.id === item.id || selectedIds.has(String(item.id))}
 									data-id={item.id}
@@ -1272,6 +1291,21 @@
 							</ContextMenu.Portal>
 						</ContextMenu.Root>
 						{/each}
+
+						{#if dragging?.moved && isAltPressed}
+							<div
+								class="pointer-events-none absolute opacity-50 ring-2 ring-blue-400 ring-dashed"
+								style="left: {dragging.ghostX}px; top: {dragging.ghostY}px; width: {dragging.item.position.width}px; height: {dragging.item.position.height}px;"
+							>
+								{#if dragging.item.type === 'stageDeck'}
+									<StageDeck size={dragging.item.size} x={0} y={0} class="w-full h-full" />
+								{:else if dragging.item.type === 'riser'}
+									<div class="flex h-full w-full items-center justify-center rounded border-2 border-dashed border-gray-500 bg-gray-400/40 text-[10px] font-bold text-gray-700">RISER</div>
+								{:else}
+									<img src={getCurrentImageSrc(dragging.item)} alt="Duplicate preview" draggable="false" style="width: {dragging.item.position.width}px; height: {dragging.item.position.height}px; pointer-events: none;" />
+								{/if}
+							</div>
+						{/if}
 
 						{#if placingItem}
 							<div
