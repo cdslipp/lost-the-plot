@@ -16,6 +16,16 @@ import {
 	buildImagePath
 } from '$lib/utils/canvasUtils';
 import { getContext, setContext } from 'svelte';
+import {
+	CATALOG_TO_COLOR_CATEGORY,
+	getDefaultCategoryColors,
+	CONSOLES,
+	getConsoleIds,
+	type ColorCategory,
+	type StagePlotItem as SharedStagePlotItem,
+	type PlotOutputItem as SharedPlotOutputItem,
+	type ChannelMode
+} from '@stageplotter/shared';
 import { upsertPlot } from '$lib/db/repositories/plots';
 import {
 	getPersonsForPlot,
@@ -31,38 +41,9 @@ import {
 import { getBandById } from '$lib/db/repositories/bands';
 
 // --- Types ---
-
-export interface StagePlotItem {
-	id: number;
-	type?: string;
-	name: string;
-	channel: string;
-	person_id: number | null;
-	itemData?: any;
-	currentVariant?: string;
-	position: {
-		x: number;
-		y: number;
-		width: number;
-		height: number;
-		zone?: string;
-		relativeX?: number;
-		relativeY?: number;
-	};
-	width?: number;
-	height?: number;
-	[key: string]: any;
-}
-
-export interface PlotOutputItem {
-	id: number;
-	name: string;
-	channel: string;
-	itemData?: any;
-	link_mode?: string;
-}
-
-type ChannelMode = 8 | 16 | 24 | 32 | 48;
+// Re-export shared types so consumers can import from one place
+export type StagePlotItem = SharedStagePlotItem;
+export type PlotOutputItem = SharedPlotOutputItem;
 
 const CONTEXT_KEY = 'plotState';
 
@@ -114,11 +95,15 @@ export class StagePlotState {
 	snapping = $state(true);
 	pdfPageFormat = $state<'letter' | 'a4'>('letter');
 	unit = $state<UnitSystem>('imperial');
-	selectedItems = $state<any[]>([]);
 
 	// Channel mode
+	static readonly CHANNEL_OPTIONS: ChannelMode[] = [8, 16, 24, 32, 48];
 	inputChannelMode = $state<ChannelMode>(48);
 	outputChannelMode = $state<ChannelMode>(16);
+
+	// Console derived
+	consoleDef = $derived(this.consoleType ? (CONSOLES[this.consoleType] ?? null) : null);
+	consoleOptions = $derived(getConsoleIds().map((id) => ({ id, name: CONSOLES[id].name })));
 
 	// Derived
 	personsById = $derived(
@@ -135,6 +120,10 @@ export class StagePlotState {
 	private writeTimer: ReturnType<typeof setTimeout> | null = null;
 	private writePromise: Promise<void> | null = null;
 
+	// Track previous stage dimensions for rescaling
+	private prevStageWidth = 0;
+	private prevStageDepth = 0;
+
 	constructor(plotId: string, bandId: string) {
 		this.plotId = plotId;
 		this.bandId = bandId;
@@ -147,6 +136,38 @@ export class StagePlotState {
 				this.unit = saved;
 			}
 		}
+
+		// Rescale items proportionally when stage dimensions change
+		$effect(() => {
+			const newW = this.stageWidth;
+			const newD = this.stageDepth;
+			if (
+				this.prevStageWidth > 0 &&
+				this.prevStageDepth > 0 &&
+				(newW !== this.prevStageWidth || newD !== this.prevStageDepth)
+			) {
+				const scaleX = newW / this.prevStageWidth;
+				const scaleY = newD / this.prevStageDepth;
+				for (const item of this.items) {
+					item.position.x = Math.round(item.position.x * scaleX);
+					item.position.y = Math.round(item.position.y * scaleY);
+					if (item.type === 'riser') {
+						item.position.width = Math.round(item.position.width * scaleX);
+						item.position.height = Math.round(item.position.height * scaleY);
+					}
+				}
+			}
+			this.prevStageWidth = newW;
+			this.prevStageDepth = newD;
+			this.debouncedWrite();
+		});
+
+		// Persist unit preference
+		$effect(() => {
+			if (typeof window !== 'undefined') {
+				localStorage.setItem('stageplotter-units', this.unit);
+			}
+		});
 	}
 
 	// --- Persistence ---
@@ -231,6 +252,13 @@ export class StagePlotState {
 		} catch {
 			this.categoryColorDefaults = {};
 		}
+		// Initialize category defaults from console if not yet set
+		if (this.consoleType && Object.keys(this.categoryColorDefaults).length === 0) {
+			this.categoryColorDefaults = getDefaultCategoryColors(this.consoleType) as Record<
+				string,
+				string
+			>;
+		}
 
 		let meta: any = {};
 		try {
@@ -257,6 +285,10 @@ export class StagePlotState {
 		// Band name
 		const band = await getBandById(this.bandId);
 		this.bandName = band?.name ?? '';
+
+		// Seed prev dimensions for rescale tracking
+		this.prevStageWidth = this.stageWidth;
+		this.prevStageDepth = this.stageDepth;
 
 		return true;
 	}
@@ -298,7 +330,7 @@ export class StagePlotState {
 		if (!item) return;
 		if (['riserWidth', 'riserDepth', 'riserHeight'].includes(property)) {
 			if (!item.itemData) item.itemData = { name: '' };
-			(item.itemData as Record<string, unknown>)[property] = parseFloat(value);
+			(item.itemData as any)[property] = parseFloat(value);
 			if (property === 'riserWidth') item.position.width = feetToPixels(parseFloat(value));
 			else if (property === 'riserDepth') item.position.height = feetToPixels(parseFloat(value));
 		} else if (property === 'person_id') {
@@ -408,6 +440,21 @@ export class StagePlotState {
 		this.commitChange();
 	}
 
+	/** Remove items on this channel and auto-apply category color when console is set */
+	preparePatchChannel(channel: number, itemData: any) {
+		this.items = this.items.filter((i) => i.channel !== String(channel));
+		if (this.consoleType && itemData?.category) {
+			const colorCat = CATALOG_TO_COLOR_CATEGORY[itemData.category] as ColorCategory | undefined;
+			if (colorCat && this.categoryColorDefaults[colorCat]) {
+				this.channelColors = {
+					...this.channelColors,
+					[channel]: this.categoryColorDefaults[colorCat]
+				};
+				this.debouncedWrite();
+			}
+		}
+	}
+
 	setOutput(channel: number, item: PlotOutputItem) {
 		this.outputs = this.outputs.filter((o) => o.channel !== String(channel));
 		this.outputs.push(item);
@@ -512,6 +559,21 @@ export class StagePlotState {
 
 	setConsoleType(newType: string | null) {
 		this.consoleType = newType;
+		if (newType && Object.keys(this.categoryColorDefaults).length === 0) {
+			this.categoryColorDefaults = getDefaultCategoryColors(newType) as Record<string, string>;
+		}
+		// Clamp channel modes to console limits
+		const def = newType ? (CONSOLES[newType] ?? null) : null;
+		if (def) {
+			const maxIn = def.inputChannels as ChannelMode;
+			if (StagePlotState.CHANNEL_OPTIONS.includes(maxIn) && this.inputChannelMode > maxIn) {
+				this.inputChannelMode = maxIn;
+			}
+			const maxOut = def.outputBuses as ChannelMode;
+			if (StagePlotState.CHANNEL_OPTIONS.includes(maxOut) && this.outputChannelMode > maxOut) {
+				this.outputChannelMode = maxOut;
+			}
+		}
 		this.debouncedWrite();
 	}
 
