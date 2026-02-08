@@ -33,12 +33,8 @@
 
 	const { needRefresh, offlineReady, updateServiceWorker } = browser
 		? useRegisterSW({
-				onRegistered(registration: ServiceWorkerRegistration | undefined) {
-					console.log('SW registered:', registration);
-				},
-				onRegisterError(error: Error) {
-					console.error('SW registration error:', error);
-				}
+			onRegistered(_registration: ServiceWorkerRegistration | undefined) {},
+			onRegisterError(_error: Error) {}
 			})
 		: { needRefresh: { subscribe: () => () => {} }, offlineReady: { subscribe: () => () => {} }, updateServiceWorker: async () => {} };
 

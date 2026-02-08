@@ -2,6 +2,12 @@
 	import PersonCombobox from './PersonCombobox.svelte';
 	import { displayValue, toFeet, unitLabel } from '$lib/utils/scale';
 	import { toggleMode } from 'mode-watcher';
+	import {
+		getItemVariants,
+		getVariantKeys,
+		buildImagePath,
+		getCurrentImageSrc
+	} from '$lib/utils/canvasUtils';
 
 	type Item = {
 		id: number;
@@ -80,20 +86,6 @@
 		}
 	}
 
-	function getItemVariants(item: Item) {
-		if (!item.itemData) return null;
-		if (item.itemData.variants) {
-			return item.itemData.variants;
-		}
-		return null;
-	}
-
-	function getVariantKeys(item: Item) {
-		const variants = getItemVariants(item);
-		if (!variants) return ['default'];
-		return Object.keys(variants);
-	}
-
 	function rotateItemLeft(item: Item) {
 		const variants = getItemVariants(item);
 		if (!variants) return;
@@ -119,28 +111,6 @@
 		}
 	}
 
-	// --- Drum kit detection & mic customization ---
-	const isDrumKit = $derived.by(() => {
-		return selectedItemsData.length === 1 && selectedItemsData[0]?.itemData?.item_type === 'drumset';
-	});
-
-	let showDrumMicModal = $state(false);
-
-	const defaultDrumMics = ['Kick', 'Snare', 'Hats', 'Rack Tom', 'Floor Tom', 'Overhead L', 'Overhead R'];
-	let activeDrumMics = $state<string[]>([...defaultDrumMics]);
-
-	function toggleDrumMic(mic: string) {
-		if (activeDrumMics.includes(mic)) {
-			activeDrumMics = activeDrumMics.filter((m) => m !== mic);
-		} else {
-			activeDrumMics = [...activeDrumMics, mic];
-		}
-	}
-
-	function saveDrumMicConfig() {
-		showDrumMicModal = false;
-	}
-
 	function rotateItemRight(item: Item) {
 		const variants = getItemVariants(item);
 		if (!variants) return;
@@ -164,26 +134,6 @@
 		if (onUpdateItem) {
 			onUpdateItem(item.id, 'currentVariant', item.currentVariant);
 		}
-	}
-
-	function getCurrentImageSrc(item: Item) {
-		const variants = getItemVariants(item);
-		if (!variants) return item.itemData?.image || '/img/egt/FenderAmp.png';
-
-		const variant = item.currentVariant || 'default';
-		const imagePath =
-			variants[variant] || variants.default || (Object.values(variants)[0] as string);
-
-		if (!imagePath) return item.itemData?.image || '/img/egt/FenderAmp.png';
-
-		return buildImagePath(item, imagePath);
-	}
-
-	function buildImagePath(item: Item, imagePath: string) {
-		if (item.itemData?.path) {
-			return `/final_assets/${item.itemData.path}/${imagePath}`;
-		}
-		return imagePath.startsWith('/') ? imagePath : '/' + imagePath;
 	}
 
 	// Handle bulk updates
@@ -431,16 +381,6 @@
 						</div>
 					{/if}
 
-	
-
-				{#if isDrumKit}
-					<button
-						onclick={() => (showDrumMicModal = true)}
-						class="w-full rounded-lg bg-green-600 px-3 py-2 text-sm text-white transition hover:bg-green-700 mt-4"
-					>
-						Customize Micing
-					</button>
-				{/if}
 				</div>
 			</div>
 		</div>
@@ -663,23 +603,4 @@
 	</div>
 </div>
 
-{#if showDrumMicModal}
-	<div class="fixed inset-0 z-50 flex items-center justify-center">
-		<div class="absolute inset-0 bg-black/50 backdrop-blur-sm" onclick={() => (showDrumMicModal = false)}></div>
-		<div class="relative w-[min(400px,90vw)] rounded-xl bg-surface p-6 shadow-lg">
-			<h2 class="mb-4 text-lg font-semibold">Customize Drum Micing</h2>
-			<div class="max-h-60 space-y-3 overflow-y-auto">
-				{#each defaultDrumMics as mic}
-					<label class="flex items-center gap-2 text-sm">
-						<input type="checkbox" checked={activeDrumMics.includes(mic)} onchange={() => toggleDrumMic(mic)} />
-						{mic}
-					</label>
-				{/each}
-			</div>
-			<div class="mt-6 flex justify-end gap-2">
-				<button class="rounded-lg bg-muted px-3 py-2 text-sm" onclick={() => (showDrumMicModal = false)}>Cancel</button>
-				<button class="rounded-lg bg-stone-900 px-3 py-2 text-sm text-white hover:bg-stone-800 dark:bg-stone-100 dark:text-stone-900 dark:hover:bg-stone-200" onclick={saveDrumMicConfig}>Save</button>
-			</div>
-		</div>
-	</div>
-{/if}
+

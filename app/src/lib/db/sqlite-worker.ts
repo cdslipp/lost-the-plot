@@ -1,7 +1,6 @@
 /// <reference lib="webworker" />
 
-// Log immediately to confirm worker script execution
-console.log('[SQLite Worker] Starting...');
+
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type SqliteDb = any;
@@ -59,29 +58,20 @@ const handlers: MessageHandler = {
 
 self.onmessage = async (e: MessageEvent) => {
 	const { type, id, data } = e.data;
-	console.log('[SQLite Worker] Received message:', type, id);
-
 	try {
 		if (type === 'init') {
-			console.log('[SQLite Worker] Initializing SQLite...');
 			const sqlite3InitModule = (await import('@sqlite.org/sqlite-wasm')).default;
-			console.log('[SQLite Worker] SQLite module imported');
 			sqlite3 = await sqlite3InitModule();
-			console.log('[SQLite Worker] SQLite initialized, version:', sqlite3.version);
 
 			// Check if OPFS is available
 			if ('opfs' in sqlite3) {
-				console.log('[SQLite Worker] OPFS available, attempting to create OpfsDb...');
 				try {
 					db = new sqlite3.oo1.OpfsDb('/app.db');
 					opfsAvailable = true;
-					console.log('[SQLite Worker] OpfsDb created successfully');
-				} catch (err) {
-					console.warn('[SQLite Worker] OPFS failed, falling back to in-memory:', err);
+				} catch {
 					db = new sqlite3.oo1.DB(':memory:');
 				}
 			} else {
-				console.log('[SQLite Worker] OPFS not available, using in-memory database');
 				db = new sqlite3.oo1.DB(':memory:');
 			}
 

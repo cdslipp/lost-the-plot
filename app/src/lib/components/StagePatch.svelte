@@ -264,7 +264,6 @@
 				includeSymbols: false
 			});
 
-			console.log('Loaded items for comboboxes:', allAvailableItems.length);
 		} catch (err) {
 			console.error('Error loading final assets:', err);
 		} finally {

@@ -30,9 +30,7 @@ export async function runMigrations(db: DbAdapter, migrations: Migration[]): Pro
 	for (const migration of sorted) {
 		if (appliedSet.has(migration.version)) continue;
 
-		console.log(`[migrations] Applying migration ${migration.version}...`);
 		await migration.up(db);
 		await db.run('INSERT INTO _migrations (version) VALUES (?)', [migration.version]);
-		console.log(`[migrations] Migration ${migration.version} applied.`);
 	}
 }

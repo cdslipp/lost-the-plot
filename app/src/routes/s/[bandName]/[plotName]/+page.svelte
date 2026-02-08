@@ -10,6 +10,7 @@
 	import { feetToPixels } from '$lib/utils/scale';
 	import { db } from '$lib/db';
 	import { exportToPdf } from '$lib/utils/pdf';
+	import { getCurrentImageSrc } from '$lib/utils/canvasUtils';
 
 	let bandName = $derived(decodeURIComponent(($page.params as Record<string, string>).bandName ?? ''));
 	let plotName = $derived(decodeURIComponent(($page.params as Record<string, string>).plotName ?? ''));
@@ -61,17 +62,6 @@
 			loading = false;
 		}
 	});
-
-	function getCurrentImageSrc(item: DecodedPlot['items'][number]): string {
-		if (!item.itemData?.variants || !item.itemData?.path) return '';
-		const variant = item.currentVariant || 'default';
-		const imagePath =
-			item.itemData.variants[variant] ??
-			item.itemData.variants['default'] ??
-			Object.values(item.itemData.variants)[0];
-		if (!imagePath) return '';
-		return `/final_assets/${item.itemData.path}/${imagePath}`;
-	}
 
 	async function handleImport() {
 		if (!plot || importing) return;

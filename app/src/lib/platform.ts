@@ -18,9 +18,4 @@ export function isTauri(): boolean {
 	return '__TAURI_INTERNALS__' in window;
 }
 
-/**
- * Returns true when running as a PWA in the browser.
- */
-export function isPWA(): boolean {
-	return !isTauri();
-}
+

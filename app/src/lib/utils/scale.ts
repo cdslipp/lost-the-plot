@@ -42,12 +42,6 @@ export function pixelsToInches(pixels: number): number {
 	return pixels * INCHES_PER_PIXEL;
 }
 
-/**
- * Convert pixels to feet using our established scale
- */
-export function pixelsToFeet(pixels: number): number {
-	return pixelsToInches(pixels) / 12;
-}
 
 /**
  * Get formatted dimensions string
@@ -122,32 +116,4 @@ export function unitLabel(unit: string): string {
 	return unit === 'metric' ? 'm' : 'ft';
 }
 
-/**
- * Scale validation - verify our reference item
- */
-export function validateScale(): {
-	isValid: boolean;
-	details: {
-		referenceWidthPx: number;
-		referenceWidthInches: number;
-		calculatedPixelsPerInch: number;
-		expectedWidthPx: number;
-		actualWidthPx: number;
-		error: number;
-	};
-} {
-	const expectedWidthPx = inchesToPixels(REFERENCE_ITEM_WIDTH_INCHES);
-	const error = Math.abs(expectedWidthPx - REFERENCE_ITEM_WIDTH_PX);
 
-	return {
-		isValid: error < 0.1, // Allow for rounding errors
-		details: {
-			referenceWidthPx: REFERENCE_ITEM_WIDTH_PX,
-			referenceWidthInches: REFERENCE_ITEM_WIDTH_INCHES,
-			calculatedPixelsPerInch: PIXELS_PER_INCH,
-			expectedWidthPx,
-			actualWidthPx: REFERENCE_ITEM_WIDTH_PX,
-			error
-		}
-	};
-}

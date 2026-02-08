@@ -17,8 +17,6 @@
 	import { feetToPixels, type UnitSystem } from '$lib/utils/scale';
 	import { browser } from '$app/environment';
 	import {
-		getZones,
-		rectIntersectionArea,
 		getItemZone as _getItemZone,
 		getItemPosition as _getItemPosition,
 		snapToGrid as _snapToGrid,
