@@ -1,7 +1,8 @@
 <script lang="ts">
 	// SPDX-License-Identifier: AGPL-3.0-only
 	import { onMount } from 'svelte';
-	import { MusicianCombobox, ItemCommandPalette, StagePatch, ImportExport } from '$lib';
+	import { ItemCommandPalette, StagePatch, ImportExport } from '$lib';
+	import type { ProcessedItem } from '$lib/utils/finalAssetsLoader';
 	import Selecto from 'selecto';
 	import { onClickOutside, PressedKeys } from 'runed';
 	import StageDeck from '$lib/components/StageDeck.svelte';
@@ -63,10 +64,16 @@
 		canvas: { width: 1100, height: 850 },
 		items: [] as any[],
 		outputs: [] as any[],
-		musicians: [] as any[],
 		stage_width: 24,
 		stage_depth: 16
 	});
+
+	// People system: plot_persons junction table tracks which persons are on this plot
+	let plotPersonIds = $state<Set<number>>(new Set());
+	let plotPersons = $state<{ id: number; name: string; role: string | null }[]>([]);
+	const personsById = $derived(
+		Object.fromEntries(plotPersons.map((p) => [p.id, p])) as Record<number, { id: number; name: string; role: string | null }>
+	);
 
 	// Console integration state — persisted to dedicated DB columns
 	let consoleType = $state<string | null>(null);
@@ -76,10 +83,10 @@
 	let categoryColorDefaults = $state<Record<string, string>>({});
 
 	let layoutMode = $state<'mobile' | 'medium' | 'desktop'>('desktop');
-	let sidePanelTab = $state<'inspector' | 'musicians' | 'settings'>('inspector');
+	let sidePanelTab = $state<'inspector' | 'people' | 'settings'>('inspector');
 	let mediumMainTab = $state<'canvas' | 'patch'>('canvas');
 	let mobileMainTab = $state<'canvas' | 'patch' | 'panel'>('canvas');
-	let mobilePanelTab = $state<'inspector' | 'musicians' | 'settings'>('inspector');
+	let mobilePanelTab = $state<'inspector' | 'people' | 'settings'>('inspector');
 
 	// Snapping
 	let snapping = $state(true);
@@ -129,7 +136,6 @@
 					JSON.stringify({
 					items: $state.snapshot(stagePlot.items),
 					outputs: $state.snapshot(stagePlot.outputs),
-					musicians: $state.snapshot(stagePlot.musicians),
 					outputStereoLinks: $state.snapshot(outputStereoLinks),
 					undoLog: $state.snapshot(history.log),
 					redoStack: $state.snapshot(history.redoStack)
@@ -224,13 +230,27 @@
 						const meta = JSON.parse(row.metadata);
 					if (meta.items) stagePlot.items = meta.items;
 					if (meta.outputs) stagePlot.outputs = meta.outputs;
-					if (meta.musicians) stagePlot.musicians = meta.musicians;
 					if (meta.outputStereoLinks) outputStereoLinks = meta.outputStereoLinks;
 					if (meta.undoLog) savedUndoLog = meta.undoLog;
 					if (meta.redoStack) savedRedoStack = meta.redoStack;
 					} catch { /* ignore parse errors */ }
 				}
 				history.startRecording(savedUndoLog, savedRedoStack);
+
+				// Load plot persons
+				const plotPersonRows = await db.query<{ person_id: number }>(
+					'SELECT person_id FROM plot_persons WHERE plot_id = ?',
+					[plotId]
+				);
+				plotPersonIds = new Set(plotPersonRows.map((r) => r.person_id));
+
+				plotPersons = await db.query<{ id: number; name: string; role: string | null }>(
+					`SELECT p.id, p.name, p.role FROM persons p
+					 INNER JOIN plot_persons pp ON pp.person_id = p.id
+					 WHERE pp.plot_id = ?
+					 ORDER BY p.name`,
+					[plotId]
+				);
 			} else {
 				// Plot doesn't exist — redirect back to band
 				goto(`/bands/${bandId}`, { replaceState: true });
@@ -333,6 +353,7 @@
 	));
 	let editingItem = $state<any>(null);
 	let isAddingItem = $state(false);
+	let replacingItemId = $state<number | null>(null);
 	let showZones = $state(true);
 	let pdfPageFormat = $state<'letter' | 'a4'>('letter');
 
@@ -402,7 +423,6 @@
 	});
 
 	let placingItem = $state<any>(null);
-	let newMusician = $state({ name: '', instrument: '' });
 	let selecto: any;
 	let justSelected = false;
 
@@ -559,8 +579,51 @@
 	}
 
 	async function handleItemSelect(item: any) {
+		if (replacingItemId != null) {
+			await handleReplaceItem(item);
+			return;
+		}
 		isAddingItem = false;
 		await preparePlacingItem(item);
+	}
+
+	function openReplaceMenu(itemId: number) {
+		replacingItemId = itemId;
+		isAddingItem = true;
+	}
+
+	async function handleReplaceItem(newItemData: any) {
+		const targetId = replacingItemId;
+		replacingItemId = null;
+		isAddingItem = false;
+		if (targetId == null) return;
+
+		const idx = stagePlot.items.findIndex((i: any) => i.id === targetId);
+		if (idx === -1) return;
+
+		const existing = stagePlot.items[idx];
+		const img = new Image();
+		img.src = newItemData.image;
+		await new Promise((resolve) => {
+			img.onload = resolve;
+			img.onerror = () => resolve(undefined);
+		});
+		const newWidth = img.naturalWidth || 80;
+		const newHeight = img.naturalHeight || 60;
+
+		stagePlot.items[idx] = {
+			...existing,
+			type: newItemData.type ?? newItemData.item_type ?? 'input',
+			itemData: newItemData,
+			name: newItemData.name || '',
+			currentVariant: 'default',
+			position: {
+				...existing.position,
+				width: newWidth,
+				height: newHeight
+			}
+		};
+		commitChange();
 	}
 
 	function handleCanvasMouseMove(event: MouseEvent) {
@@ -595,7 +658,7 @@
 				},
 				name: placingItem.itemData?.name || '',
 				channel: '',
-				musician: ''
+				person_id: placingItem.person_id ?? null
 			};
 
 			let ch = placingItem.channel;
@@ -615,7 +678,7 @@
 						itemData: { ...inputDef, item_type: 'input', name: inputDef.name, category: 'Input', path: '' },
 						name: inputDef.name,
 						channel: String(inputDef.ch || ''),
-						musician: inputDef.source || '',
+						person_id: null,
 						currentVariant: 'default',
 						position: { width: 0, height: 0, x: 0, y: 0 }
 					});
@@ -750,25 +813,54 @@
 		}
 	}
 
-	function addMusician() {
-		if (newMusician.name.trim() !== '') {
-			stagePlot.musicians.push({
-				id: Date.now(),
-				name: newMusician.name.trim(),
-				instrument: newMusician.instrument.trim()
-			});
-			newMusician.name = '';
-			newMusician.instrument = '';
-			debouncedWrite();
+	async function addPersonToPlot(personId: number, silhouetteItem: ProcessedItem) {
+		// Insert into plot_persons
+		await db.run('INSERT OR IGNORE INTO plot_persons (plot_id, person_id) VALUES (?, ?)', [plotId, personId]);
+		plotPersonIds = new Set([...plotPersonIds, personId]);
+
+		// Reload plot persons
+		plotPersons = await db.query<{ id: number; name: string; role: string | null }>(
+			`SELECT p.id, p.name, p.role FROM persons p
+			 INNER JOIN plot_persons pp ON pp.person_id = p.id
+			 WHERE pp.plot_id = ?
+			 ORDER BY p.name`,
+			[plotId]
+		);
+
+		// Place silhouette on canvas
+		await preparePlacingItem(silhouetteItem);
+		if (placingItem) {
+			placingItem.person_id = personId;
 		}
 	}
 
-	function deleteMusician(id: number) {
-		const index = stagePlot.musicians.findIndex((m: any) => m.id === id);
-		if (index !== -1) {
-			stagePlot.musicians.splice(index, 1);
-			debouncedWrite();
-		}
+	async function createPerson(name: string): Promise<number> {
+		const result = await db.run(
+			'INSERT INTO persons (band_id, name, member_type, status) VALUES (?, ?, ?, ?)',
+			[bandId, name, 'performer', 'permanent']
+		);
+		const personId = result.lastInsertRowid;
+
+		// Refresh band persons list
+		bandPersons = await db.query<{
+			id: number;
+			name: string;
+			role: string | null;
+			member_type: string | null;
+		}>(
+			'SELECT id, name, role, member_type FROM persons WHERE band_id = ? AND status != ? ORDER BY name',
+			[bandId, 'inactive']
+		);
+
+		return personId;
+	}
+
+	async function removePersonFromPlot(personId: number) {
+		await db.run('DELETE FROM plot_persons WHERE plot_id = ? AND person_id = ?', [plotId, personId]);
+		const next = new Set(plotPersonIds);
+		next.delete(personId);
+		plotPersonIds = next;
+		plotPersons = plotPersons.filter((p) => p.id !== personId);
 	}
 
 	// Pointer-based drag state
@@ -781,6 +873,7 @@
 		ghostX: number;
 		ghostY: number;
 		moved: boolean;
+		group: Array<{ item: any; startX: number; startY: number }>;
 	} | null>(null);
 
 	function handleItemPointerDown(event: PointerEvent, item: any) {
@@ -792,6 +885,20 @@
 		el.setPointerCapture(event.pointerId);
 
 		const canvasRect = canvasEl!.getBoundingClientRect();
+
+		// Build group of all selected items (if dragged item is in selection)
+		const isInSelection = selectedIds.has(String(item.id));
+		let group: Array<{ item: any; startX: number; startY: number }>;
+		if (isInSelection && selectedItems.length > 1) {
+			group = selectedItems.map((el) => {
+				const id = parseInt(el.dataset?.id || '0');
+				const groupItem = stagePlot.items.find((i: any) => i.id === id);
+				return groupItem ? { item: groupItem, startX: groupItem.position.x, startY: groupItem.position.y } : null;
+			}).filter(Boolean) as Array<{ item: any; startX: number; startY: number }>;
+		} else {
+			group = [{ item, startX: item.position.x, startY: item.position.y }];
+		}
+
 		dragging = {
 			item,
 			offsetX: event.clientX - canvasRect.left - item.position.x,
@@ -800,7 +907,8 @@
 			startY: item.position.y,
 			ghostX: item.position.x,
 			ghostY: item.position.y,
-			moved: false
+			moved: false,
+			group
 		};
 	}
 
@@ -818,19 +926,25 @@
 			dragging.moved = true;
 		}
 
-		const clampedX = Math.max(0, Math.min(rawX, canvasWidth - dragging.item.position.width));
-		const clampedY = Math.max(0, Math.min(rawY, canvasHeight - dragging.item.position.height));
+		const deltaX = rawX - dragging.startX;
+		const deltaY = rawY - dragging.startY;
 
 		if (isAltPressed) {
-			// Alt+drag: keep original in place, move ghost
+			// Alt+drag: keep original in place, move ghost (single item only)
 			dragging.item.position.x = dragging.startX;
 			dragging.item.position.y = dragging.startY;
+			const clampedX = Math.max(0, Math.min(rawX, canvasWidth - dragging.item.position.width));
+			const clampedY = Math.max(0, Math.min(rawY, canvasHeight - dragging.item.position.height));
 			dragging.ghostX = clampedX;
 			dragging.ghostY = clampedY;
 		} else {
-			// Normal drag: move the item directly
-			dragging.item.position.x = clampedX;
-			dragging.item.position.y = clampedY;
+			// Normal drag: move all items in the group
+			for (const entry of dragging.group) {
+				const newX = entry.startX + deltaX;
+				const newY = entry.startY + deltaY;
+				entry.item.position.x = Math.max(0, Math.min(newX, canvasWidth - entry.item.position.width));
+				entry.item.position.y = Math.max(0, Math.min(newY, canvasHeight - entry.item.position.height));
+			}
 		}
 	}
 
@@ -839,6 +953,7 @@
 
 		if (dragging.moved) {
 			if (isAltPressed) {
+				// Alt+drag: duplicate single item only
 				const snapped = snapToGrid(
 					dragging.ghostX, dragging.ghostY,
 					dragging.item.position.width, dragging.item.position.height
@@ -847,14 +962,17 @@
 				const y = Math.max(0, Math.min(snapped.y, canvasHeight - dragging.item.position.height));
 				duplicateItem(dragging.item, { position: { ...dragging.item.position, x, y } });
 			} else {
-				const snapped = snapToGrid(
-					dragging.item.position.x, dragging.item.position.y,
-					dragging.item.position.width, dragging.item.position.height
-				);
-				const x = Math.max(0, Math.min(snapped.x, canvasWidth - dragging.item.position.width));
-				const y = Math.max(0, Math.min(snapped.y, canvasHeight - dragging.item.position.height));
-				dragging.item.position.x = x;
-				dragging.item.position.y = y;
+				// Snap all items in the group
+				for (const entry of dragging.group) {
+					const snapped = snapToGrid(
+						entry.item.position.x, entry.item.position.y,
+						entry.item.position.width, entry.item.position.height
+					);
+					const x = Math.max(0, Math.min(snapped.x, canvasWidth - entry.item.position.width));
+					const y = Math.max(0, Math.min(snapped.y, canvasHeight - entry.item.position.height));
+					entry.item.position.x = x;
+					entry.item.position.y = y;
+				}
 				commitChange();
 			}
 			justSelected = true;
@@ -894,12 +1012,13 @@
 		if (['riserWidth', 'riserDepth', 'riserHeight'].includes(property)) {
 			if (!item.itemData) item.itemData = {};
 			item.itemData[property] = parseFloat(value);
-			// Recalculate canvas pixel dimensions for width/depth
 			if (property === 'riserWidth') {
 				item.position.width = feetToPixels(parseFloat(value));
 			} else if (property === 'riserDepth') {
 				item.position.height = feetToPixels(parseFloat(value));
 			}
+		} else if (property === 'person_id') {
+			item.person_id = value ? parseInt(value) : null;
 		} else {
 			(item as any)[property] = value;
 		}
@@ -1045,6 +1164,14 @@
 		commitChange();
 	}
 
+	function handleClearPatch() {
+		for (const item of stagePlot.items) {
+			item.channel = '';
+			item.musician = '';
+		}
+		commitChange();
+	}
+
 	function handlePatchOutputSelect(item: any, channel: number) {
 		stagePlot.outputs = stagePlot.outputs.filter((o: any) => o.channel !== String(channel));
 		if (item) {
@@ -1116,25 +1243,17 @@
 		};
 	}
 
-	function importMusiciansFromBand(persons: { name: string; role: string | null }[]) {
-		const baseId = Date.now();
-		for (let i = 0; i < persons.length; i++) {
-			stagePlot.musicians.push({
-				id: baseId + i + 1,
-				name: persons[i].name,
-				instrument: persons[i].role || ''
-			});
-		}
-		debouncedWrite();
-	}
-
 	async function handleExportPdf() {
 		if (!canvasEl) return;
 		await exportToPdf({
 			plotName: stagePlot.plot_name,
 			canvasEl,
-			items: stagePlot.items,
-			musicians: stagePlot.musicians,
+			items: stagePlot.items.map((i: any) => ({
+				name: i.name,
+				channel: i.channel,
+				person_name: i.person_id ? personsById[i.person_id]?.name || '' : ''
+			})),
+			persons: plotPersons.map((p) => ({ name: p.name, role: p.role || '' })),
 			pageFormat: pdfPageFormat
 		});
 	}
@@ -1149,7 +1268,7 @@
 
 <svelte:window onkeydown={handleGlobalKeydown} />
 
-<div class="flex h-[calc(100dvh-3rem)] flex-col gap-3 overflow-hidden">
+<div class="flex h-[calc(100dvh-4.25rem)] flex-col gap-3 overflow-hidden">
 	<div class="shrink-0">
 		<EditorToolbar
 			bind:title={stagePlot.plot_name}
@@ -1159,7 +1278,7 @@
 			onExportPdf={handleExportPdf}
 			backHref={'/bands/' + bandId}
 			bind:items={stagePlot.items}
-			bind:musicians={stagePlot.musicians}
+			musicians={plotPersons.map(p => ({ id: p.id, name: p.name, instrument: p.role || '' }))}
 			bind:canvasWidth
 			bind:canvasHeight
 			bind:lastModified={stagePlot.revision_date}
@@ -1187,6 +1306,7 @@
 			onSelectItem={openItemEditor}
 			onAddItem={handlePatchAddItem}
 			onRemoveItem={handlePatchRemoveItem}
+			onClearPatch={handleClearPatch}
 			onOutputSelect={handlePatchOutputSelect}
 			onOutputRemove={handlePatchOutputRemove}
 			{consoleType}
@@ -1251,6 +1371,15 @@
 										<img src={getCurrentImageSrc(item)} alt={item.itemData?.name || item.name || 'Stage Item'} draggable="false" style="width: {item.position.width}px; height: {item.position.height}px; pointer-events: none;" />
 									{/if}
 
+									{#if item.person_id && item.itemData?.item_type === 'person'}
+										{@const person = personsById[item.person_id]}
+										{#if person}
+											<div class="absolute -top-5 left-1/2 -translate-x-1/2 whitespace-nowrap rounded bg-white/90 px-1.5 py-0.5 text-[10px] font-semibold text-gray-800 shadow-sm pointer-events-none dark:bg-gray-800/90 dark:text-gray-200">
+												{person.name}
+											</div>
+										{/if}
+									{/if}
+
 									{#if selectedItems.some((el) => el.dataset?.id === String(item.id))}
 										{#if getVariantKeys(item).length > 1}
 											<div class="absolute -bottom-8 left-1/2 z-20 flex -translate-x-1/2 transform gap-1">
@@ -1278,7 +1407,7 @@
 							</ContextMenu.Trigger>
 							<ContextMenu.Portal>
 								<ContextMenu.Content class="z-50 w-[200px] rounded-xl border border-gray-300 bg-white px-1 py-1.5 shadow-lg dark:border-gray-600 dark:bg-gray-800">
-									<ContextMenu.Item onSelect={(e) => openItemEditor(item, e)} class="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700">Edit</ContextMenu.Item>
+									<ContextMenu.Item onSelect={() => openReplaceMenu(item.id)} class="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700">Replace...</ContextMenu.Item>
 									<ContextMenu.Item onSelect={() => duplicateItem(item)} class="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700">Duplicate</ContextMenu.Item>
 									<ContextMenu.Separator class="bg-muted -mx-1 my-1 block h-px" />
 									<ContextMenu.Item onSelect={() => moveToFront(item.id)} class="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700">Bring to Front</ContextMenu.Item>
@@ -1332,7 +1461,7 @@
 		</div>
 
 		<div class="mt-1.5 flex justify-between text-xs text-text-tertiary">
-			<div class="flex items-center gap-3">Items: {stagePlot.items.length} | Musicians: {stagePlot.musicians.length}
+			<div class="flex items-center gap-3">Items: {stagePlot.items.length} | People: {plotPersonIds.size}
 				{#if isAltPressed}
 					<span class="text-blue-600 font-semibold animate-bounce">(Duplicate)</span>
 				{/if}
@@ -1360,7 +1489,7 @@
 					bind:activeTab={sidePanelTab}
 					bind:selectedItems
 					bind:items={stagePlot.items}
-					bind:musicians={stagePlot.musicians}
+					persons={plotPersons}
 					bind:title={stagePlot.plot_name}
 					bind:lastModified={stagePlot.revision_date}
 					bind:showZones
@@ -1370,17 +1499,14 @@
 					bind:pdfPageFormat
 					onPlaceRiser={placeRiser}
 					onUpdateItem={updateItemProperty}
-					onAddMusician={(name, instrument) => {
-						newMusician.name = name;
-						newMusician.instrument = instrument;
-						addMusician();
-					}}
 					{getItemZone}
 					{getItemPosition}
 					{updateItemPosition}
 					{bandPersons}
-					onImportFromBand={importMusiciansFromBand}
-					onDeleteMusician={deleteMusician}
+					{plotPersonIds}
+					onAddPersonToPlot={addPersonToPlot}
+					onCreatePerson={createPerson}
+					onRemovePersonFromPlot={removePersonFromPlot}
 					{consoleType}
 					{consoleDef}
 					{consoleOptions}
@@ -1435,7 +1561,7 @@
 					bind:activeTab={sidePanelTab}
 					bind:selectedItems
 					bind:items={stagePlot.items}
-					bind:musicians={stagePlot.musicians}
+					persons={plotPersons}
 					bind:title={stagePlot.plot_name}
 					bind:lastModified={stagePlot.revision_date}
 					bind:showZones
@@ -1445,17 +1571,14 @@
 					bind:pdfPageFormat
 					onPlaceRiser={placeRiser}
 					onUpdateItem={updateItemProperty}
-					onAddMusician={(name, instrument) => {
-						newMusician.name = name;
-						newMusician.instrument = instrument;
-						addMusician();
-					}}
 					{getItemZone}
 					{getItemPosition}
 					{updateItemPosition}
 					{bandPersons}
-					onImportFromBand={importMusiciansFromBand}
-					onDeleteMusician={deleteMusician}
+					{plotPersonIds}
+					onAddPersonToPlot={addPersonToPlot}
+					onCreatePerson={createPerson}
+					onRemovePersonFromPlot={removePersonFromPlot}
 					{consoleType}
 					{consoleDef}
 					{consoleOptions}
@@ -1513,7 +1636,7 @@
 						bind:activeTab={mobilePanelTab}
 						bind:selectedItems
 						bind:items={stagePlot.items}
-						bind:musicians={stagePlot.musicians}
+						persons={plotPersons}
 						bind:title={stagePlot.plot_name}
 						bind:lastModified={stagePlot.revision_date}
 						bind:showZones
@@ -1523,17 +1646,14 @@
 						bind:pdfPageFormat
 						onPlaceRiser={placeRiser}
 						onUpdateItem={updateItemProperty}
-						onAddMusician={(name, instrument) => {
-							newMusician.name = name;
-							newMusician.instrument = instrument;
-							addMusician();
-						}}
 						{getItemZone}
 						{getItemPosition}
 						{updateItemPosition}
 						{bandPersons}
-						onImportFromBand={importMusiciansFromBand}
-						onDeleteMusician={deleteMusician}
+						{plotPersonIds}
+						onAddPersonToPlot={addPersonToPlot}
+						onCreatePerson={createPerson}
+						onRemovePersonFromPlot={removePersonFromPlot}
 						{consoleType}
 						{consoleDef}
 						{consoleOptions}
@@ -1560,7 +1680,7 @@
 	<ItemCommandPalette
 		bind:open={isAddingItem}
 		onselect={handleItemSelect}
-		onclose={() => (isAddingItem = false)}
+		onclose={() => { isAddingItem = false; replacingItemId = null; }}
 	/>
 </div>
 

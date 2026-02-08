@@ -8,6 +8,10 @@
 	} from '@stageplotter/shared/share-codec';
 
 	import { generateX32Scn, downloadScnFile, type ScnChannelData } from '$lib/utils/scnGenerator';
+	import { browser } from '$app/environment';
+
+	const isMac = browser && /Mac|iPhone|iPad|iPod/.test(navigator.platform);
+	const modKey = isMac ? '⌘' : 'Ctrl+';
 
 	let exporting = $state(false);
 	let sharing = $state(false);
@@ -226,7 +230,6 @@
 			bind:title
 			bind:lastModified
 			bind:items
-			bind:musicians
 			bind:canvasWidth
 			bind:canvasHeight
 			{getItemZone}
@@ -239,7 +242,7 @@
 		<button
 			onclick={onAddItem}
 			class="flex items-center gap-2 rounded-lg bg-stone-900 px-4 py-2 text-sm text-white transition hover:bg-stone-800 dark:bg-stone-100 dark:text-stone-900 dark:hover:bg-stone-200"
-			title="Add Item (⌘K)"
+			title="Add Item ({modKey}K)"
 		>
 			<svg
 				xmlns="http://www.w3.org/2000/svg"
@@ -256,7 +259,7 @@
 			Add Item
 			<span
 				class="rounded bg-stone-700 px-1.5 py-0.5 text-xs text-stone-200 dark:bg-stone-300 dark:text-stone-800"
-				>⌘K</span
+				>{modKey}K</span
 			>
 		</button>
 	</div>

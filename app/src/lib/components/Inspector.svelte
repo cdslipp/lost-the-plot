@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { MusicianCombobox } from '$lib';
+	import PersonCombobox from './PersonCombobox.svelte';
 	import { displayValue, toFeet, unitLabel } from '$lib/utils/scale';
 	import { toggleMode } from 'mode-watcher';
 
@@ -8,7 +8,7 @@
 		type?: string;
 		name: string;
 		channel: string;
-		musician: string;
+		person_id: number | null;
 		itemData: any;
 		currentVariant?: string;
 		width: number;
@@ -17,16 +17,16 @@
 		y: number;
 	};
 
-	type Musician = {
+	type Person = {
 		id: number;
 		name: string;
-		instrument: string;
+		role?: string | null;
 	};
 
 	let {
 		selectedItems = $bindable<HTMLElement[]>([]),
 		items = $bindable<Item[]>([]),
-		musicians = $bindable<Musician[]>([]),
+		persons = [] as Person[],
 		title = $bindable<string>(''),
 		lastModified = $bindable<string>(''),
 		showZones = $bindable(true),
@@ -40,7 +40,6 @@
 		onUpdateItem = $bindable<
 			((itemId: number, property: string, value: string) => void) | undefined
 		>(undefined),
-		onAddMusician = $bindable<((name: string, instrument: string) => void) | undefined>(undefined),
 		onClose = $bindable<(() => void) | undefined>(undefined),
 		getItemZone = $bindable<((item: Item) => string) | undefined>(undefined),
 		getItemPosition = $bindable<((item: Item) => { x: number; y: number }) | undefined>(undefined),
@@ -61,7 +60,7 @@
 	});
 
 	// For bulk editing
-	let bulkMusician = $state('');
+	let bulkPersonId = $state<number | null>(null);
 
 	// Riser form state
 	let showRiserForm = $state(false);
@@ -104,10 +103,8 @@
 		const newIndex = (currentIndex - 1 + variantKeys.length) % variantKeys.length;
 		item.currentVariant = variantKeys[newIndex];
 
-		// Update the image source
 		const newImagePath = variants[item.currentVariant];
 
-		// Load new image to get dimensions
 		if (newImagePath) {
 			const img = new Image();
 			img.src = buildImagePath(item, newImagePath);
@@ -117,7 +114,6 @@
 			};
 		}
 
-		// Update in main state
 		if (onUpdateItem) {
 			onUpdateItem(item.id, 'currentVariant', item.currentVariant);
 		}
@@ -130,7 +126,6 @@
 
 	let showDrumMicModal = $state(false);
 
-	// Basic mic list for now – will evolve per kit type later
 	const defaultDrumMics = ['Kick', 'Snare', 'Hats', 'Rack Tom', 'Floor Tom', 'Overhead L', 'Overhead R'];
 	let activeDrumMics = $state<string[]>([...defaultDrumMics]);
 
@@ -143,7 +138,6 @@
 	}
 
 	function saveDrumMicConfig() {
-		// TODO: integrate with items/input list (create or remove mic input items)
 		showDrumMicModal = false;
 	}
 
@@ -156,10 +150,8 @@
 		const newIndex = (currentIndex + 1) % variantKeys.length;
 		item.currentVariant = variantKeys[newIndex];
 
-		// Update the image source
 		const newImagePath = variants[item.currentVariant];
 
-		// Load new image to get dimensions
 		if (newImagePath) {
 			const img = new Image();
 			img.src = buildImagePath(item, newImagePath);
@@ -169,7 +161,6 @@
 			};
 		}
 
-		// Update in main state
 		if (onUpdateItem) {
 			onUpdateItem(item.id, 'currentVariant', item.currentVariant);
 		}
@@ -183,38 +174,27 @@
 		const imagePath =
 			variants[variant] || variants.default || (Object.values(variants)[0] as string);
 
-		// Handle case where imagePath might be undefined
 		if (!imagePath) return item.itemData?.image || '/img/egt/FenderAmp.png';
 
 		return buildImagePath(item, imagePath);
 	}
 
 	function buildImagePath(item: Item, imagePath: string) {
-		// If item has a path property, it's from final_assets structure
 		if (item.itemData?.path) {
-			// For final_assets items, build path from the item's directory path
 			return `/final_assets/${item.itemData.path}/${imagePath}`;
 		}
-		
-		// For old structure items, check if path already starts with /
 		return imagePath.startsWith('/') ? imagePath : '/' + imagePath;
 	}
 
 	// Handle bulk updates
-	function applyBulkMusician() {
-		if (bulkMusician && selectedItemsData.length > 0) {
+	function applyBulkPerson() {
+		if (bulkPersonId != null && selectedItemsData.length > 0) {
 			selectedItemsData.forEach((item) => {
 				if (!item) return;
-
-				// Mutate the item directly for immediate reactivity
-				item.musician = bulkMusician;
-
-				// Call the callback so the parent can perform any additional bookkeeping
-				onUpdateItem?.(item.id, 'musician', bulkMusician);
+				item.person_id = bulkPersonId;
+				onUpdateItem?.(item.id, 'person_id', String(bulkPersonId));
 			});
-
-			// Clear the combobox after assignment so the user sees success feedback
-			bulkMusician = '';
+			bulkPersonId = null;
 		}
 	}
 </script>
@@ -230,8 +210,8 @@
 					<div class="text-[10px] text-text-tertiary">{items.length === 1 ? 'Item' : 'Items'}</div>
 				</div>
 				<div class="rounded-lg bg-muted/50 px-3 py-2">
-					<div class="text-lg font-semibold text-text-primary">{musicians.length}</div>
-					<div class="text-[10px] text-text-tertiary">{musicians.length === 1 ? 'Musician' : 'Musicians'}</div>
+					<div class="text-lg font-semibold text-text-primary">{persons.length}</div>
+					<div class="text-[10px] text-text-tertiary">{persons.length === 1 ? 'Person' : 'People'}</div>
 				</div>
 				<div class="rounded-lg bg-muted/50 px-3 py-2">
 					<div class="text-lg font-semibold text-text-primary">{items.filter(i => i.channel).length}</div>
@@ -268,35 +248,15 @@
 				</div>
 			</div>
 
-			{#if items.length > 0}
-				<!-- Item breakdown by category -->
-				{@const categoryCounts: Record<string, number> = items.reduce<Record<string, number>>((acc, item) => {
-					const cat = item.itemData?.category || item.category || 'Other';
-					acc[cat] = (acc[cat] || 0) + 1;
-					return acc;
-				}, {})}
+			{#if persons.length > 0}
+				<!-- People list -->
 				<div>
-					<h4 class="mb-1.5 text-[10px] font-medium uppercase tracking-wider text-text-tertiary">Items on Stage</h4>
+					<h4 class="mb-1.5 text-[10px] font-medium uppercase tracking-wider text-text-tertiary">People</h4>
 					<div class="space-y-1">
-						{#each Object.entries(categoryCounts).sort((a: [string, number], b: [string, number]) => b[1] - a[1]) as [cat, count]}
+						{#each persons as p}
 							<div class="flex items-center justify-between text-xs">
-								<span class="text-text-secondary truncate">{cat}</span>
-								<span class="text-text-tertiary tabular-nums">{count}</span>
-							</div>
-						{/each}
-					</div>
-				</div>
-			{/if}
-
-			{#if musicians.length > 0}
-				<!-- Musicians list -->
-				<div>
-					<h4 class="mb-1.5 text-[10px] font-medium uppercase tracking-wider text-text-tertiary">Musicians</h4>
-					<div class="space-y-1">
-						{#each musicians as m}
-							<div class="flex items-center justify-between text-xs">
-								<span class="text-text-primary truncate">{m.name}</span>
-								<span class="text-text-tertiary truncate ml-2">{m.instrument}</span>
+								<span class="text-text-primary truncate">{p.name}</span>
+								<span class="text-text-tertiary truncate ml-2">{p.role || ''}</span>
 							</div>
 						{/each}
 					</div>
@@ -355,13 +315,12 @@
 						/>
 					</div>
 					<div>
-						<label class="mb-1 block text-xs text-text-secondary">Musician</label>
-						<MusicianCombobox
-							{musicians}
-							value={selectedItemsData[0].musician}
+						<label class="mb-1 block text-xs text-text-secondary">Person</label>
+						<PersonCombobox
+							{persons}
+							value={selectedItemsData[0].person_id}
 							onValueChange={(newValue) =>
-								onUpdateItem?.(selectedItemsData[0].id, 'musician', newValue)}
-							{onAddMusician}
+								onUpdateItem?.(selectedItemsData[0].id, 'person_id', String(newValue ?? ''))}
 						/>
 					</div>
 					{/if}
@@ -472,60 +431,7 @@
 						</div>
 					{/if}
 
-					<!-- Rotate buttons -->
-					{#if getVariantKeys(selectedItemsData[0]).length > 1}
-						<div>
-							<label class="mb-1 block text-xs text-text-secondary">Rotation</label>
-							<div class="flex gap-2">
-								<button
-									onclick={() => rotateItemLeft(selectedItemsData[0])}
-									class="flex flex-1 items-center justify-center gap-2 rounded-lg bg-stone-900 px-3 py-2 text-sm text-white transition-colors hover:bg-stone-800 dark:bg-stone-100 dark:text-stone-900 dark:hover:bg-stone-200"
-									title="Rotate Left"
-								>
-									<svg
-										xmlns="http://www.w3.org/2000/svg"
-										class="h-4 w-4"
-										viewBox="0 0 20 20"
-										fill="currentColor"
-									>
-										<path
-											fill-rule="evenodd"
-											d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z"
-											clip-rule="evenodd"
-											transform="scale(-1, 1) translate(-20, 0)"
-										/>
-									</svg>
-									Left
-								</button>
-								<button
-									onclick={() => rotateItemRight(selectedItemsData[0])}
-									class="flex flex-1 items-center justify-center gap-2 rounded-lg bg-stone-900 px-3 py-2 text-sm text-white transition-colors hover:bg-stone-800 dark:bg-stone-100 dark:text-stone-900 dark:hover:bg-stone-200"
-									title="Rotate Right"
-								>
-									<svg
-										xmlns="http://www.w3.org/2000/svg"
-										class="h-4 w-4"
-										viewBox="0 0 20 20"
-										fill="currentColor"
-									>
-										<path
-											fill-rule="evenodd"
-											d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 010-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z"
-											clip-rule="evenodd"
-										/>
-									</svg>
-									Right
-								</button>
-							</div>
-							<div class="mt-1 text-xs text-text-secondary">
-								Current: {selectedItemsData[0].currentVariant || 'default'} ({getVariantKeys(
-									selectedItemsData[0]
-								).indexOf(selectedItemsData[0].currentVariant || 'default') + 1} of {getVariantKeys(
-									selectedItemsData[0]
-								).length})
-							</div>
-						</div>
-					{/if}
+	
 
 				{#if isDrumKit}
 					<button
@@ -547,18 +453,17 @@
 
 			<div class="flex-1 space-y-4">
 				<div class="rounded-lg bg-muted/50 p-4">
-					<h4 class="mb-3 font-medium text-text-primary">Assign Musician</h4>
+					<h4 class="mb-3 font-medium text-text-primary">Assign Person</h4>
 					<div class="space-y-3">
-						<MusicianCombobox
-							{musicians}
-							value={bulkMusician}
-							onValueChange={(newValue) => (bulkMusician = newValue)}
-							{onAddMusician}
+						<PersonCombobox
+							{persons}
+							value={bulkPersonId}
+							onValueChange={(newValue) => (bulkPersonId = newValue)}
 						/>
 						<button
-							onclick={applyBulkMusician}
+							onclick={applyBulkPerson}
 							class="w-full rounded-lg bg-stone-900 px-3 py-2 text-sm text-white transition hover:bg-stone-800 dark:bg-stone-100 dark:text-stone-900 dark:hover:bg-stone-200"
-							disabled={!bulkMusician}
+							disabled={bulkPersonId == null}
 						>
 							Apply to All Selected Items
 						</button>
@@ -734,7 +639,7 @@
 		>
 			<svg
 				xmlns="http://www.w3.org/2000/svg"
-				class="h-3.5 w-3.5 block dark:hidden"
+				class="h-3.5 w-3.5 hidden dark:block"
 				viewBox="0 0 20 20"
 				fill="currentColor"
 			>
@@ -746,7 +651,7 @@
 			</svg>
 			<svg
 				xmlns="http://www.w3.org/2000/svg"
-				class="h-3.5 w-3.5 hidden dark:block"
+				class="h-3.5 w-3.5 block dark:hidden"
 				viewBox="0 0 20 20"
 				fill="currentColor"
 			>

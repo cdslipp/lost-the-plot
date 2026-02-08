@@ -1,5 +1,9 @@
 <script lang="ts">
 	// SPDX-License-Identifier: AGPL-3.0-only
+	import { browser } from '$app/environment';
+
+	const isMac = browser && /Mac|iPhone|iPad|iPod/.test(navigator.platform);
+	const modKey = isMac ? '⌘' : 'Ctrl+';
 
 	let {
 		showZones,
@@ -51,6 +55,6 @@
 
 {#if itemCount === 0}
 	<div class="pointer-events-auto absolute inset-0 flex flex-col items-center justify-center gap-4">
-		<p class="text-lg text-text-secondary">Press <kbd class="rounded border border-border-primary bg-muted px-1.5 py-0.5 text-sm font-mono">⌘K</kbd> to add your first item</p>
+		<p class="text-lg text-text-secondary">Press <kbd class="rounded border border-border-primary bg-muted px-1.5 py-0.5 text-sm font-mono">{modKey}K</kbd> to add your first item</p>
 	</div>
 {/if}

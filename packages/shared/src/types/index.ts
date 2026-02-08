@@ -19,7 +19,6 @@ export interface StagePlot {
 	canvas: CanvasSpec;
 	stage?: StageSpec;
 	items: StagePlotItem[];
-	musicians: Musician[];
 	metadata?: Record<string, unknown>;
 	band_id?: string;
 	event_name?: string;
@@ -57,7 +56,7 @@ export interface StagePlotItem {
 	currentVariant?: string;
 	position: ItemPosition;
 	channel: string;
-	musician: string;
+	person_id: number | null;
 	itemData?: ItemData;
 	size?: string; // For stage decks
 }
@@ -100,10 +99,10 @@ export interface DefaultOutput {
 	link_mode?: 'mono' | 'stereo_pair' | 'stereo_sum';
 }
 
-export interface Musician {
+export interface PlotPerson {
 	id: number;
-	name: string;
-	instrument: string;
+	plot_id: string;
+	person_id: number;
 }
 
 export type MemberType = 'performer' | 'crew' | 'management' | 'other';

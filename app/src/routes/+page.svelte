@@ -17,6 +17,6 @@
 	});
 </script>
 
-<div class="flex h-[100dvh] items-center justify-center">
+<div class="flex h-[calc(100dvh-1.25rem)] items-center justify-center">
 	<p class="text-text-secondary">Loading...</p>
 </div>

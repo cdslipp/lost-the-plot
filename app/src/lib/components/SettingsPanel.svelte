@@ -64,7 +64,6 @@
 			{/each}
 			<option disabled>───────────</option>
 			<option disabled>Allen & Heath dLive (coming soon)</option>
-			<option disabled>Allen & Heath SQ (coming soon)</option>
 		</select>
 		{#if consoleDef}
 			<p class="text-xs text-text-secondary mt-1.5">

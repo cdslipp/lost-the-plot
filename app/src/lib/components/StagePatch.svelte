@@ -12,25 +12,39 @@
 		id: number;
 		name: string;
 		channel: string;
-		musician: string;
+		person_id: number | null;
 		itemData: any;
 		category?: string;
+	};
+
+	type OutputItem = {
+		id: number;
+		name: string;
+		channel: string;
+		itemData: any;
+		link_mode?: 'mono' | 'stereo_pair';
 	};
 
 	type ChannelMode = 8 | 16 | 24 | 32 | 48;
 
 	type Props = {
 		items: Item[];
+		outputs?: OutputItem[];
 		onUpdateItem?: (itemId: number, property: string, value: string) => void;
 		onReorderPatch?: (fromIndex: number, toIndex: number) => void;
 		onSelectItem?: (item: Item, event: MouseEvent) => void;
 		onAddItem?: (item: ProcessedItem, channel: number) => void;
 		onRemoveItem?: (channel: number) => void;
+		onOutputSelect?: (item: ProcessedItem, channel: number) => void;
+		onOutputRemove?: (channel: number) => void;
+		onClearPatch?: () => void;
 		consoleType?: string | null;
 		channelColors?: Record<number, string>;
 		onChannelColorChange?: (channel: number, colorId: string) => void;
 		stereoLinks?: number[];
 		onStereoLinksChange?: (links: number[]) => void;
+		outputStereoLinks?: number[];
+		onOutputStereoLinksChange?: (links: number[]) => void;
 		categoryColorDefaults?: Record<string, string>;
 		inputChannelMode?: ChannelMode;
 		outputChannelMode?: ChannelMode;
@@ -39,16 +53,22 @@
 
 	let {
 		items,
+		outputs = [],
 		onUpdateItem,
 		onReorderPatch,
 		onSelectItem,
 		onAddItem,
 		onRemoveItem,
+		onOutputSelect,
+		onOutputRemove,
+		onClearPatch,
 		consoleType = null,
 		channelColors = {},
 		onChannelColorChange,
 		stereoLinks = [],
 		onStereoLinksChange,
+		outputStereoLinks = [],
+		onOutputStereoLinksChange,
 		categoryColorDefaults = {},
 		inputChannelMode = 48,
 		outputChannelMode = 16,
@@ -121,11 +141,41 @@
 			inputSearchValues[ch] = proc ? proc.name : '';
 		}
 	});
-	let selectedOutputItemsByChannel = $state<Record<number, ProcessedItem | null>>({});
+
+	const selectedOutputItemsByChannel = $derived.by(() => {
+		const map: Record<number, ProcessedItem | null> = {};
+		outputs.forEach((o) => {
+			if (o.channel) {
+				const ch = parseInt(o.channel as string);
+				if (o.itemData) {
+					map[ch] = { ...(o.itemData as ProcessedItem), name: o.name } as ProcessedItem;
+				} else {
+					map[ch] = {
+						id: String(o.id),
+						name: o.name,
+						category: 'Output',
+						image: '',
+						type: 'output',
+						keywords: []
+					} as unknown as ProcessedItem;
+				}
+			}
+		});
+		return map;
+	});
 
 	// Search values for each combobox (separate for inputs and outputs)
 	let inputSearchValues = $state<Record<number, string>>({});
 	let outputSearchValues = $state<Record<number, string>>({});
+
+	// Keep output combobox search boxes in sync with outputs prop
+	$effect(() => {
+		outputs.map((o) => o.name).join('|');
+		for (const ch of outputChannelNumbers) {
+			const proc = selectedOutputItemsByChannel[ch] as ProcessedItem | null;
+			outputSearchValues[ch] = proc ? proc.name : '';
+		}
+	});
 
 	// Create channel lists based on current modes
 	const inputChannelNumbers = $derived.by(() => {
@@ -161,6 +211,39 @@
 			newLinks.sort((a, b) => a - b);
 		}
 		onStereoLinksChange?.(newLinks);
+	}
+
+	// Output stereo link helpers
+	const outputStereoLinkSet = $derived(new Set(outputStereoLinks));
+
+	function isOutputLinkedTop(ch: number): boolean {
+		return outputStereoLinkSet.has(ch);
+	}
+	function isOutputLinkedBottom(ch: number): boolean {
+		return ch % 2 === 0 && outputStereoLinkSet.has(ch - 1);
+	}
+	function isOutputLinked(ch: number): boolean {
+		return isOutputLinkedTop(ch) || isOutputLinkedBottom(ch);
+	}
+
+	function toggleOutputStereoLink(startChannel: number) {
+		const newLinks = [...outputStereoLinks];
+		const idx = newLinks.indexOf(startChannel);
+		if (idx >= 0) {
+			newLinks.splice(idx, 1);
+		} else {
+			newLinks.push(startChannel);
+			newLinks.sort((a, b) => a - b);
+		}
+		onOutputStereoLinksChange?.(newLinks);
+	}
+
+	// Get badge style for output channel (no console colors - just blue when occupied)
+	function getOutputChannelBadgeStyle(channelNum: number): string {
+		if (selectedOutputItemsByChannel[channelNum]) {
+			return 'background-color: rgb(37, 99, 235); color: white;';
+		}
+		return '';
 	}
 
 	// Context menu state
@@ -212,10 +295,13 @@
 		}
 	}
 
-	// Handle output item selection (placeholder - no action for now)
+	// Handle output item selection
 	function handleOutputItemSelect(channel: number, item: ProcessedItem | null) {
-		selectedOutputItemsByChannel[channel] = item;
-		// TODO: Add output handling logic later
+		if (item) {
+			onOutputSelect?.(item, channel);
+		} else {
+			onOutputRemove?.(channel);
+		}
 	}
 
 	// Get the CSS background color for a channel number badge
@@ -270,10 +356,21 @@
 		<div class="border-b border-border-primary bg-muted/30 px-4 pt-4">
 			<div class="flex items-center justify-between mb-3">
 				<h2 class="text-xl font-semibold text-text-primary">Patch List</h2>
-				<div class="text-sm text-text-secondary">
-					{TOTAL_INPUT_CHANNELS} inputs &bull; {TOTAL_OUTPUT_CHANNELS} outputs
-					{#if consoleDef}
-						&bull; {consoleDef.name}
+				<div class="flex items-center gap-3">
+					<div class="text-sm text-text-secondary">
+						{TOTAL_INPUT_CHANNELS} inputs &bull; {TOTAL_OUTPUT_CHANNELS} outputs
+						{#if consoleDef}
+							&bull; {consoleDef.name}
+						{/if}
+					</div>
+					{#if onClearPatch}
+						<button
+							onclick={() => { if (confirm('Clear all channel assignments? Items will remain on the canvas.')) onClearPatch(); }}
+							class="rounded-md border border-border-primary px-2.5 py-1 text-xs text-text-secondary transition hover:bg-red-50 hover:text-red-600 hover:border-red-300 dark:hover:bg-red-900/20 dark:hover:text-red-400 dark:hover:border-red-700"
+							title="Clear all channel assignments"
+						>
+							Clear Patch
+						</button>
 					{/if}
 				</div>
 			</div>
@@ -548,110 +645,190 @@
 						class="grid gap-0 border border-border-primary"
 						style="grid-template-columns: repeat({NUM_COLUMNS}, minmax(0, 1fr));"
 					>
-						{#each outputColumns as col}
+						{#each outputColumns as col, colIndex (colIndex)}
 							<div class="border-r border-border-primary last:border-r-0">
-								{#each col as channelNum}
-									<div
-										class="border-b border-border-primary last:border-b-0 h-10 flex items-center"
-									>
-										<!-- Channel number cell -->
-										<div
-											class="w-10 h-full flex items-center justify-center border-r border-border-primary text-xs font-semibold cursor-pointer transition-colors {selectedOutputItemsByChannel[channelNum]
-												? 'bg-blue-600 text-white'
-												: 'bg-muted/50 text-text-secondary'}"
-										>
-											{channelNum}
-										</div>
-
-										<!-- Combobox cell -->
-										<div class="flex-1 px-1">
-											<Combobox.Root
-												value={selectedOutputItemsByChannel[channelNum]?.id ??
-													undefined}
-												type="single"
-												name="output-{channelNum}"
-												inputValue={selectedOutputItemsByChannel[channelNum]
-													?.name ?? ''}
-												onValueChange={(value) => {
-													const selected = allAvailableItems.find(
-														(item) => item.id === value
-													);
-													handleOutputItemSelect(
-														channelNum,
-														selected || null
-													);
-												}}
+								{#each col as channelNum (channelNum)}
+									{@const linked = isOutputLinked(channelNum)}
+									{@const linkedTop = isOutputLinkedTop(channelNum)}
+									{@const linkedBottom = isOutputLinkedBottom(channelNum)}
+									<ContextMenu.Root onOpenChange={(open) => { if (open) contextMenuChannel = channelNum; }}>
+										<ContextMenu.Trigger>
+											<div
+												class="border-b border-border-primary last:border-b-0 flex items-center {linkedTop ? 'h-10 border-b-0' : linkedBottom ? 'h-10 border-b border-border-primary' : 'h-10'}"
 											>
-												<div class="relative">
-													<Combobox.Input
-														class="w-full h-8 px-2 text-xs bg-transparent border-0 outline-none placeholder:text-text-secondary/50 focus:ring-1 focus:ring-foreground/20 rounded"
-														placeholder="Select item..."
-														oninput={(e) => {
-															outputSearchValues[channelNum] = (
-																e.currentTarget as HTMLInputElement
-															).value;
-														}}
-													/>
-													<Combobox.Trigger
-														class="absolute right-1 top-1/2 -translate-y-1/2 w-4 h-4 opacity-50 hover:opacity-100"
+												<!-- Channel number cell -->
+												<div class="w-10 h-full flex-shrink-0 flex items-center justify-center border-r border-border-primary">
+													<div
+														class="w-full h-full flex items-center justify-center text-xs font-semibold cursor-pointer transition-colors {linked ? 'ring-1 ring-inset ring-yellow-400/50' : ''} {!selectedOutputItemsByChannel[channelNum] ? 'bg-muted/50 text-text-secondary' : ''}"
+														style={getOutputChannelBadgeStyle(channelNum)}
 													>
-														<svg
-															xmlns="http://www.w3.org/2000/svg"
-															viewBox="0 0 24 24"
-															fill="none"
-															stroke="currentColor"
-															stroke-width="2"
-															class="w-full h-full"
-														>
-															<path d="M6 9l6 6 6-6" />
-														</svg>
-													</Combobox.Trigger>
+														{#if linkedTop}
+															<span class="flex flex-col items-center leading-none">
+																<span>{channelNum}</span>
+																<svg class="w-3 h-3 opacity-60 -mb-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+																	<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+																	<path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+																</svg>
+															</span>
+														{:else if linkedBottom}
+															<span class="flex flex-col items-center leading-none">
+																<svg class="w-3 h-3 opacity-60 -mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+																	<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+																	<path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+																</svg>
+																<span>{channelNum}</span>
+															</span>
+														{:else}
+															{channelNum}
+														{/if}
+													</div>
 												</div>
 
-												<Combobox.Portal>
-													<Combobox.Content
-														class="z-50 max-h-60 w-[var(--bits-combobox-anchor-width)] min-w-[200px] overflow-hidden rounded-md border border-border-primary bg-surface shadow-lg"
-														sideOffset={4}
+												<!-- Combobox cell -->
+												<div class="flex-1 px-1">
+													<Combobox.Root
+														value={selectedOutputItemsByChannel[channelNum]?.id ??
+															undefined}
+														type="single"
+														name="output-{channelNum}"
+														inputValue={selectedOutputItemsByChannel[channelNum]
+															?.name ?? ''}
+														onValueChange={(value) => {
+															const selected = allAvailableItems.find(
+																(item) => item.id === value
+															);
+															handleOutputItemSelect(
+																channelNum,
+																selected || null
+															);
+														}}
 													>
-														<Combobox.Viewport class="p-1">
-															{#each getFilteredItems(outputSearchValues[channelNum] || '') as item (item.id)}
-																<Combobox.Item
-																	value={item.id}
-																	label={item.name}
-																	class="relative flex cursor-pointer select-none items-center rounded px-2 py-1.5 text-xs outline-none data-[highlighted]:bg-muted"
+														<div class="relative">
+															<Combobox.Input
+																class="w-full h-8 px-2 text-xs bg-transparent border-0 outline-none placeholder:text-text-secondary/50 focus:ring-1 focus:ring-foreground/20 rounded"
+																placeholder="Select item..."
+																oninput={(e) => {
+																	outputSearchValues[channelNum] = (
+																		e.currentTarget as HTMLInputElement
+																	).value;
+																}}
+															/>
+															<Combobox.Trigger
+																class="absolute right-1 top-1/2 -translate-y-1/2 w-4 h-4 opacity-50 hover:opacity-100"
+															>
+																<svg
+																	xmlns="http://www.w3.org/2000/svg"
+																	viewBox="0 0 24 24"
+																	fill="none"
+																	stroke="currentColor"
+																	stroke-width="2"
+																	class="w-full h-full"
 																>
-																	{#snippet children({ selected })}
-																		<span class="truncate"
-																			>{item.name}</span
+																	<path d="M6 9l6 6 6-6" />
+																</svg>
+															</Combobox.Trigger>
+														</div>
+
+														<Combobox.Portal>
+															<Combobox.Content
+																class="z-50 max-h-60 w-[var(--bits-combobox-anchor-width)] min-w-[200px] overflow-hidden rounded-md border border-border-primary bg-surface shadow-lg"
+																sideOffset={4}
+															>
+																<Combobox.Viewport class="p-1">
+																	{#each getFilteredItems(outputSearchValues[channelNum] || '') as item (item.id)}
+																		<Combobox.Item
+																			value={item.id}
+																			label={item.name}
+																			class="relative flex cursor-pointer select-none items-center rounded px-2 py-1.5 text-xs outline-none data-[highlighted]:bg-muted"
 																		>
-																		{#if selected}
-																			<svg
-																				class="ml-auto h-3 w-3"
-																				viewBox="0 0 24 24"
-																				fill="none"
-																				stroke="currentColor"
-																				stroke-width="2"
-																			>
-																				<path
-																					d="M20 6L9 17l-5-5"
-																				/>
-																			</svg>
-																		{/if}
-																	{/snippet}
-																</Combobox.Item>
-															{:else}
-																<div
-																	class="px-2 py-1.5 text-xs text-text-secondary"
-																>
-																	No items found
-																</div>
-															{/each}
-														</Combobox.Viewport>
-													</Combobox.Content>
-												</Combobox.Portal>
-											</Combobox.Root>
-										</div>
-									</div>
+																			{#snippet children({ selected })}
+																				<span class="truncate"
+																					>{item.name}</span
+																				>
+																				{#if selected}
+																					<svg
+																						class="ml-auto h-3 w-3"
+																						viewBox="0 0 24 24"
+																						fill="none"
+																						stroke="currentColor"
+																						stroke-width="2"
+																					>
+																						<path
+																							d="M20 6L9 17l-5-5"
+																						/>
+																					</svg>
+																				{/if}
+																			{/snippet}
+																		</Combobox.Item>
+																	{:else}
+																		<div
+																			class="px-2 py-1.5 text-xs text-text-secondary"
+																		>
+																			No items found
+																		</div>
+																	{/each}
+																</Combobox.Viewport>
+															</Combobox.Content>
+														</Combobox.Portal>
+													</Combobox.Root>
+												</div>
+											</div>
+										</ContextMenu.Trigger>
+										<ContextMenu.Portal>
+											<ContextMenu.Content class="z-50 min-w-[180px] rounded-md border border-border-primary bg-surface p-1 shadow-lg">
+												{#if channelNum % 2 === 1}
+													{@const isCurrentlyLinked = outputStereoLinkSet.has(channelNum)}
+													<ContextMenu.Item
+														class="flex cursor-pointer items-center rounded px-2 py-1.5 text-xs outline-none hover:bg-muted"
+														onSelect={() => toggleOutputStereoLink(channelNum)}
+													>
+														<svg class="w-3.5 h-3.5 mr-2 opacity-70" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+															<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+															<path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+														</svg>
+														{isCurrentlyLinked ? `Unlink Ch ${channelNum}-${channelNum + 1}` : `Stereo Link Ch ${channelNum}-${channelNum + 1}`}
+													</ContextMenu.Item>
+												{:else}
+													{@const isCurrentlyLinked = outputStereoLinkSet.has(channelNum - 1)}
+													{#if isCurrentlyLinked}
+														<ContextMenu.Item
+															class="flex cursor-pointer items-center rounded px-2 py-1.5 text-xs outline-none hover:bg-muted"
+															onSelect={() => toggleOutputStereoLink(channelNum - 1)}
+														>
+															<svg class="w-3.5 h-3.5 mr-2 opacity-70" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+																<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+																<path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+															</svg>
+															Unlink Ch {channelNum - 1}-{channelNum}
+														</ContextMenu.Item>
+													{:else}
+														<ContextMenu.Item
+															class="flex cursor-pointer items-center rounded px-2 py-1.5 text-xs text-yellow-600 outline-none hover:bg-muted"
+															onSelect={() => toggleOutputStereoLink(channelNum)}
+														>
+															<svg class="w-3.5 h-3.5 mr-2 opacity-70" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+																<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+																<path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+															</svg>
+															Link Ch {channelNum}-{channelNum + 1} (not recommended)
+														</ContextMenu.Item>
+														<div class="px-2 py-1 text-[10px] text-yellow-600/80">
+															Stereo links should start on an odd channel
+														</div>
+													{/if}
+												{/if}
+												{#if selectedOutputItemsByChannel[channelNum]}
+													<ContextMenu.Separator class="my-1 h-px bg-border-primary" />
+													<ContextMenu.Item
+														class="flex cursor-pointer items-center rounded px-2 py-1.5 text-xs text-red-500 outline-none hover:bg-muted"
+														onSelect={() => onOutputRemove?.(channelNum)}
+													>
+														Clear Channel
+													</ContextMenu.Item>
+												{/if}
+											</ContextMenu.Content>
+										</ContextMenu.Portal>
+									</ContextMenu.Root>
 								{/each}
 							</div>
 						{/each}

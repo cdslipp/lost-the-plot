@@ -165,6 +165,11 @@
 	<div class="relative z-10 container mx-auto max-w-[1600px] pl-28 pr-4 sm:pl-32 sm:pr-6 lg:pl-36 lg:pr-8">
 		{@render children()}
 	</div>
+	<footer class="fixed bottom-0 left-0 right-0 z-10 flex items-center justify-center py-1 text-[10px] text-text-tertiary/50 pointer-events-none select-none">
+		<span>Made in Kitchener, Ontario</span>
+		<span class="mx-1.5">|</span>
+		<a href="https://github.com/cdslipp/lost-the-plot" target="_blank" rel="noopener noreferrer" class="pointer-events-auto underline decoration-text-tertiary/30 hover:text-text-tertiary transition">GitHub</a>
+	</footer>
 </div>
 
 {#if showRefresh || showOffline}

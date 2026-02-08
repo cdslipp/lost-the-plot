@@ -4,8 +4,8 @@ import html2canvas from 'html2canvas';
 interface PdfExportOptions {
 	plotName: string;
 	canvasEl: HTMLElement;
-	items: Array<{ name: string; channel: string; musician: string }>;
-	musicians: Array<{ name: string; instrument: string }>;
+	items: Array<{ name: string; channel: string; person_name: string }>;
+	persons: Array<{ name: string; role: string }>;
 	pageFormat?: 'letter' | 'a4';
 }
 
@@ -13,7 +13,7 @@ export async function exportToPdf({
 	plotName,
 	canvasEl,
 	items,
-	musicians,
+	persons,
 	pageFormat = 'letter'
 }: PdfExportOptions) {
 	const exportAttr = 'data-pdf-export-root';
@@ -91,7 +91,7 @@ export async function exportToPdf({
 
 	// Input list on page 2
 	const inputItems = items.filter((i) => i.channel);
-	if (inputItems.length > 0 || musicians.length > 0) {
+	if (inputItems.length > 0 || persons.length > 0) {
 		doc.addPage(pageFormat, 'portrait');
 
 		let y = margin + 16;
@@ -107,11 +107,11 @@ export async function exportToPdf({
 		doc.setFont('helvetica', 'bold');
 		const colCh = margin;
 		const colName = margin + 60;
-		const colMusician = margin + Math.round(availableWidth * 0.55);
+		const colPerson = margin + Math.round(availableWidth * 0.55);
 
 		doc.text('Ch', colCh, y);
 		doc.text('Input', colName, y);
-		doc.text('Musician', colMusician, y);
+		doc.text('Person', colPerson, y);
 		y += 6;
 		doc.setDrawColor(180);
 		doc.line(margin, y, pageWidth - margin, y);
@@ -130,12 +130,12 @@ export async function exportToPdf({
 			}
 			doc.text(item.channel, colCh, y);
 			doc.text(item.name || '', colName, y);
-			doc.text(item.musician || '', colMusician, y);
+			doc.text(item.person_name || '', colPerson, y);
 			y += 16;
 		}
 
-		// Musicians section
-		if (musicians.length > 0) {
+		// People section
+		if (persons.length > 0) {
 			y += 8;
 			if (y > pageHeight - margin - 30) {
 				doc.addPage(pageFormat, 'portrait');
@@ -143,17 +143,17 @@ export async function exportToPdf({
 			}
 			doc.setFontSize(16);
 			doc.setFont('helvetica', 'bold');
-			doc.text('Musicians', margin, y);
+			doc.text('People', margin, y);
 			y += 18;
 
 			doc.setFontSize(11);
 			doc.setFont('helvetica', 'normal');
-			for (const m of musicians) {
+			for (const p of persons) {
 				if (y > pageHeight - margin) {
 					doc.addPage(pageFormat, 'portrait');
 					y = margin + 16;
 				}
-				doc.text(`${m.name}${m.instrument ? ' — ' + m.instrument : ''}`, margin, y);
+				doc.text(`${p.name}${p.role ? ' — ' + p.role : ''}`, margin, y);
 				y += 16;
 			}
 		}

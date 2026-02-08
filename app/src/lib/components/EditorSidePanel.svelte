@@ -1,15 +1,16 @@
 <script lang="ts">
 	import Inspector from './Inspector.svelte';
-	import MusicianPanel from './MusicianPanel.svelte';
+	import PlotPeoplePanel from './PlotPeoplePanel.svelte';
 	import SettingsPanel from './SettingsPanel.svelte';
 	import type { UnitSystem } from '$lib/utils/scale';
+	import type { ProcessedItem } from '$lib/utils/finalAssetsLoader';
 
 	type Props = {
-		activeTab: 'inspector' | 'musicians' | 'settings';
+		activeTab: 'inspector' | 'people' | 'settings';
 		// Inspector props (forwarded with $bindable)
 		selectedItems: HTMLElement[];
 		items: any[];
-		musicians: any[];
+		persons: { id: number; name: string; role?: string | null }[];
 		title: string;
 		lastModified: string;
 		showZones: boolean;
@@ -19,14 +20,15 @@
 		pdfPageFormat: 'letter' | 'a4';
 		onPlaceRiser: (w: number, d: number, h: number) => void;
 		onUpdateItem: (id: number, prop: string, val: string) => void;
-		onAddMusician: (name: string, instrument: string) => void;
 		getItemZone: (item: any) => string;
 		getItemPosition: (item: any) => { x: number; y: number };
 		updateItemPosition: (id: number, x: number, y: number) => void;
-		// Musician panel props
+		// People panel props
 		bandPersons: { id: number; name: string; role: string | null; member_type: string | null }[];
-		onImportFromBand: (persons: { name: string; role: string | null }[]) => void;
-		onDeleteMusician: (id: number) => void;
+		plotPersonIds: Set<number>;
+		onAddPersonToPlot: (personId: number, silhouetteItem: ProcessedItem) => void;
+		onCreatePerson: (name: string) => Promise<number>;
+		onRemovePersonFromPlot: (personId: number) => void;
 		// Settings panel props
 		consoleType: string | null;
 		consoleDef: any | null;
@@ -46,7 +48,7 @@
 		activeTab = $bindable(),
 		selectedItems = $bindable(),
 		items = $bindable(),
-		musicians = $bindable(),
+		persons,
 		title = $bindable(),
 		lastModified = $bindable(),
 		showZones = $bindable(),
@@ -56,13 +58,14 @@
 		pdfPageFormat = $bindable(),
 		onPlaceRiser,
 		onUpdateItem,
-		onAddMusician,
 		getItemZone,
 		getItemPosition,
 		updateItemPosition,
 		bandPersons,
-		onImportFromBand,
-		onDeleteMusician,
+		plotPersonIds,
+		onAddPersonToPlot,
+		onCreatePerson,
+		onRemovePersonFromPlot,
 		consoleType,
 		consoleDef,
 		consoleOptions,
@@ -90,10 +93,10 @@
 			</button>
 			<button
 				type="button"
-				onclick={() => (activeTab = 'musicians')}
-				class={`px-3 py-2 text-sm font-medium rounded-t-lg transition-colors ${activeTab === 'musicians' ? 'bg-surface text-text-primary' : 'text-text-secondary hover:text-text-primary'}`}
+				onclick={() => (activeTab = 'people')}
+				class={`px-3 py-2 text-sm font-medium rounded-t-lg transition-colors ${activeTab === 'people' ? 'bg-surface text-text-primary' : 'text-text-secondary hover:text-text-primary'}`}
 			>
-				Musicians
+				People
 			</button>
 			<button
 				type="button"
@@ -109,7 +112,7 @@
 			<Inspector
 				bind:selectedItems
 				bind:items
-				bind:musicians
+				{persons}
 				bind:title
 				bind:lastModified
 				bind:showZones
@@ -119,20 +122,20 @@
 				bind:pdfPageFormat
 				{onPlaceRiser}
 				onUpdateItem={onUpdateItem}
-				onAddMusician={onAddMusician}
 				{getItemZone}
 				{getItemPosition}
 				{updateItemPosition}
 			/>
 		</div>
-	{:else if activeTab === 'musicians'}
+	{:else if activeTab === 'people'}
 		<div class="flex-1 min-h-0 overflow-auto p-4">
-			<MusicianPanel
-				{musicians}
-				onAdd={onAddMusician}
-				onDelete={onDeleteMusician}
+			<PlotPeoplePanel
 				{bandPersons}
-				{onImportFromBand}
+				{plotPersonIds}
+				{items}
+				{onAddPersonToPlot}
+				{onCreatePerson}
+				{onRemovePersonFromPlot}
 			/>
 		</div>
 	{:else}

@@ -9,6 +9,7 @@
 	import CanvasOverlay from '$lib/components/CanvasOverlay.svelte';
 	import { feetToPixels } from '$lib/utils/scale';
 	import { db } from '$lib/db';
+	import { exportToPdf } from '$lib/utils/pdf';
 
 	let bandName = $derived(decodeURIComponent(($page.params as Record<string, string>).bandName ?? ''));
 	let plotName = $derived(decodeURIComponent(($page.params as Record<string, string>).plotName ?? ''));
@@ -19,8 +20,9 @@
 	let importing = $state(false);
 	let importSuccess = $state(false);
 	let copied = $state(false);
+	let exportingPdf = $state(false);
 
-	// Canvas dimensions based on stage aspect ratio
+	// Canvas dimensions — match editor defaults
 	let canvasWidth = $state(1100);
 	let canvasHeight = $state(850);
 	let canvasEl = $state<HTMLElement | null>(null);
@@ -148,15 +150,30 @@
 		copied = true;
 		setTimeout(() => (copied = false), 2000);
 	}
+
+	async function handleExportPdf() {
+		if (!canvasEl || !plot || exportingPdf) return;
+		exportingPdf = true;
+		try {
+			await exportToPdf({
+				plotName,
+				canvasEl,
+				items: plot.items,
+				musicians: plot.musicians
+			});
+		} finally {
+			exportingPdf = false;
+		}
+	}
 </script>
 
 <svelte:head>
 	<title>{plotName} - {bandName} | StagePlotter</title>
 </svelte:head>
 
-<div class="py-6">
+<div class="flex h-[calc(100dvh-4.25rem)] flex-col gap-3 overflow-hidden py-3">
 	{#if loading}
-		<div class="flex min-h-[60vh] items-center justify-center">
+		<div class="flex flex-1 items-center justify-center">
 			<div class="text-center">
 				<div
 					class="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-2 border-text-secondary border-t-transparent"
@@ -165,7 +182,7 @@
 			</div>
 		</div>
 	{:else if error}
-		<div class="flex min-h-[60vh] items-center justify-center">
+		<div class="flex flex-1 items-center justify-center">
 			<div class="text-center">
 				<div class="mb-4 text-4xl">!</div>
 				<h2 class="mb-2 text-xl font-bold text-text-primary">Unable to Load Plot</h2>
@@ -179,15 +196,11 @@
 			</div>
 		</div>
 	{:else if plot}
-		<!-- Header -->
-		<div class="mb-6 flex items-start justify-between gap-4">
+		<!-- Header toolbar -->
+		<div class="flex shrink-0 items-center justify-between gap-4">
 			<div class="min-w-0 flex-1">
-				<div class="mb-1 text-sm font-medium text-text-tertiary">{bandName}</div>
-				<h1 class="font-serif text-3xl font-bold text-text-primary">{plotName}</h1>
-				<div class="mt-1 text-xs text-text-tertiary">
-					Stage: {plot.stageWidth}' x {plot.stageDepth}' | {plot.items.length} items | {plot.musicians.length}
-					musicians
-				</div>
+				<div class="mb-0.5 text-sm font-medium text-text-tertiary">{bandName}</div>
+				<h1 class="font-serif text-2xl font-bold text-text-primary">{plotName}</h1>
 			</div>
 			<div class="flex shrink-0 items-center gap-2">
 				<button
@@ -195,16 +208,9 @@
 					class="flex items-center gap-2 rounded-lg border border-border-primary px-3 py-2 text-sm text-text-primary transition hover:bg-surface-hover"
 					title="Copy share link"
 				>
-					<svg
-						xmlns="http://www.w3.org/2000/svg"
-						class="h-4 w-4"
-						viewBox="0 0 20 20"
-						fill="currentColor"
-					>
+					<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
 						<path d="M8 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z" />
-						<path
-							d="M6 3a2 2 0 00-2 2v11a2 2 0 002 2h8a2 2 0 002-2V5a2 2 0 00-2-2 3 3 0 01-3 3H9a3 3 0 01-3-3z"
-						/>
+						<path d="M6 3a2 2 0 00-2 2v11a2 2 0 002 2h8a2 2 0 002-2V5a2 2 0 00-2-2 3 3 0 01-3 3H9a3 3 0 01-3-3z" />
 					</svg>
 					{copied ? 'Copied!' : 'Copy Link'}
 				</button>
@@ -216,22 +222,11 @@
 					{#if importSuccess}
 						Imported! Redirecting...
 					{:else if importing}
-						<div
-							class="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent dark:border-stone-900 dark:border-t-transparent"
-						></div>
+						<div class="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent dark:border-stone-900 dark:border-t-transparent"></div>
 						Importing...
 					{:else}
-						<svg
-							xmlns="http://www.w3.org/2000/svg"
-							class="h-4 w-4"
-							viewBox="0 0 20 20"
-							fill="currentColor"
-						>
-							<path
-								fill-rule="evenodd"
-								d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z"
-								clip-rule="evenodd"
-							/>
+						<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+							<path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd" />
 						</svg>
 						Import to My Plots
 					{/if}
@@ -239,116 +234,138 @@
 			</div>
 		</div>
 
-		<!-- Canvas -->
-		<div class="border border-border-primary bg-surface p-4 shadow-sm">
-			<div
-				bind:this={canvasEl}
-				class="relative mx-auto w-full bg-white dark:bg-gray-800"
-				style="aspect-ratio: {plot.stageWidth}/{plot.stageDepth}; max-width: 1100px;"
-			>
-				<CanvasOverlay showZones={true} {canvasWidth} {canvasHeight} itemCount={plot.items.length} />
-
-				{#each plot.items as item (item.id)}
+		<!-- Main content: canvas + sidebar -->
+		<div class="flex flex-1 min-h-0 gap-5 overflow-hidden">
+			<!-- Canvas area -->
+			<div class="flex min-h-0 flex-1 flex-col overflow-hidden">
+				<div class="border border-border-primary bg-surface p-3 shadow-sm">
 					<div
-						class="absolute"
-						style="left: {item.position.x}px; top: {item.position.y}px; width: {item.position.width}px; height: {item.position.height}px;"
+						bind:this={canvasEl}
+						class="relative mx-auto w-full bg-white dark:bg-gray-800"
+						style="aspect-ratio: {plot.stageWidth}/{plot.stageDepth}; max-width: 1100px;"
 					>
-						{#if item.type === 'stageDeck'}
-							<StageDeck size={item.currentVariant || '4x4'} x={0} y={0} class="w-full h-full" />
-						{:else if item.type === 'riser'}
+						<CanvasOverlay showZones={true} {canvasWidth} {canvasHeight} itemCount={plot.items.length} />
+
+						{#each plot.items as item (item.id)}
 							<div
-								class="flex h-full w-full items-center justify-center rounded border-2 border-gray-500 bg-gray-400/50 dark:border-gray-400 dark:bg-gray-600/50"
+								class="absolute"
+								style="left: {item.position.x}px; top: {item.position.y}px; width: {item.position.width}px; height: {item.position.height}px;"
 							>
-								<div class="text-center leading-tight">
-									<div class="text-[10px] font-bold text-gray-700 dark:text-gray-200">RISER</div>
-									<div class="text-[8px] text-gray-600 dark:text-gray-300">
-										{item.itemData?.riserWidth ?? '?'}' x {item.itemData?.riserDepth ?? '?'}'
-									</div>
-									{#if item.itemData?.riserHeight}
-										<div class="text-[7px] text-gray-500 dark:text-gray-400">
-											h: {item.itemData.riserHeight}'
+								{#if item.type === 'stageDeck'}
+									<StageDeck size={item.currentVariant || '4x4'} x={0} y={0} class="w-full h-full" />
+								{:else if item.type === 'riser'}
+									<div
+										class="flex h-full w-full items-center justify-center rounded border-2 border-gray-500 bg-gray-400/50 dark:border-gray-400 dark:bg-gray-600/50"
+									>
+										<div class="text-center leading-tight">
+											<div class="text-[10px] font-bold text-gray-700 dark:text-gray-200">RISER</div>
+											<div class="text-[8px] text-gray-600 dark:text-gray-300">
+												{item.itemData?.riserWidth ?? '?'}' x {item.itemData?.riserDepth ?? '?'}'
+											</div>
+											{#if item.itemData?.riserHeight}
+												<div class="text-[7px] text-gray-500 dark:text-gray-400">
+													h: {item.itemData.riserHeight}'
+												</div>
+											{/if}
 										</div>
+									</div>
+								{:else}
+									{@const src = getCurrentImageSrc(item)}
+									{#if src}
+										<img
+											{src}
+											alt={item.itemData?.name || item.name || 'Stage Item'}
+											style="width: {item.position.width}px; height: {item.position.height}px;"
+										/>
 									{/if}
-								</div>
+								{/if}
 							</div>
-						{:else}
-							{@const src = getCurrentImageSrc(item)}
-							{#if src}
-								<img
-									{src}
-									alt={item.itemData?.name || item.name || 'Stage Item'}
-									style="width: {item.position.width}px; height: {item.position.height}px;"
-								/>
-							{/if}
-						{/if}
+						{/each}
 					</div>
-				{/each}
+				</div>
+				<div class="mt-2 text-xs text-text-tertiary">
+					Stage: {plot.stageWidth}' x {plot.stageDepth}' | {plot.items.length} items | {plot.musicians.length} musicians
+				</div>
 			</div>
-		</div>
 
-		<!-- Info panels -->
-		<div class="mt-6 grid gap-6 md:grid-cols-2">
-			<!-- Musicians -->
-			{#if plot.musicians.length > 0}
-				<div class="rounded-xl border border-border-primary bg-surface p-4 shadow-sm">
-					<h2 class="mb-3 text-lg font-bold text-text-primary">Musicians</h2>
-					<div class="space-y-2">
-						{#each plot.musicians as musician}
-							<div class="flex items-center justify-between rounded-lg bg-muted/30 px-3 py-2">
-								<span class="font-medium text-text-primary">{musician.name}</span>
-								<span class="text-sm text-text-secondary">{musician.instrument}</span>
-							</div>
-						{/each}
+			<!-- Sidebar -->
+			<div class="flex w-80 shrink-0 flex-col overflow-hidden">
+				<div class="flex flex-1 flex-col gap-4 overflow-y-auto rounded-xl border border-border-primary bg-surface p-4 shadow-sm">
+					<!-- Download PDF -->
+					<div>
+						<button
+							onclick={handleExportPdf}
+							disabled={exportingPdf}
+							class="flex w-full items-center justify-center gap-2 rounded-lg bg-stone-900 px-4 py-2.5 text-sm text-white transition hover:bg-stone-800 disabled:opacity-50 dark:bg-stone-100 dark:text-stone-900 dark:hover:bg-stone-200"
+						>
+							<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+								<path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd" />
+							</svg>
+							{exportingPdf ? 'Exporting...' : 'Download PDF'}
+						</button>
 					</div>
-				</div>
-			{/if}
 
-		<!-- Input List -->
-		{#if plot.items.filter((i) => i.channel && parseInt(i.channel) > 0).length > 0}
-			{@const inputs = plot.items.filter((i) => i.channel && parseInt(i.channel) > 0).sort((a, b) => parseInt(a.channel) - parseInt(b.channel))}
-				<div class="rounded-xl border border-border-primary bg-surface p-4 shadow-sm">
-					<h2 class="mb-3 text-lg font-bold text-text-primary">Input List</h2>
-					<div class="space-y-1">
-						<div class="grid grid-cols-[3rem_1fr_1fr] gap-2 px-2 text-xs font-medium text-text-tertiary">
-							<span>CH</span>
-							<span>Source</span>
-							<span>Musician</span>
+					<!-- Input List -->
+					{#if plot.items.filter((i) => i.channel && parseInt(i.channel) > 0).length > 0}
+					{@const inputs = plot.items.filter((i) => i.channel && parseInt(i.channel) > 0).sort((a, b) => parseInt(a.channel) - parseInt(b.channel))}
+						<div>
+							<h3 class="mb-2 text-xs font-medium uppercase tracking-wider text-text-tertiary">Input List</h3>
+							<div class="space-y-0.5">
+								<div class="grid grid-cols-[2rem_1fr_1fr] gap-1.5 px-1.5 text-[10px] font-medium text-text-tertiary">
+									<span>CH</span>
+									<span>Source</span>
+									<span>Musician</span>
+								</div>
+								{#each inputs as item}
+									<div class="grid grid-cols-[2rem_1fr_1fr] gap-1.5 rounded-md bg-muted/30 px-1.5 py-1 text-xs">
+										<span class="font-mono font-bold text-text-primary">{item.channel}</span>
+										<span class="truncate text-text-primary">{item.name || item.itemData?.name || '-'}</span>
+										<span class="truncate text-text-secondary">{item.musician || '-'}</span>
+									</div>
+								{/each}
+							</div>
 						</div>
-						{#each inputs as item}
-							<div
-								class="grid grid-cols-[3rem_1fr_1fr] gap-2 rounded-lg bg-muted/30 px-2 py-1.5 text-sm"
-							>
-								<span class="font-mono font-bold text-text-primary">{item.channel}</span>
-								<span class="text-text-primary">{item.name || item.itemData?.name || '-'}</span>
-								<span class="text-text-secondary">{item.musician || '-'}</span>
-							</div>
-						{/each}
-					</div>
-				</div>
-			{/if}
+					{/if}
 
-			<!-- Persons / Contacts -->
-			{#if plot.persons.length > 0}
-				<div class="rounded-xl border border-border-primary bg-surface p-4 shadow-sm md:col-span-2">
-					<h2 class="mb-3 text-lg font-bold text-text-primary">Contacts</h2>
-					<div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-						{#each plot.persons as person}
-							<div class="rounded-lg bg-muted/30 px-3 py-2">
-								<div class="font-medium text-text-primary">{person.name}</div>
-								{#if person.role}
-									<div class="text-sm text-text-secondary">{person.role}</div>
-								{/if}
-								{#if person.phone}
-									<div class="mt-1 text-xs text-text-tertiary">{person.phone}</div>
-								{/if}
-								{#if person.email}
-									<div class="text-xs text-text-tertiary">{person.email}</div>
-								{/if}
+					<!-- Musicians -->
+					{#if plot.musicians.length > 0}
+						<div>
+							<h3 class="mb-2 text-xs font-medium uppercase tracking-wider text-text-tertiary">Musicians</h3>
+							<div class="space-y-1">
+								{#each plot.musicians as musician}
+									<div class="flex items-center justify-between rounded-md bg-muted/30 px-2 py-1.5 text-xs">
+										<span class="font-medium text-text-primary">{musician.name}</span>
+										<span class="text-text-secondary">{musician.instrument}</span>
+									</div>
+								{/each}
 							</div>
-						{/each}
-					</div>
+						</div>
+					{/if}
+
+					<!-- Contacts -->
+					{#if plot.persons.length > 0}
+						<div>
+							<h3 class="mb-2 text-xs font-medium uppercase tracking-wider text-text-tertiary">Contacts</h3>
+							<div class="space-y-1.5">
+								{#each plot.persons as person}
+									<div class="rounded-md bg-muted/30 px-2 py-1.5">
+										<div class="text-xs font-medium text-text-primary">{person.name}</div>
+										{#if person.role}
+											<div class="text-[10px] text-text-secondary">{person.role}</div>
+										{/if}
+										{#if person.phone}
+											<div class="mt-0.5 text-[10px] text-text-tertiary">{person.phone}</div>
+										{/if}
+										{#if person.email}
+											<div class="text-[10px] text-text-tertiary">{person.email}</div>
+										{/if}
+									</div>
+								{/each}
+							</div>
+						</div>
+					{/if}
 				</div>
-			{/if}
+			</div>
 		</div>
 	{/if}
 </div>

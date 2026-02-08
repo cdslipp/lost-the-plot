@@ -19,3 +19,4 @@ export * as migration006 from './migrations/006_add_gigs_setlists.js';
 export * as migration007 from './migrations/007_add_stage_dimensions.js';
 export * as migration008 from './migrations/008_add_gig_times_and_starred.js';
 export * as migration009 from './migrations/009_add_console_settings.js';
+export * as migration010 from './migrations/010_plot_persons.js';

@@ -6,19 +6,13 @@
 		id: number;
 		name: string;
 		channel: string;
-		musician: string;
+		person_id: number | null;
 		itemData: any;
 		currentVariant?: string;
 		width: number;
 		height: number;
 		x: number;
 		y: number;
-	};
-
-	type Musician = {
-		id: number;
-		name: string;
-		instrument: string;
 	};
 
 	type StagePlotExport = {
@@ -44,10 +38,9 @@
 				relativeY: number;
 			};
 			channel: string;
-			musician: string;
+			person_id: number | null;
 			itemData: any;
 		}>;
-		musicians: Musician[];
 		metadata?: any;
 	};
 
@@ -55,7 +48,6 @@
 		title = $bindable<string>(''),
 		lastModified = $bindable<string>(''),
 		items = $bindable<Item[]>([]),
-		musicians = $bindable<Musician[]>([]),
 		canvasWidth = $bindable<number>(1100),
 		canvasHeight = $bindable<number>(850),
 		getItemZone = $bindable<((item: Item) => string) | undefined>(undefined),
@@ -101,11 +93,10 @@
 						relativeY: relativePos.y
 					},
 					channel: item.channel,
-					musician: item.musician,
+					person_id: item.person_id,
 					itemData: item.itemData
 				};
 			}),
-			musicians: musicians,
 			metadata: {
 				exportedAt: new Date().toISOString(),
 				exportedBy: 'Stage Plot Creator v1.0.0'
@@ -187,7 +178,7 @@
 						id: exportedItem.id,
 						name: exportedItem.name,
 						channel: exportedItem.channel || '',
-						musician: exportedItem.musician || '',
+						person_id: exportedItem.person_id ?? null,
 						itemData: exportedItem.itemData,
 						currentVariant: exportedItem.currentVariant || 'default',
 						width: exportedItem.position.width,
@@ -195,11 +186,6 @@
 						x: exportedItem.position.x,
 						y: exportedItem.position.y
 					}));
-				}
-
-				// Load musicians
-				if (jsonData.musicians && Array.isArray(jsonData.musicians)) {
-					musicians = jsonData.musicians;
 				}
 
 				// Update last modified to now since we just imported
