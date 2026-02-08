@@ -17,3 +17,4 @@ export * as migration004 from './migrations/004_add_person_meta.js';
 export * as migration005 from './migrations/005_add_songs.js';
 export * as migration006 from './migrations/006_add_gigs_setlists.js';
 export * as migration007 from './migrations/007_add_stage_dimensions.js';
+export * as migration008 from './migrations/008_add_gig_times_and_starred.js';

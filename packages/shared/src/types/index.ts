@@ -138,6 +138,7 @@ export interface Song {
 	starting_tempo?: number;
 	instruments?: string;
 	notes?: string;
+	starred?: number;
 	created_at?: string;
 	updated_at?: string;
 }
@@ -149,6 +150,8 @@ export interface Gig {
 	venue?: string;
 	date?: string;
 	time?: string;
+	set_time?: string;
+	changeover_minutes?: number;
 	plot_id?: string;
 	notes?: string;
 	created_at?: string;

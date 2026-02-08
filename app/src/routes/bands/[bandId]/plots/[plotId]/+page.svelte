@@ -5,12 +5,12 @@
 	import { MusicianCombobox, ItemCommandPalette, StagePatch, ImportExport } from '$lib';
 	import Selecto from 'selecto';
 	import Inspector from '$lib/components/Inspector.svelte';
-	import { onClickOutside, PressedKeys, StateHistory } from 'runed';
+	import { onClickOutside, PressedKeys } from 'runed';
 	import StageDeck from '$lib/components/StageDeck.svelte';
 	import { ContextMenu } from 'bits-ui';
 	import { db } from '$lib/db';
 	import { page } from '$app/stores';
-	import { goto } from '$app/navigation';
+	import { goto, beforeNavigate } from '$app/navigation';
 	import EditorToolbar from '$lib/components/EditorToolbar.svelte';
 	import MusicianPanel from '$lib/components/MusicianPanel.svelte';
 	import CanvasOverlay from '$lib/components/CanvasOverlay.svelte';
@@ -49,7 +49,12 @@
 					stagePlot.revision_date,
 					stagePlot.canvas.width,
 					stagePlot.canvas.height,
-					JSON.stringify({ items: $state.snapshot(stagePlot.items), musicians: $state.snapshot(stagePlot.musicians) }),
+					JSON.stringify({
+					items: $state.snapshot(stagePlot.items),
+					musicians: $state.snapshot(stagePlot.musicians),
+					undoLog: $state.snapshot(history.log),
+					redoStack: $state.snapshot(history.redoStack)
+				}),
 					bandId,
 					stagePlot.stage_width,
 					stagePlot.stage_depth
@@ -58,6 +63,32 @@
 		} catch (e) {
 			console.error('Failed to persist state:', e);
 		}
+	}
+
+	// Debounced write — collapses rapid changes (nudges, drags) into fewer DB writes
+	let writeTimer: ReturnType<typeof setTimeout> | null = null;
+	let writePromise: Promise<void> | null = null;
+
+	function debouncedWrite(delay = 300) {
+		if (writeTimer) clearTimeout(writeTimer);
+		writeTimer = setTimeout(() => {
+			writeTimer = null;
+			writePromise = write();
+		}, delay);
+	}
+
+	async function flushWrite() {
+		if (writeTimer) {
+			clearTimeout(writeTimer);
+			writeTimer = null;
+		}
+		writePromise = write();
+		await writePromise;
+	}
+
+	function commitChange() {
+		history.record($state.snapshot(stagePlot.items) as any[]);
+		debouncedWrite();
 	}
 
 	// Load state from SQLite on mount
@@ -82,13 +113,18 @@
 				stagePlot.canvas.height = row.canvas_height;
 				stagePlot.stage_width = row.stage_width ?? 24;
 				stagePlot.stage_depth = row.stage_depth ?? 16;
+				let savedUndoLog: { snapshot: any[]; timestamp: number }[] | undefined;
+				let savedRedoStack: any[][] | undefined;
 				if (row.metadata) {
 					try {
 						const meta = JSON.parse(row.metadata);
 						if (meta.items) stagePlot.items = meta.items;
 						if (meta.musicians) stagePlot.musicians = meta.musicians;
+						if (meta.undoLog) savedUndoLog = meta.undoLog;
+						if (meta.redoStack) savedRedoStack = meta.redoStack;
 					} catch { /* ignore parse errors */ }
 				}
+				history.startRecording(savedUndoLog, savedRedoStack);
 			} else {
 				// Plot doesn't exist — redirect back to band
 				goto(`/bands/${bandId}`, { replaceState: true });
@@ -109,14 +145,70 @@
 		}
 	}
 
-	// --- Undo / Redo with StateHistory ---
-	const history = new StateHistory(
-		() => $state.snapshot(stagePlot.items),
-		(itemsSnapshot) => {
-			stagePlot.items.splice(0, stagePlot.items.length, ...itemsSnapshot);
-			write();
+	// --- Undo / Redo with persistent PlotHistory ---
+	const MAX_HISTORY = 50;
+
+	class PlotHistory {
+		log = $state<{ snapshot: any[]; timestamp: number }[]>([]);
+		#redoStack = $state<any[][]>([]);
+		#pointer = $state(-1);
+		#recording = false;
+
+		get redoStack() { return this.#redoStack; }
+		get canUndo() { return this.#pointer > 0; }
+		get canRedo() { return this.#redoStack.length > 0; }
+
+		startRecording(savedLog?: { snapshot: any[]; timestamp: number }[], savedRedoStack?: any[][]) {
+			if (savedLog?.length) {
+				this.log = savedLog;
+				this.#pointer = savedLog.length - 1;
+			} else {
+				// Seed with current state
+				this.log = [{ snapshot: $state.snapshot(stagePlot.items) as any[], timestamp: Date.now() }];
+				this.#pointer = 0;
+			}
+			this.#redoStack = savedRedoStack ?? [];
+			this.#recording = true;
 		}
-	);
+
+		record(items: any[]) {
+			if (!this.#recording) return;
+			const snapshot = $state.snapshot(items) as any[];
+			// Trim any forward entries if we recorded after undoing
+			this.log = this.log.slice(0, this.#pointer + 1);
+			this.log.push({ snapshot, timestamp: Date.now() });
+			// Cap at MAX_HISTORY
+			if (this.log.length > MAX_HISTORY) {
+				this.log = this.log.slice(this.log.length - MAX_HISTORY);
+			}
+			this.#pointer = this.log.length - 1;
+			this.#redoStack = [];
+		}
+
+		undo() {
+			if (!this.canUndo) return;
+			// Push current state onto redo stack
+			this.#redoStack.push($state.snapshot(stagePlot.items) as any[]);
+			this.#pointer--;
+			const entry = this.log[this.#pointer];
+			stagePlot.items.splice(0, stagePlot.items.length, ...structuredClone(entry.snapshot));
+			debouncedWrite();
+		}
+
+		redo() {
+			if (!this.canRedo) return;
+			const snapshot = this.#redoStack.pop()!;
+			this.#pointer++;
+			// Update log pointer entry to match
+			if (this.#pointer >= this.log.length) {
+				this.log.push({ snapshot: $state.snapshot(snapshot) as any[], timestamp: Date.now() });
+			}
+			stagePlot.items.splice(0, stagePlot.items.length, ...structuredClone(snapshot));
+			debouncedWrite();
+		}
+	}
+
+	const history = new PlotHistory();
 
 	// Canvas state
 	let canvasEl = $state<HTMLElement | null>(null);
@@ -141,7 +233,7 @@
 			item.position.x = newX;
 			item.position.y = newY;
 		});
-		write();
+		commitChange();
 	}
 
 	function deleteSelected() {
@@ -149,7 +241,7 @@
 		const selectedIds = selectedItems.map((el: any) => parseInt(el.dataset?.id || '0'));
 		stagePlot.items = stagePlot.items.filter((item: any) => !selectedIds.includes(item.id));
 		clearSelections();
-		write();
+		commitChange();
 	}
 
 	function handleDeleteHotkey() {
@@ -233,7 +325,7 @@
 			const absoluteY = canvasHeight - relativeY - item.position.height / 2;
 			item.position.x = Math.max(0, Math.min(absoluteX, canvasWidth - item.position.width));
 			item.position.y = Math.max(0, Math.min(absoluteY, canvasHeight - item.position.height));
-			write();
+			commitChange();
 		}
 	}
 
@@ -270,7 +362,7 @@
 		}
 		prevStageWidth = newW;
 		prevStageDepth = newD;
-		write();
+		debouncedWrite();
 	});
 
 	let placingItem = $state<any>(null);
@@ -288,9 +380,21 @@
 		}
 	}
 
+	// --- Navigation guards: flush pending writes before leaving ---
+	beforeNavigate(async () => {
+		await flushWrite();
+	});
+
+	function handleBeforeUnload() {
+		// Best-effort: flush synchronously (async can't block unload)
+		flushWrite();
+	}
+
 	onMount(() => {
 		// Load saved state from SQLite (fire-and-forget since onMount can't be async with cleanup)
 		loadFromDb();
+
+		window.addEventListener('beforeunload', handleBeforeUnload);
 
 		selecto = new Selecto({
 			container: canvasEl,
@@ -343,6 +447,7 @@
 
 		return () => {
 			resizeObserver?.disconnect();
+			window.removeEventListener('beforeunload', handleBeforeUnload);
 		};
 	});
 
@@ -426,7 +531,7 @@
 			}
 
 			placingItem = null;
-			write();
+			commitChange();
 		} else {
 			const target = (event.target as HTMLElement);
 			const clickedItem = target.closest('.selectable-item');
@@ -485,7 +590,7 @@
 		const index = stagePlot.items.findIndex((item: any) => item.id === id);
 		if (index !== -1) {
 			stagePlot.items.splice(index, 1);
-			write();
+			commitChange();
 		}
 	}
 
@@ -503,7 +608,7 @@
 			newItem.position.y = Math.min(sourceItem.position.y + 20, canvasHeight - sourceItem.position.height);
 		}
 		stagePlot.items.push(newItem);
-		write();
+		commitChange();
 	}
 
 	function moveToFront(itemId: number) {
@@ -511,7 +616,7 @@
 		if (idx === -1 || idx === stagePlot.items.length - 1) return;
 		const [item] = stagePlot.items.splice(idx, 1);
 		stagePlot.items.push(item);
-		write();
+		commitChange();
 	}
 
 	function moveToBack(itemId: number) {
@@ -519,21 +624,21 @@
 		if (idx <= 0) return;
 		const [item] = stagePlot.items.splice(idx, 1);
 		stagePlot.items.unshift(item);
-		write();
+		commitChange();
 	}
 
 	function moveForward(itemId: number) {
 		const idx = stagePlot.items.findIndex((i: any) => i.id === itemId);
 		if (idx === -1 || idx === stagePlot.items.length - 1) return;
 		[stagePlot.items[idx], stagePlot.items[idx + 1]] = [stagePlot.items[idx + 1], stagePlot.items[idx]];
-		write();
+		commitChange();
 	}
 
 	function moveBackward(itemId: number) {
 		const idx = stagePlot.items.findIndex((i: any) => i.id === itemId);
 		if (idx <= 0) return;
 		[stagePlot.items[idx - 1], stagePlot.items[idx]] = [stagePlot.items[idx], stagePlot.items[idx - 1]];
-		write();
+		commitChange();
 	}
 
 	function openItemEditor(item: any, event: any) {
@@ -559,7 +664,7 @@
 			});
 			newMusician.name = '';
 			newMusician.instrument = '';
-			write();
+			debouncedWrite();
 		}
 	}
 
@@ -567,7 +672,7 @@
 		const index = stagePlot.musicians.findIndex((m: any) => m.id === id);
 		if (index !== -1) {
 			stagePlot.musicians.splice(index, 1);
-			write();
+			debouncedWrite();
 		}
 	}
 
@@ -598,7 +703,7 @@
 			} else {
 				item.position.x = x;
 				item.position.y = y;
-				write();
+				commitChange();
 			}
 		}
 	}
@@ -632,7 +737,7 @@
 		img.onload = () => {
 			item.position.width = img.naturalWidth;
 			item.position.height = img.naturalHeight;
-			write();
+			commitChange();
 		};
 		updateItemProperty(item.id, 'currentVariant', item.currentVariant);
 	}
@@ -654,7 +759,7 @@
 
 	function handlePatchItemUpdate(itemId: number, property: string, value: string) {
 		const item = stagePlot.items.find((i: any) => i.id === itemId);
-		if (item) { (item as any)[property] = value; write(); }
+		if (item) { (item as any)[property] = value; commitChange(); }
 	}
 
 	function updateItemProperty(itemId: number, property: string, value: string) {
@@ -673,7 +778,7 @@
 		} else {
 			(item as any)[property] = value;
 		}
-		write();
+		commitChange();
 	}
 
 	function handlePatchReorder(fromIndex: number, toIndex: number) {
@@ -681,7 +786,7 @@
 		if (fromIndex < 0 || toIndex < 0 || fromIndex >= stagePlot.items.length || toIndex >= stagePlot.items.length) return;
 		const [moved] = stagePlot.items.splice(fromIndex, 1);
 		stagePlot.items.splice(toIndex, 0, moved);
-		write();
+		commitChange();
 	}
 
 	function getNextAvailableChannel() {
@@ -698,7 +803,7 @@
 
 	function handlePatchRemoveItem(channel: number) {
 		stagePlot.items = stagePlot.items.filter((i: any) => i.channel !== String(channel));
-		write();
+		commitChange();
 	}
 
 	function placeRiser(riserWidth: number, riserDepth: number, riserHeight: number) {
@@ -729,7 +834,7 @@
 				instrument: persons[i].role || ''
 			});
 		}
-		write();
+		debouncedWrite();
 	}
 
 	async function handleExportPdf() {
@@ -746,7 +851,7 @@
 		clearSelections();
 		placingItem = null;
 		editingItem = null;
-		write();
+		commitChange();
 	}
 </script>
 
@@ -785,7 +890,7 @@
 				bind:lastModified={stagePlot.revision_date}
 				{getItemZone}
 				{getItemPosition}
-				onTitleChange={() => write()}
+				onTitleChange={() => debouncedWrite()}
 			/>
 
 			<!-- Canvas Card -->

@@ -33,6 +33,7 @@
 			starting_tempo: number | null;
 			instruments: string | null;
 			notes: string | null;
+			starred: number;
 		}[]
 	>([]);
 	let gigs = $state<
@@ -42,6 +43,8 @@
 			venue: string | null;
 			date: string | null;
 			time: string | null;
+			set_time: string | null;
+			changeover_minutes: number | null;
 			plot_id: string | null;
 			notes: string | null;
 		}[]
@@ -94,8 +97,9 @@
 			starting_tempo: number | null;
 			instruments: string | null;
 			notes: string | null;
+			starred: number;
 		}>(
-			'SELECT id, title, starting_key, starting_tempo, instruments, notes FROM songs WHERE band_id = ? ORDER BY title',
+			'SELECT id, title, starting_key, starting_tempo, instruments, notes, COALESCE(starred, 0) as starred FROM songs WHERE band_id = ? ORDER BY title',
 			[bandId]
 		);
 
@@ -105,10 +109,12 @@
 			venue: string | null;
 			date: string | null;
 			time: string | null;
+			set_time: string | null;
+			changeover_minutes: number | null;
 			plot_id: string | null;
 			notes: string | null;
 		}>(
-			'SELECT id, name, venue, date, time, plot_id, notes FROM gigs WHERE band_id = ? ORDER BY date DESC',
+			'SELECT id, name, venue, date, time, set_time, changeover_minutes, plot_id, notes FROM gigs WHERE band_id = ? ORDER BY date DESC',
 			[bandId]
 		);
 
@@ -149,7 +155,7 @@
 		<p class="text-text-secondary">Loading...</p>
 	</div>
 {:else if band}
-	<div class="flex flex-col gap-8">
+	<div class="flex flex-col gap-10">
 		<!-- Band Name -->
 		<div class="flex items-center gap-3">
 			<a
@@ -194,12 +200,17 @@
 			{:else}
 				<button
 					onclick={() => (editingBandName = true)}
-					class="text-left font-serif text-3xl font-bold text-text-primary transition hover:text-stone-600"
+					class="group/name flex items-center gap-2 text-left font-serif text-3xl font-bold text-text-primary transition hover:text-stone-600"
 				>
-					{band.name}
+					<span class="border-b border-dashed border-transparent group-hover/name:border-stone-400">{band.name}</span>
+					<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-text-tertiary opacity-0 transition group-hover/name:opacity-100" viewBox="0 0 20 20" fill="currentColor">
+						<path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+					</svg>
 				</button>
 			{/if}
 		</div>
+
+		<hr class="border-border-primary" />
 
 		<!-- Plots Section -->
 		<div>
@@ -283,11 +294,15 @@
 			{/if}
 		</div>
 
+		<hr class="border-border-primary" />
+
 		<!-- Two-Column Grid: People + Songs -->
 		<div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
 			<PeoplePanel {bandId} bind:persons />
 			<SongsPanel {bandId} bind:songs />
 		</div>
+
+		<hr class="border-border-primary" />
 
 		<!-- Gigs Section -->
 		<GigsSection

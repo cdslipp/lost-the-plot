@@ -36,7 +36,7 @@
 	});
 </script>
 
-<div class="flex h-[100dvh] flex-col gap-6 py-6">
+<div class="flex h-[100dvh] max-w-md mx-auto flex-col gap-6 py-6">
 	<div class="flex items-center justify-between">
 		<h1 class="font-serif text-3xl font-bold text-text-primary">Your Bands</h1>
 		<button
@@ -65,7 +65,7 @@
 			</button>
 		</div>
 	{:else}
-		<div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+		<div class="flex flex-col gap-3">
 			{#each bands as band (band.id)}
 				<a
 					href="/bands/{band.id}"

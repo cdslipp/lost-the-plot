@@ -175,12 +175,44 @@ function initializeItem(original: OriginalItem): CatalogItem {
 	};
 }
 
+function normalizeItem(
+	item: Partial<CatalogItem> & Pick<CatalogItem, 'name' | 'path' | 'item_type' | 'variants'>
+): CatalogItem {
+	return {
+		name: item.name,
+		item_type: item.item_type,
+		variants: item.variants,
+		path: item.path,
+		brand: item.brand ?? '',
+		model: item.model ?? '',
+		common_models: item.common_models ?? [],
+		slug: item.slug ?? slugify(item.path),
+		category: item.category ?? guessCategory(item.path),
+		subcategory: item.subcategory ?? '',
+		tags: item.tags ?? [],
+		default_inputs: item.default_inputs ?? [],
+		dimensions: item.dimensions ?? { width_in: 0, depth_in: 0, height_in: 0 },
+		provision_default: item.provision_default ?? '',
+		is_backline: item.is_backline ?? false,
+		connectors: item.connectors ?? [],
+		power_requirements: item.power_requirements ?? '',
+		notes: item.notes ?? '',
+		auto_number_prefix: item.auto_number_prefix ?? '',
+		person_subcategory: item.person_subcategory ?? '',
+		_enriched: item._enriched ?? false,
+		_original_name: item._original_name ?? item.name
+	};
+}
+
 export const load: PageServerLoad = async () => {
 	// Try enriched data first, filtering out any items whose assets are missing
 	if (existsSync(ENRICHED_PATH)) {
 		const data = await readFile(ENRICHED_PATH, 'utf-8');
-		const items: CatalogItem[] = JSON.parse(data);
-		return { items: items.filter((i) => existsSync(join(ASSETS_DIR, i.path))) };
+		const parsed = JSON.parse(data);
+		const items: CatalogItem[] = parsed
+			.filter((i: any) => existsSync(join(ASSETS_DIR, i.path)))
+			.map(normalizeItem);
+		return { items };
 	}
 
 	// Initialize from original items.json, filtering out items with missing asset dirs

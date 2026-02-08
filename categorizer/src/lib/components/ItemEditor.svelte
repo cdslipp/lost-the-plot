@@ -390,84 +390,76 @@
 				>
 					No default inputs. Click "+ Add Input" for items that generate audio channels when placed.
 				</div>
-			{/if}
-
-			<div class="space-y-3">
-				{#each item.default_inputs as input, i (i)}
-					<div class="rounded-lg border border-gray-200 bg-gray-50 p-3">
-						<div class="mb-2 flex items-center justify-between">
-							<span class="text-xs font-medium text-gray-500">Input {i + 1}</span>
-							<button
-								class="text-xs text-red-500 hover:text-red-700"
-								onclick={() => removeInput(i)}
-							>
-								Remove
-							</button>
-						</div>
-						<div class="grid grid-cols-2 gap-3">
-							<div>
-								<label for="input-{i}-name" class="mb-1 block text-xs text-gray-500">Name</label>
-								<input
-									id="input-{i}-name"
-									type="text"
-									placeholder="Kick In"
-									class="w-full rounded border-gray-300 text-sm"
-									bind:value={input.name}
-								/>
-							</div>
-							<div>
-								<label for="input-{i}-short" class="mb-1 block text-xs text-gray-500"
-									>Short name</label
-								>
-								<input
-									id="input-{i}-short"
-									type="text"
-									placeholder="KikIn"
-									class="w-full rounded border-gray-300 text-sm"
-									bind:value={input.short_name}
-								/>
-							</div>
-							<div>
-								<label for="input-{i}-stand" class="mb-1 block text-xs text-gray-500">Stand</label>
-								<select
-									id="input-{i}-stand"
-									class="w-full rounded border-gray-300 text-sm"
-									bind:value={input.stand}
-								>
-									{#each STAND_TYPES as stand (stand)}
-										<option value={stand}>{stand.replace(/_/g, ' ')}</option>
-									{/each}
-								</select>
-							</div>
-							<div>
-								<label for="input-{i}-link" class="mb-1 block text-xs text-gray-500"
-									>Link mode</label
-								>
-								<select
-									id="input-{i}-link"
-									class="w-full rounded border-gray-300 text-sm"
-									bind:value={input.link_mode}
-								>
-									{#each LINK_MODES as mode (mode)}
-										<option value={mode}>{mode.replace(/_/g, ' ')}</option>
-									{/each}
-								</select>
-							</div>
-							<div class="col-span-2">
-								<label for="input-{i}-phantom" class="flex items-center gap-2">
+			{:else}
+				<table class="w-full text-xs">
+					<thead>
+						<tr class="border-b border-gray-200 text-left text-gray-500">
+							<th class="px-2 py-1 font-medium">#</th>
+							<th class="px-2 py-1 font-medium">Name</th>
+							<th class="px-2 py-1 font-medium">Short</th>
+							<th class="px-2 py-1 font-medium">Stand</th>
+							<th class="px-2 py-1 font-medium">Link</th>
+							<th class="px-2 py-1 font-medium">48V</th>
+							<th class="px-2 py-1 font-medium"></th>
+						</tr>
+					</thead>
+					<tbody>
+						{#each item.default_inputs as input, i (i)}
+							<tr class="border-b border-gray-100">
+								<td class="px-2 py-1 text-gray-400">{i + 1}</td>
+								<td class="px-2 py-1">
 									<input
-										id="input-{i}-phantom"
+										type="text"
+										placeholder="Kick In"
+										class="w-full min-w-20 rounded border-gray-300 px-1 py-0.5 text-xs"
+										bind:value={input.name}
+									/>
+								</td>
+								<td class="px-2 py-1">
+									<input
+										type="text"
+										placeholder="KikIn"
+										class="w-full min-w-16 rounded border-gray-300 px-1 py-0.5 text-xs"
+										bind:value={input.short_name}
+									/>
+								</td>
+								<td class="px-2 py-1">
+									<select
+										class="rounded border-gray-300 px-1 py-0.5 text-xs"
+										bind:value={input.stand}
+									>
+										{#each STAND_TYPES as stand (stand)}
+											<option value={stand}>{stand.replace(/_/g, ' ')}</option>
+										{/each}
+									</select>
+								</td>
+								<td class="px-2 py-1">
+									<select
+										class="rounded border-gray-300 px-1 py-0.5 text-xs"
+										bind:value={input.link_mode}
+									>
+										{#each LINK_MODES as mode (mode)}
+											<option value={mode}>{mode.replace(/_/g, ' ')}</option>
+										{/each}
+									</select>
+								</td>
+								<td class="px-2 py-1 text-center">
+									<input
 										type="checkbox"
 										class="rounded border-gray-300 text-blue-600"
 										bind:checked={input.phantom_power}
 									/>
-									<span class="text-sm text-gray-700">Phantom power (48V)</span>
-								</label>
-							</div>
-						</div>
-					</div>
-				{/each}
-			</div>
+								</td>
+								<td class="px-2 py-1">
+									<button class="text-red-400 hover:text-red-600" onclick={() => removeInput(i)}>
+										&times;
+									</button>
+								</td>
+							</tr>
+						{/each}
+					</tbody>
+				</table>
+			{/if}
 		</section>
 
 		<!-- Common Models -->

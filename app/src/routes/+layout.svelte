@@ -5,9 +5,10 @@
 	import { ModeWatcher } from 'mode-watcher';
 	import { useRegisterSW } from 'virtual:pwa-register/svelte';
 	import { browser } from '$app/environment';
-	import { goto } from '$app/navigation';
+	import { goto, afterNavigate } from '$app/navigation';
 	import { page } from '$app/stores';
 	import { detectDevice } from '$lib/device';
+	import { onMount } from 'svelte';
 
 	let { children } = $props();
 
@@ -60,6 +61,53 @@
 		showRefresh = false;
 		showOffline = false;
 	}
+
+	// Cycling hero instrument animation
+	const instruments = [
+		'/final_assets/guitars/electric/electricguitar/electricguitar.png',
+		'/final_assets/guitars/acoustic/acousticguitar/acousticguitar.png',
+		'/final_assets/guitars/bass/p_bass/P_Bass.png',
+		'/final_assets/guitars/banjo/banjo/banjo.png',
+		'/final_assets/keys/keytar/keytar/keytar.png',
+		'/final_assets/keys/nordstage88/NordStage88.png',
+		'/final_assets/winds/trumpet/trumpet/trumpet.png',
+		'/final_assets/winds/altosax/altosax.png',
+		'/final_assets/strings/violin/violin/Violin.png',
+		'/final_assets/keys/mellotron/Mellotron.png'
+	];
+
+	let instrumentIndex = $state(0);
+	let instrumentVisible = $state(true);
+	let instrumentSpin = $state(false);
+	let clicking = false;
+
+	onMount(() => {
+		instrumentIndex = Math.floor(Math.random() * instruments.length);
+	});
+
+	afterNavigate(() => {
+		// Fade out, swap, fade in
+		instrumentVisible = false;
+		setTimeout(() => {
+			instrumentIndex = (instrumentIndex + 1) % instruments.length;
+			instrumentVisible = true;
+		}, 300);
+	});
+
+	function handleInstrumentClick() {
+		if (clicking) return;
+		clicking = true;
+		instrumentSpin = true;
+		// Halfway through the spin, swap the instrument
+		setTimeout(() => {
+			instrumentIndex = (instrumentIndex + 1) % instruments.length;
+		}, 200);
+		// End the spin
+		setTimeout(() => {
+			instrumentSpin = false;
+			clicking = false;
+		}, 500);
+	}
 </script>
 
 <svelte:head>
@@ -74,21 +122,46 @@
 		aria-hidden="true"
 	>
 		<div class="flex flex-col items-center pb-8">
-			<img
-				src="/final_assets/guitars/electric/electricguitar/electricguitar.png"
-				alt=""
-				class="mb-4 w-16 opacity-20 dark:opacity-15"
-				style="transform: rotate(-8deg);"
-			/>
 			<span
-				class="whitespace-nowrap font-serif text-[clamp(7rem,15vh,13rem)] font-bold leading-none tracking-tight text-stone-300 dark:text-stone-700"
-				style="writing-mode: vertical-lr; transform: rotate(180deg);"
+				class="whitespace-nowrap font-serif text-[clamp(5rem,12vh,10rem)] font-bold leading-none text-stone-300 dark:text-stone-700"
+				style="writing-mode: vertical-lr; transform: rotate(180deg); letter-spacing: 0.05em;"
 			>
 				Lost the Plot
 			</span>
 		</div>
 	</div>
-	<div class="relative z-10 container mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-8">
+	<!-- Clickable instrument — own stacking context above content -->
+	<div
+		class="pointer-events-none fixed left-0 top-0 z-20 flex h-screen items-end select-none"
+	>
+		<div class="flex flex-col items-center pb-8">
+			<button
+				class="pointer-events-auto mb-4 h-20 w-16 cursor-pointer border-none bg-transparent p-0 outline-none"
+				style="transform: rotate(-8deg);"
+				onclick={handleInstrumentClick}
+				aria-label="Change instrument"
+			>
+				<img
+					src={instruments[instrumentIndex]}
+					alt=""
+					class="h-full w-full object-contain"
+					class:instrument-spin={instrumentSpin}
+					class:instrument-idle={!instrumentSpin}
+					style:opacity={instrumentSpin ? undefined : (instrumentVisible ? '0.2' : '0')}
+					style:transition={instrumentSpin ? 'none' : 'opacity 300ms'}
+				/>
+			</button>
+			<!-- Invisible spacer matching wordmark text height -->
+			<span
+				class="invisible whitespace-nowrap font-serif text-[clamp(5rem,12vh,10rem)] font-bold leading-none"
+				style="writing-mode: vertical-lr;"
+				aria-hidden="true"
+			>
+				Lost the Plot
+			</span>
+		</div>
+	</div>
+	<div class="relative z-10 container mx-auto max-w-[1600px] pl-28 pr-4 sm:pl-32 sm:pr-6 lg:pl-36 lg:pr-8">
 		{@render children()}
 	</div>
 </div>
@@ -110,3 +183,28 @@
 		<button onclick={close} class="text-xs text-text-tertiary hover:text-text-primary">Close</button>
 	</div>
 {/if}
+
+<style>
+	.instrument-spin {
+		animation: spin-swap 500ms cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+	}
+
+	@keyframes spin-swap {
+		0% {
+			transform: scale(1) rotate(0deg);
+			opacity: 0.2;
+		}
+		40% {
+			transform: scale(0.3) rotate(360deg);
+			opacity: 0;
+		}
+		60% {
+			transform: scale(0.3) rotate(360deg);
+			opacity: 0;
+		}
+		100% {
+			transform: scale(1) rotate(720deg);
+			opacity: 0.2;
+		}
+	}
+</style>

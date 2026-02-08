@@ -62,6 +62,14 @@
 
 	let enrichedCount = $derived(items.filter((i) => i._enriched).length);
 
+	let listContainer: HTMLDivElement;
+
+	$effect(() => {
+		if (!selectedPath || !listContainer) return;
+		const el = listContainer.querySelector(`[data-path="${CSS.escape(selectedPath)}"]`);
+		el?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+	});
+
 	export function getFilteredItems() {
 		return filteredItems;
 	}
@@ -126,10 +134,11 @@
 	</div>
 
 	<!-- Item list -->
-	<div class="flex-1 overflow-y-auto">
+	<div class="flex-1 overflow-y-auto" bind:this={listContainer}>
 		{#each filteredItems as item (item.path)}
 			{@const isMultiSelected = multiSelected.has(item.path)}
 			<button
+				data-path={item.path}
 				class="flex w-full items-center gap-2 border-b border-gray-50 px-3 py-2 text-left text-sm transition-colors hover:bg-gray-50
 					{item.path === selectedPath ? 'border-l-2 border-l-blue-500 bg-blue-50' : ''}
 					{isMultiSelected ? 'bg-indigo-50' : ''}"

@@ -8,6 +8,7 @@
 		starting_tempo: number | null;
 		instruments: string | null;
 		notes: string | null;
+		starred: number;
 	}
 
 	let {
@@ -28,6 +29,14 @@
 		instruments: '',
 		notes: ''
 	});
+
+	// Sort: starred first (alphabetically), then unstarred (alphabetically)
+	const sortedSongs = $derived(
+		[...songs].sort((a, b) => {
+			if (a.starred !== b.starred) return b.starred - a.starred;
+			return a.title.localeCompare(b.title);
+		})
+	);
 
 	async function addSong() {
 		if (!newSong.title.trim()) return;
@@ -51,7 +60,8 @@
 				starting_key: newSong.starting_key.trim() || null,
 				starting_tempo: tempo,
 				instruments: newSong.instruments.trim() || null,
-				notes: newSong.notes.trim() || null
+				notes: newSong.notes.trim() || null,
+				starred: 0
 			}
 		];
 		newSong = { title: '', starting_key: '', starting_tempo: '', instruments: '', notes: '' };
@@ -80,6 +90,18 @@
 				(s as any)[field] = value || null;
 			}
 		}
+	}
+
+	async function toggleStar(songId: number) {
+		const s = songs.find((s) => s.id === songId);
+		if (!s) return;
+		const newVal = s.starred ? 0 : 1;
+		await db.run("UPDATE songs SET starred = ?, updated_at = datetime('now') WHERE id = ?", [
+			newVal,
+			songId
+		]);
+		s.starred = newVal;
+		songs = [...songs];
 	}
 </script>
 
@@ -180,9 +202,9 @@
 		</div>
 	{:else}
 		<div class="space-y-2">
-			{#each songs as song (song.id)}
+			{#each sortedSongs as song (song.id)}
 				<div
-					class="group rounded-xl border border-border-primary bg-surface p-3 shadow-sm"
+					class="group rounded-xl border border-border-primary bg-surface p-3 shadow-sm {song.starred ? 'border-amber-200 dark:border-amber-800/40' : ''}"
 				>
 					{#if editingSongId === song.id}
 						<div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
@@ -257,6 +279,21 @@
 					{:else}
 						<div class="flex items-center justify-between">
 							<div class="flex flex-1 items-center gap-2">
+								<button
+									onclick={() => toggleStar(song.id)}
+									class="shrink-0 rounded p-0.5 transition hover:scale-110 {song.starred ? 'text-amber-500' : 'text-text-tertiary opacity-0 group-hover:opacity-100'}"
+									title={song.starred ? 'Unstar' : 'Star'}
+								>
+									{#if song.starred}
+										<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+											<path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+										</svg>
+									{:else}
+										<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+											<path stroke-linecap="round" stroke-linejoin="round" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+										</svg>
+									{/if}
+								</button>
 								<span class="font-medium text-text-primary">{song.title}</span>
 								{#if song.starting_key}
 									<span

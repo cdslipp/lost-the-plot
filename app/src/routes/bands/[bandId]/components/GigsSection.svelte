@@ -20,6 +20,8 @@
 		venue: string | null;
 		date: string | null;
 		time: string | null;
+		set_time: string | null;
+		changeover_minutes: number | null;
 		plot_id: string | null;
 		notes: string | null;
 	}
@@ -61,6 +63,8 @@
 		venue: '',
 		date: new Date().toISOString().slice(0, 10),
 		time: '20:00',
+		set_time: '',
+		changeover_minutes: '' as string,
 		plot_id: '',
 		notes: ''
 	});
@@ -82,14 +86,17 @@
 
 	async function addGig() {
 		if (!newGig.name.trim()) return;
+		const changeover = newGig.changeover_minutes ? parseInt(newGig.changeover_minutes) : null;
 		const result = await db.run(
-			'INSERT INTO gigs (band_id, name, venue, date, time, plot_id, notes) VALUES (?, ?, ?, ?, ?, ?, ?)',
+			'INSERT INTO gigs (band_id, name, venue, date, time, set_time, changeover_minutes, plot_id, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
 			[
 				bandId,
 				newGig.name.trim(),
 				newGig.venue.trim() || null,
 				newGig.date || null,
 				newGig.time || null,
+				newGig.set_time || null,
+				changeover,
 				newGig.plot_id || null,
 				newGig.notes.trim() || null
 			]
@@ -108,6 +115,8 @@
 			venue: newGig.venue.trim() || null,
 			date: newGig.date || null,
 			time: newGig.time || null,
+			set_time: newGig.set_time || null,
+			changeover_minutes: changeover,
 			plot_id: newGig.plot_id || null,
 			notes: newGig.notes.trim() || null
 		};
@@ -119,7 +128,7 @@
 		];
 		gigSetlistSongs[gigId] = { [setlistResult.lastInsertRowid]: [] };
 
-		newGig = { name: '', venue: '', date: new Date().toISOString().slice(0, 10), time: '20:00', plot_id: '', notes: '' };
+		newGig = { name: '', venue: '', date: new Date().toISOString().slice(0, 10), time: '20:00', set_time: '', changeover_minutes: '', plot_id: '', notes: '' };
 		showAddGig = false;
 	}
 
@@ -131,12 +140,22 @@
 	}
 
 	async function updateGig(gigId: number, field: string, value: string) {
+		let dbValue: string | number | null = value || null;
+		if (field === 'changeover_minutes') {
+			dbValue = value ? parseInt(value) : null;
+		}
 		await db.run(`UPDATE gigs SET ${field} = ?, updated_at = datetime('now') WHERE id = ?`, [
-			value || null,
+			dbValue,
 			gigId
 		]);
 		const g = gigs.find((g) => g.id === gigId);
-		if (g) (g as any)[field] = value || null;
+		if (g) {
+			if (field === 'changeover_minutes') {
+				g.changeover_minutes = value ? parseInt(value) : null;
+			} else {
+				(g as any)[field] = value || null;
+			}
+		}
 	}
 
 	async function toggleExpand(gigId: number) {
@@ -266,6 +285,26 @@
 						<input
 							bind:value={newGig.time}
 							type="time"
+							class="w-full rounded-lg border border-border-primary bg-surface px-3 py-2 text-sm text-text-primary focus:border-stone-500 focus:ring-2 focus:ring-stone-500"
+						/>
+					</div>
+				</div>
+				<div class="grid grid-cols-2 gap-3">
+					<div>
+						<label class="mb-1 block text-xs font-medium text-text-secondary">Set Time</label>
+						<input
+							bind:value={newGig.set_time}
+							type="time"
+							class="w-full rounded-lg border border-border-primary bg-surface px-3 py-2 text-sm text-text-primary focus:border-stone-500 focus:ring-2 focus:ring-stone-500"
+						/>
+					</div>
+					<div>
+						<label class="mb-1 block text-xs font-medium text-text-secondary">Changeover (min)</label>
+						<input
+							bind:value={newGig.changeover_minutes}
+							type="number"
+							min="0"
+							placeholder="e.g. 30"
 							class="w-full rounded-lg border border-border-primary bg-surface px-3 py-2 text-sm text-text-primary focus:border-stone-500 focus:ring-2 focus:ring-stone-500"
 						/>
 					</div>
@@ -401,7 +440,13 @@
 							<span>{formatDate(gig.date)}</span>
 						{/if}
 						{#if gig.time}
-							<span>{formatTime(gig.time)}</span>
+							<span>Load-in {formatTime(gig.time)}</span>
+						{/if}
+						{#if gig.set_time}
+							<span>Set {formatTime(gig.set_time)}</span>
+						{/if}
+						{#if gig.changeover_minutes}
+							<span class="rounded-full bg-stone-100 px-1.5 py-0.5 text-xs text-stone-600 dark:bg-stone-800 dark:text-stone-400">{gig.changeover_minutes} min changeover</span>
 						{/if}
 						{#if gig.venue}
 							<span class="text-text-tertiary">{gig.venue}</span>
@@ -487,6 +532,29 @@
 								type="time"
 								onchange={(e) =>
 									updateGig(gig.id, 'time', (e.target as HTMLInputElement).value)}
+								class="w-full rounded-lg border border-border-primary bg-surface px-2 py-1.5 text-sm"
+							/>
+						</div>
+					</div>
+					<div class="grid grid-cols-2 gap-3">
+						<div>
+							<label class="mb-1 block text-xs font-medium text-text-secondary">Set Time</label>
+							<input
+								value={gig.set_time || ''}
+								type="time"
+								onchange={(e) =>
+									updateGig(gig.id, 'set_time', (e.target as HTMLInputElement).value)}
+								class="w-full rounded-lg border border-border-primary bg-surface px-2 py-1.5 text-sm"
+							/>
+						</div>
+						<div>
+							<label class="mb-1 block text-xs font-medium text-text-secondary">Changeover (min)</label>
+							<input
+								value={gig.changeover_minutes ?? ''}
+								type="number"
+								min="0"
+								onchange={(e) =>
+									updateGig(gig.id, 'changeover_minutes', (e.target as HTMLInputElement).value)}
 								class="w-full rounded-lg border border-border-primary bg-surface px-2 py-1.5 text-sm"
 							/>
 						</div>
