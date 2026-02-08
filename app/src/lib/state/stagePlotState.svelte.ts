@@ -107,18 +107,7 @@ export class StagePlotState {
 	bandPersons = $state<
 		{ id: number; name: string; role: string | null; member_type: string | null }[]
 	>([]);
-	bandPersonsFull = $state<
-		{
-			id: number;
-			name: string;
-			role: string | null;
-			pronouns: string | null;
-			phone: string | null;
-			email: string | null;
-			member_type: string | null;
-			status: string | null;
-		}[]
-	>([]);
+	bandPersonsFull = $state<any[]>([]);
 
 	// UI state
 	showZones = $state(true);
@@ -149,7 +138,7 @@ export class StagePlotState {
 	constructor(plotId: string, bandId: string) {
 		this.plotId = plotId;
 		this.bandId = bandId;
-		this.history = new PlotHistory();
+		this.history = new PlotHistory(this.items, () => this.debouncedWrite());
 
 		// Load unit preference from localStorage
 		if (typeof window !== 'undefined') {
@@ -254,9 +243,9 @@ export class StagePlotState {
 		this.outputStereoLinks = Array.isArray(meta.outputStereoLinks) ? meta.outputStereoLinks : [];
 
 		// Restore history
-		if (Array.isArray(meta.undoLog)) this.history.log = meta.undoLog;
-		if (Array.isArray(meta.redoStack)) this.history.redoStack = meta.redoStack;
-		this.history.startRecording($state.snapshot(this.items) as any[]);
+		const savedLog = Array.isArray(meta.undoLog) ? meta.undoLog : undefined;
+		const savedRedoStack = Array.isArray(meta.redoStack) ? meta.redoStack : undefined;
+		this.history.startRecording(savedLog, savedRedoStack);
 
 		// Load people
 		const personIds = await getPlotPersonIds(this.plotId);
