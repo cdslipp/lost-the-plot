@@ -1004,37 +1004,8 @@
 				<EditorSidePanel
 					bind:activeTab={sidePanelTab}
 					bind:selectedItems
-					bind:items={ps.items}
-					persons={ps.plotPersons}
-					bind:title={ps.plotName}
-					bind:lastModified={ps.revisionDate}
-					bind:showZones={ps.showZones}
-					bind:stageWidth={ps.stageWidth}
-					bind:stageDepth={ps.stageDepth}
-					bind:unit={ps.unit}
-					bind:pdfPageFormat={ps.pdfPageFormat}
 					onPlaceRiser={placeRiser}
-					onUpdateItem={(id, prop, val) => ps.updateItemProperty(id, prop, val)}
-					getItemZone={(item) => ps.getItemZone(item)}
-					getItemPosition={(item) => ps.getItemPosition(item)}
-					updateItemPosition={(id, x, y) => ps.updateItemPosition(id, x, y)}
-					bandPersons={ps.bandPersons}
-					plotPersonIds={ps.plotPersonIds}
 					onAddPersonToPlot={addPersonToPlot}
-					onCreatePerson={createPerson}
-					onRemovePersonFromPlot={(id) => ps.removePersonFromPlot(id)}
-					consoleType={ps.consoleType}
-					consoleDef={ps.consoleDef}
-					consoleOptions={ps.consoleOptions}
-					categoryColorDefaults={ps.categoryColorDefaults}
-					inputChannelMode={ps.inputChannelMode}
-					outputChannelMode={ps.outputChannelMode}
-					channelOptions={ps.consoleDef?.channelOptions ?? StagePlotState.CHANNEL_OPTIONS}
-					outputOptions={ps.consoleDef?.outputOptions ?? StagePlotState.CHANNEL_OPTIONS}
-					onConsoleTypeChange={(t) => ps.setConsoleType(t)}
-					onCategoryColorDefaultsChange={(d) => ps.setCategoryColorDefaults(d)}
-					onInputChannelModeChange={(m) => (ps.inputChannelMode = m as ChannelMode)}
-					onOutputChannelModeChange={(m) => (ps.outputChannelMode = m as ChannelMode)}
 				/>
 			</div>
 		</div>
@@ -1081,37 +1052,8 @@
 				<EditorSidePanel
 					bind:activeTab={sidePanelTab}
 					bind:selectedItems
-					bind:items={ps.items}
-					persons={ps.plotPersons}
-					bind:title={ps.plotName}
-					bind:lastModified={ps.revisionDate}
-					bind:showZones={ps.showZones}
-					bind:stageWidth={ps.stageWidth}
-					bind:stageDepth={ps.stageDepth}
-					bind:unit={ps.unit}
-					bind:pdfPageFormat={ps.pdfPageFormat}
 					onPlaceRiser={placeRiser}
-					onUpdateItem={(id, prop, val) => ps.updateItemProperty(id, prop, val)}
-					getItemZone={(item) => ps.getItemZone(item)}
-					getItemPosition={(item) => ps.getItemPosition(item)}
-					updateItemPosition={(id, x, y) => ps.updateItemPosition(id, x, y)}
-					bandPersons={ps.bandPersons}
-					plotPersonIds={ps.plotPersonIds}
 					onAddPersonToPlot={addPersonToPlot}
-					onCreatePerson={createPerson}
-					onRemovePersonFromPlot={(id) => ps.removePersonFromPlot(id)}
-					consoleType={ps.consoleType}
-					consoleDef={ps.consoleDef}
-					consoleOptions={ps.consoleOptions}
-					categoryColorDefaults={ps.categoryColorDefaults}
-					inputChannelMode={ps.inputChannelMode}
-					outputChannelMode={ps.outputChannelMode}
-					channelOptions={ps.consoleDef?.channelOptions ?? StagePlotState.CHANNEL_OPTIONS}
-					outputOptions={ps.consoleDef?.outputOptions ?? StagePlotState.CHANNEL_OPTIONS}
-					onConsoleTypeChange={(t) => ps.setConsoleType(t)}
-					onCategoryColorDefaultsChange={(d) => ps.setCategoryColorDefaults(d)}
-					onInputChannelModeChange={(m) => (ps.inputChannelMode = m as ChannelMode)}
-					onOutputChannelModeChange={(m) => (ps.outputChannelMode = m as ChannelMode)}
 				/>
 			</div>
 		</div>
@@ -1158,37 +1100,8 @@
 						<EditorSidePanel
 							bind:activeTab={mobilePanelTab}
 							bind:selectedItems
-							bind:items={ps.items}
-							persons={ps.plotPersons}
-							bind:title={ps.plotName}
-							bind:lastModified={ps.revisionDate}
-							bind:showZones={ps.showZones}
-							bind:stageWidth={ps.stageWidth}
-							bind:stageDepth={ps.stageDepth}
-							bind:unit={ps.unit}
-							bind:pdfPageFormat={ps.pdfPageFormat}
 							onPlaceRiser={placeRiser}
-							onUpdateItem={(id, prop, val) => ps.updateItemProperty(id, prop, val)}
-							getItemZone={(item) => ps.getItemZone(item)}
-							getItemPosition={(item) => ps.getItemPosition(item)}
-							updateItemPosition={(id, x, y) => ps.updateItemPosition(id, x, y)}
-							bandPersons={ps.bandPersons}
-							plotPersonIds={ps.plotPersonIds}
 							onAddPersonToPlot={addPersonToPlot}
-							onCreatePerson={createPerson}
-							onRemovePersonFromPlot={(id) => ps.removePersonFromPlot(id)}
-							consoleType={ps.consoleType}
-							consoleDef={ps.consoleDef}
-							consoleOptions={ps.consoleOptions}
-							categoryColorDefaults={ps.categoryColorDefaults}
-							inputChannelMode={ps.inputChannelMode}
-							outputChannelMode={ps.outputChannelMode}
-							channelOptions={ps.consoleDef?.channelOptions ?? StagePlotState.CHANNEL_OPTIONS}
-							outputOptions={ps.consoleDef?.outputOptions ?? StagePlotState.CHANNEL_OPTIONS}
-							onConsoleTypeChange={(t) => ps.setConsoleType(t)}
-							onCategoryColorDefaultsChange={(d) => ps.setCategoryColorDefaults(d)}
-							onInputChannelModeChange={(m) => (ps.inputChannelMode = m as ChannelMode)}
-							onOutputChannelModeChange={(m) => (ps.outputChannelMode = m as ChannelMode)}
 						/>
 					</div>
 				{/if}

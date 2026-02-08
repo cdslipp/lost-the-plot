@@ -2,83 +2,22 @@
 	import Inspector from './Inspector.svelte';
 	import PlotPeoplePanel from './PlotPeoplePanel.svelte';
 	import SettingsPanel from './SettingsPanel.svelte';
-	import type { UnitSystem } from '$lib/utils/scale';
 	import type { ProcessedItem } from '$lib/utils/finalAssetsLoader';
-	import type { StagePlotItem } from '@stageplotter/shared';
 
 	type Props = {
 		activeTab: 'inspector' | 'people' | 'settings';
-		// Inspector props (forwarded with $bindable)
+		// Inspector-only props
 		selectedItems: HTMLElement[];
-		items: StagePlotItem[];
-		persons: { id: number; name: string; role?: string | null }[];
-		title: string;
-		lastModified: string;
-		showZones: boolean;
-		stageWidth: number;
-		stageDepth: number;
-		unit: UnitSystem;
-		pdfPageFormat: 'letter' | 'a4';
 		onPlaceRiser: (w: number, d: number, h: number) => void;
-		onUpdateItem: (id: number, prop: string, val: string) => void;
-		getItemZone: (item: StagePlotItem) => string;
-		getItemPosition: (item: StagePlotItem) => { x: number; y: number };
-		updateItemPosition: (id: number, x: number, y: number) => void;
-		// People panel props
-		bandPersons: { id: number; name: string; role: string | null; member_type: string | null }[];
-		plotPersonIds: Set<number>;
+		// People panel -- needs page-level callback for placement integration
 		onAddPersonToPlot: (personId: number, silhouetteItem: ProcessedItem) => void;
-		onCreatePerson: (name: string) => Promise<number>;
-		onRemovePersonFromPlot: (personId: number) => void;
-		// Settings panel props
-		consoleType: string | null;
-		consoleDef: any | null;
-		consoleOptions: { id: string; name: string }[];
-		categoryColorDefaults: Record<string, string>;
-		inputChannelMode: number;
-		outputChannelMode: number;
-		channelOptions: number[];
-		outputOptions: number[];
-		onConsoleTypeChange: (type: string | null) => void;
-		onCategoryColorDefaultsChange: (defaults: Record<string, string>) => void;
-		onInputChannelModeChange: (mode: number) => void;
-		onOutputChannelModeChange: (mode: number) => void;
 	};
 
 	let {
 		activeTab = $bindable(),
 		selectedItems = $bindable(),
-		items = $bindable(),
-		persons,
-		title = $bindable(),
-		lastModified = $bindable(),
-		showZones = $bindable(),
-		stageWidth = $bindable(),
-		stageDepth = $bindable(),
-		unit = $bindable(),
-		pdfPageFormat = $bindable(),
 		onPlaceRiser,
-		onUpdateItem,
-		getItemZone,
-		getItemPosition,
-		updateItemPosition,
-		bandPersons,
-		plotPersonIds,
-		onAddPersonToPlot,
-		onCreatePerson,
-		onRemovePersonFromPlot,
-		consoleType,
-		consoleDef,
-		consoleOptions,
-		categoryColorDefaults,
-		inputChannelMode,
-		outputChannelMode,
-		channelOptions,
-		outputOptions,
-		onConsoleTypeChange,
-		onCategoryColorDefaultsChange,
-		onInputChannelModeChange,
-		onOutputChannelModeChange
+		onAddPersonToPlot
 	}: Props = $props();
 </script>
 
@@ -112,51 +51,15 @@
 	</div>
 	{#if activeTab === 'inspector'}
 		<div class="min-h-0 flex-1 overflow-hidden p-4">
-			<Inspector
-				bind:selectedItems
-				bind:items
-				{persons}
-				bind:title
-				bind:lastModified
-				bind:showZones
-				bind:stageWidth
-				bind:stageDepth
-				bind:unit
-				bind:pdfPageFormat
-				{onPlaceRiser}
-				{onUpdateItem}
-				{getItemZone}
-				{getItemPosition}
-				{updateItemPosition}
-			/>
+			<Inspector bind:selectedItems {onPlaceRiser} />
 		</div>
 	{:else if activeTab === 'people'}
 		<div class="min-h-0 flex-1 overflow-auto p-4">
-			<PlotPeoplePanel
-				{bandPersons}
-				{plotPersonIds}
-				{items}
-				{onAddPersonToPlot}
-				{onCreatePerson}
-				{onRemovePersonFromPlot}
-			/>
+			<PlotPeoplePanel {onAddPersonToPlot} />
 		</div>
 	{:else}
 		<div class="min-h-0 flex-1 overflow-auto p-4">
-			<SettingsPanel
-				{consoleType}
-				{consoleDef}
-				{consoleOptions}
-				{categoryColorDefaults}
-				{inputChannelMode}
-				{outputChannelMode}
-				{channelOptions}
-				{outputOptions}
-				{onConsoleTypeChange}
-				{onCategoryColorDefaultsChange}
-				{onInputChannelModeChange}
-				{onOutputChannelModeChange}
-			/>
+			<SettingsPanel />
 		</div>
 	{/if}
 </div>

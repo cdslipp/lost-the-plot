@@ -1,24 +1,15 @@
 <script lang="ts">
 	import PersonSilhouettePicker from './PersonSilhouettePicker.svelte';
 	import type { ProcessedItem } from '$lib/utils/finalAssetsLoader';
+	import { getPlotState } from '$lib/state/stagePlotState.svelte';
 
 	type Props = {
-		bandPersons: { id: number; name: string; role: string | null; member_type: string | null }[];
-		plotPersonIds: Set<number>;
-		items: { id: number; name: string; person_id: number | null; itemData?: any }[];
 		onAddPersonToPlot: (personId: number, silhouetteItem: ProcessedItem) => void;
-		onCreatePerson: (name: string) => Promise<number>;
-		onRemovePersonFromPlot: (personId: number) => void;
 	};
 
-	let {
-		bandPersons,
-		plotPersonIds,
-		items,
-		onAddPersonToPlot,
-		onCreatePerson,
-		onRemovePersonFromPlot
-	}: Props = $props();
+	let { onAddPersonToPlot }: Props = $props();
+
+	const ps = getPlotState();
 
 	let showNewPersonInput = $state(false);
 	let newPersonName = $state('');
@@ -27,14 +18,14 @@
 	let pickerPersonName = $state('');
 
 	// People on the plot
-	const onPlot = $derived(bandPersons.filter((p) => plotPersonIds.has(p.id)));
+	const onPlot = $derived(ps.bandPersons.filter((p) => ps.plotPersonIds.has(p.id)));
 
 	// People in the band but not yet on the plot
-	const offPlot = $derived(bandPersons.filter((p) => !plotPersonIds.has(p.id)));
+	const offPlot = $derived(ps.bandPersons.filter((p) => !ps.plotPersonIds.has(p.id)));
 
 	// Items assigned to a given person
 	function getPersonItems(personId: number) {
-		return items.filter((i) => i.person_id === personId);
+		return ps.items.filter((i) => i.person_id === personId);
 	}
 
 	function handleAddClick(person: { id: number; name: string }) {
@@ -54,7 +45,7 @@
 	async function handleCreatePerson() {
 		const name = newPersonName.trim();
 		if (!name) return;
-		const personId = await onCreatePerson(name);
+		const personId = await ps.createAndAddPerson(name);
 		newPersonName = '';
 		showNewPersonInput = false;
 		// Open silhouette picker for the new person
@@ -83,7 +74,7 @@
 							{/if}
 						</div>
 						<button
-							onclick={() => onRemovePersonFromPlot(person.id)}
+							onclick={() => ps.removePersonFromPlot(person.id)}
 							class="text-red-500 hover:text-red-700"
 							title="Remove from plot"
 						>
