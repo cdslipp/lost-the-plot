@@ -152,8 +152,15 @@
 			await exportToPdf({
 				plotName,
 				canvasEl,
-				items: plot.items,
-				musicians: plot.musicians
+				items: plot.items.map((i) => ({
+					name: i.name || i.itemData?.name || '',
+					channel: i.channel || '',
+					person_name: i.musician || ''
+				})),
+				persons: plot.musicians.map((m) => ({
+					name: m.name,
+					role: m.instrument || ''
+				}))
 			});
 		} finally {
 			exportingPdf = false;

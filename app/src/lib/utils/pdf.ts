@@ -174,7 +174,20 @@ export async function exportToPdf({
 		}
 	}
 
-	// Save
+	// Save — manual blob download so repeated exports work without a page refresh.
+	// jsPDF's built-in save() leaks blob URLs and browsers suppress repeated
+	// downloads of the same filename; creating + revoking our own URL avoids both.
 	const filename = (plotName || 'stage-plot').replace(/[^a-zA-Z0-9-_ ]/g, '').replace(/\s+/g, '-');
-	doc.save(`${filename}.pdf`);
+	const blob = doc.output('blob');
+	const url = URL.createObjectURL(blob);
+	const a = document.createElement('a');
+	a.href = url;
+	a.download = `${filename}.pdf`;
+	document.body.appendChild(a);
+	a.click();
+	// Small delay before cleanup so the browser has time to start the download
+	setTimeout(() => {
+		document.body.removeChild(a);
+		URL.revokeObjectURL(url);
+	}, 100);
 }

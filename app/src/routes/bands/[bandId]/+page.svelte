@@ -19,6 +19,7 @@
 			id: number;
 			name: string;
 			role: string | null;
+			pronouns: string | null;
 			phone: string | null;
 			email: string | null;
 			member_type: string | null;
@@ -81,12 +82,13 @@
 			id: number;
 			name: string;
 			role: string | null;
+			pronouns: string | null;
 			phone: string | null;
 			email: string | null;
 			member_type: string | null;
 			status: string | null;
 		}>(
-			'SELECT id, name, role, phone, email, member_type, status FROM persons WHERE band_id = ? ORDER BY name',
+			'SELECT id, name, role, pronouns, phone, email, member_type, status FROM persons WHERE band_id = ? ORDER BY name',
 			[bandId]
 		);
 
