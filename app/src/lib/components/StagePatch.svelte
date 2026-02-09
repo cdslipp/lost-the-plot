@@ -265,10 +265,29 @@
 		);
 	}
 
+	// Channel conflict error state
+	let channelConflict = $state<{ channel: number; message: string } | null>(null);
+	let channelConflictTimer: ReturnType<typeof setTimeout> | null = null;
+
+	function showChannelConflict(channel: number) {
+		if (channelConflictTimer) clearTimeout(channelConflictTimer);
+		channelConflict = {
+			channel,
+			message: `Ch ${channel} already assigned — clear it first`
+		};
+		channelConflictTimer = setTimeout(() => {
+			channelConflict = null;
+		}, 3000);
+	}
+
 	// Handle input item selection
 	function handleInputItemSelect(channel: number, item: ProcessedItem | null) {
 		if (item) {
-			// Add or overwrite canvas for this channel
+			// Prevent overwriting an already-assigned channel
+			if (selectedInputItemsByChannel[channel]) {
+				showChannelConflict(channel);
+				return;
+			}
 			onAddItem?.(item, channel);
 		} else {
 			// Clear channel on canvas
@@ -325,7 +344,30 @@
 	});
 </script>
 
-<div class="h-full overflow-hidden rounded-xl border border-border-primary bg-surface shadow-sm">
+<div
+	class="relative h-full overflow-hidden rounded-xl border border-border-primary bg-surface shadow-sm"
+>
+	{#if channelConflict}
+		<div
+			class="absolute top-2 right-2 left-2 z-50 flex items-center gap-2 rounded-lg border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700 shadow-md dark:border-red-700 dark:bg-red-900/30 dark:text-red-300"
+		>
+			<svg class="h-4 w-4 shrink-0" viewBox="0 0 20 20" fill="currentColor">
+				<path
+					fill-rule="evenodd"
+					d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+					clip-rule="evenodd"
+				/>
+			</svg>
+			<span>{channelConflict.message}</span>
+			<button
+				onclick={() => (channelConflict = null)}
+				class="ml-auto text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-200"
+			>
+				&times;
+			</button>
+		</div>
+	{/if}
+
 	<Tabs.Root value="inputs" class="w-full">
 		<!-- Tab Headers -->
 		<div class="border-b border-border-primary bg-muted/30 px-4 pt-4">
@@ -394,14 +436,15 @@
 									{@const linked = isLinked(channelNum)}
 									{@const linkedTop = isLinkedTop(channelNum)}
 									{@const linkedBottom = isLinkedBottom(channelNum)}
+									{@const hasConflict = channelConflict?.channel === channelNum}
 									<ContextMenu.Root>
 										<ContextMenu.Trigger>
 											<div
-												class="flex items-center border-b border-border-primary last:border-b-0 {linkedTop
+												class="flex items-center border-b border-border-primary transition-colors last:border-b-0 {linkedTop
 													? 'h-10 border-b-0'
 													: linkedBottom
 														? 'h-10 border-b border-border-primary'
-														: 'h-10'}"
+														: 'h-10'} {hasConflict ? 'bg-red-100 dark:bg-red-900/30' : ''}"
 											>
 												<!-- Channel number cell with color picker -->
 												<div

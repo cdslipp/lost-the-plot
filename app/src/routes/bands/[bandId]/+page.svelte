@@ -4,6 +4,8 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
 	import { db } from '$lib/db';
+	import { Dialog } from 'bits-ui';
+	import { BAND_TEMPLATES, applyTemplate, type BandTemplate } from '$lib/data/bandTemplates';
 	import PeoplePanel from './components/PeoplePanel.svelte';
 	import SongsPanel from './components/SongsPanel.svelte';
 	import GigsSection from './components/GigsSection.svelte';
@@ -131,15 +133,35 @@
 		editingBandName = false;
 	}
 
-	async function createPlot() {
+	let showNewPlotDialog = $state(false);
+
+	async function createPlot(template?: BandTemplate) {
 		const plotId = crypto.randomUUID().replace(/-/g, '');
+		const canvasWidth = 1100;
+		const canvasHeight = 850;
+
+		let metadata: { items: any[]; musicians: any[] };
+
+		if (template) {
+			const result = applyTemplate(template, canvasWidth, canvasHeight, []);
+			metadata = { items: result.items, musicians: [] };
+		} else {
+			metadata = { items: [], musicians: [] };
+		}
+
 		await db.run(`INSERT INTO stage_plots (id, name, band_id, metadata) VALUES (?, ?, ?, ?)`, [
 			plotId,
-			'Untitled Plot',
+			template ? template.name : 'Untitled Plot',
 			bandId,
-			JSON.stringify({ items: [], musicians: [] })
+			JSON.stringify(metadata)
 		]);
+
+		showNewPlotDialog = false;
 		goto(`/bands/${bandId}/plots/${plotId}`);
+	}
+
+	function openNewPlotDialog() {
+		showNewPlotDialog = true;
 	}
 
 	async function deletePlot(plotId: string) {
@@ -244,7 +266,7 @@
 				>
 					<p class="text-text-secondary">No stage plots yet</p>
 					<button
-						onclick={createPlot}
+						onclick={openNewPlotDialog}
 						class="mt-3 text-sm text-stone-600 hover:text-stone-800 dark:text-stone-400 dark:hover:text-stone-200"
 					>
 						Create your first plot
@@ -289,7 +311,7 @@
 						</div>
 					{/each}
 					<button
-						onclick={createPlot}
+						onclick={openNewPlotDialog}
 						class="group flex min-h-[76px] flex-col items-start justify-center rounded-xl border border-dashed border-border-primary bg-surface px-3 py-2.5 text-left text-sm text-text-tertiary transition hover:border-stone-400 hover:text-text-secondary"
 					>
 						<span class="flex items-center gap-2 text-text-secondary">
@@ -337,3 +359,77 @@
 		/>
 	</div>
 {/if}
+
+<!-- New Plot Template Dialog -->
+<Dialog.Root bind:open={showNewPlotDialog}>
+	<Dialog.Portal>
+		<Dialog.Overlay
+			class="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm"
+			onclick={() => (showNewPlotDialog = false)}
+		/>
+		<Dialog.Content
+			class="fixed top-1/2 left-1/2 z-50 w-full max-w-lg -translate-x-1/2 -translate-y-1/2 rounded-xl border border-border-primary bg-surface p-6 shadow-xl"
+		>
+			<Dialog.Title class="mb-1 font-serif text-xl font-semibold text-text-primary"
+				>New Stage Plot</Dialog.Title
+			>
+			<Dialog.Description class="mb-5 text-sm text-text-secondary"
+				>Start from scratch or choose a template</Dialog.Description
+			>
+
+			<div class="grid grid-cols-1 gap-3">
+				<!-- Blank plot option -->
+				<button
+					onclick={() => createPlot()}
+					class="group flex items-center gap-4 rounded-lg border border-border-primary p-4 text-left transition hover:border-stone-400 hover:bg-muted/50"
+				>
+					<div
+						class="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-muted text-text-tertiary"
+					>
+						<svg
+							xmlns="http://www.w3.org/2000/svg"
+							class="h-6 w-6"
+							viewBox="0 0 20 20"
+							fill="currentColor"
+						>
+							<path
+								fill-rule="evenodd"
+								d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z"
+								clip-rule="evenodd"
+							/>
+						</svg>
+					</div>
+					<div>
+						<div class="font-medium text-text-primary">Blank Plot</div>
+						<div class="text-xs text-text-secondary">Start with an empty stage</div>
+					</div>
+				</button>
+
+				<!-- Template options -->
+				{#each BAND_TEMPLATES as template (template.id)}
+					<button
+						onclick={() => createPlot(template)}
+						class="group flex items-center gap-4 rounded-lg border border-border-primary p-4 text-left transition hover:border-stone-400 hover:bg-muted/50"
+					>
+						<div
+							class="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-stone-100 text-stone-600 dark:bg-stone-800 dark:text-stone-300"
+						>
+							<span class="text-lg font-bold">{template.persons.length}</span>
+						</div>
+						<div>
+							<div class="font-medium text-text-primary">{template.name}</div>
+							<div class="text-xs text-text-secondary">{template.description}</div>
+						</div>
+					</button>
+				{/each}
+			</div>
+
+			<button
+				onclick={() => (showNewPlotDialog = false)}
+				class="mt-4 w-full rounded-lg px-3 py-2 text-sm text-text-secondary transition hover:bg-surface-hover"
+			>
+				Cancel
+			</button>
+		</Dialog.Content>
+	</Dialog.Portal>
+</Dialog.Root>
