@@ -45,10 +45,7 @@
 
 	async function addSetlist() {
 		const name = `Set ${setlists.length + 1}`;
-		const result = await db.run('INSERT INTO setlists (gig_id, name) VALUES (?, ?)', [
-			gigId,
-			name
-		]);
+		const result = await db.run('INSERT INTO setlists (gig_id, name) VALUES (?, ?)', [gigId, name]);
 		const newSetlist: SetlistRow = {
 			id: result.lastInsertRowid,
 			gig_id: gigId,
@@ -118,10 +115,7 @@
 		for (let i = 0; i < currentSongs.length; i++) {
 			if (currentSongs[i].position !== i) {
 				currentSongs[i].position = i;
-				await db.run('UPDATE setlist_songs SET position = ? WHERE id = ?', [
-					i,
-					currentSongs[i].id
-				]);
+				await db.run('UPDATE setlist_songs SET position = ? WHERE id = ?', [i, currentSongs[i].id]);
 			}
 		}
 		setlistSongs = { ...setlistSongs, [setlistId]: currentSongs };
@@ -137,10 +131,7 @@
 		current[index].position = index;
 		current[newIndex].position = newIndex;
 
-		await db.run('UPDATE setlist_songs SET position = ? WHERE id = ?', [
-			index,
-			current[index].id
-		]);
+		await db.run('UPDATE setlist_songs SET position = ? WHERE id = ?', [index, current[index].id]);
 		await db.run('UPDATE setlist_songs SET position = ? WHERE id = ?', [
 			newIndex,
 			current[newIndex].id
@@ -202,9 +193,19 @@
 						class="group/setname flex items-center gap-1 text-sm font-semibold text-text-primary hover:text-stone-600"
 						title="Click to rename"
 					>
-						<span class="border-b border-dashed border-transparent group-hover/setname:border-stone-400">{setlist.name}</span>
-						<svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 text-text-tertiary opacity-0 transition group-hover/setname:opacity-100" viewBox="0 0 20 20" fill="currentColor">
-							<path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+						<span
+							class="border-b border-dashed border-transparent group-hover/setname:border-stone-400"
+							>{setlist.name}</span
+						>
+						<svg
+							xmlns="http://www.w3.org/2000/svg"
+							class="h-3.5 w-3.5 text-text-tertiary opacity-0 transition group-hover/setname:opacity-100"
+							viewBox="0 0 20 20"
+							fill="currentColor"
+						>
+							<path
+								d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"
+							/>
 						</svg>
 					</button>
 				{/if}
@@ -212,8 +213,7 @@
 					{#if availableSongs(setlist.id).length > 0}
 						<button
 							onclick={() => {
-								addingSongToSetlist =
-									addingSongToSetlist === setlist.id ? null : setlist.id;
+								addingSongToSetlist = addingSongToSetlist === setlist.id ? null : setlist.id;
 								selectedSongId = '';
 							}}
 							class="rounded px-2 py-1 text-xs text-stone-600 hover:bg-surface-hover dark:text-stone-400"
@@ -270,13 +270,8 @@
 			{:else}
 				<div class="space-y-1">
 					{#each items as entry, i (entry.id)}
-						<div
-							class="group flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-muted"
-						>
-							<span
-								class="w-5 text-right text-xs font-medium text-text-tertiary"
-								>{i + 1}.</span
-							>
+						<div class="group flex items-center gap-2 rounded-lg px-2 py-1.5 hover:bg-muted">
+							<span class="w-5 text-right text-xs font-medium text-text-tertiary">{i + 1}.</span>
 							<span class="flex-1 text-sm text-text-primary">{entry.title}</span>
 							{#if entry.starting_key}
 								<span
@@ -285,19 +280,13 @@
 								>
 							{/if}
 							{#if entry.starting_tempo}
-								<span class="text-xs text-text-tertiary"
-									>{entry.starting_tempo}</span
-								>
+								<span class="text-xs text-text-tertiary">{entry.starting_tempo}</span>
 							{/if}
 							{#if editingNotesId === entry.id}
 								<input
 									value={entry.notes || ''}
 									onchange={(e) =>
-										updateSongNotes(
-											entry.id,
-											setlist.id,
-											(e.target as HTMLInputElement).value
-										)}
+										updateSongNotes(entry.id, setlist.id, (e.target as HTMLInputElement).value)}
 									onkeydown={(e) => {
 										if (e.key === 'Escape') editingNotesId = null;
 									}}
@@ -316,14 +305,12 @@
 							{:else}
 								<button
 									onclick={() => (editingNotesId = entry.id)}
-									class="text-xs text-text-tertiary opacity-0 hover:text-text-secondary group-hover:opacity-100"
+									class="text-xs text-text-tertiary opacity-0 group-hover:opacity-100 hover:text-text-secondary"
 								>
 									note
 								</button>
 							{/if}
-							<div
-								class="flex items-center gap-0.5 opacity-0 transition group-hover:opacity-100"
-							>
+							<div class="flex items-center gap-0.5 opacity-0 transition group-hover:opacity-100">
 								<button
 									onclick={() => moveSong(setlist.id, i, -1)}
 									disabled={i === 0}
@@ -363,8 +350,7 @@
 									</svg>
 								</button>
 								<button
-									onclick={() =>
-										removeSongFromSetlist(setlist.id, entry.id)}
+									onclick={() => removeSongFromSetlist(setlist.id, entry.id)}
 									class="rounded p-0.5 text-text-tertiary hover:text-red-600"
 									title="Remove from setlist"
 								>

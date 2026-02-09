@@ -133,10 +133,12 @@
 
 	async function createPlot() {
 		const plotId = crypto.randomUUID().replace(/-/g, '');
-		await db.run(
-			`INSERT INTO stage_plots (id, name, band_id, metadata) VALUES (?, ?, ?, ?)`,
-			[plotId, 'Untitled Plot', bandId, JSON.stringify({ items: [], musicians: [] })]
-		);
+		await db.run(`INSERT INTO stage_plots (id, name, band_id, metadata) VALUES (?, ?, ?, ?)`, [
+			plotId,
+			'Untitled Plot',
+			bandId,
+			JSON.stringify({ items: [], musicians: [] })
+		]);
 		goto(`/bands/${bandId}/plots/${plotId}`);
 	}
 
@@ -163,8 +165,17 @@
 				class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-border-primary text-text-secondary transition hover:bg-surface-hover hover:text-text-primary"
 				aria-label="Back to bands"
 			>
-				<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-					<path fill-rule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clip-rule="evenodd" />
+				<svg
+					xmlns="http://www.w3.org/2000/svg"
+					class="h-5 w-5"
+					viewBox="0 0 20 20"
+					fill="currentColor"
+				>
+					<path
+						fill-rule="evenodd"
+						d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z"
+						clip-rule="evenodd"
+					/>
 				</svg>
 			</a>
 			{#if editingBandName}
@@ -202,9 +213,18 @@
 					onclick={() => (editingBandName = true)}
 					class="group/name flex items-center gap-2 text-left font-serif text-3xl font-bold text-text-primary transition hover:text-stone-600"
 				>
-					<span class="border-b border-dashed border-transparent group-hover/name:border-stone-400">{band.name}</span>
-					<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-text-tertiary opacity-0 transition group-hover/name:opacity-100" viewBox="0 0 20 20" fill="currentColor">
-						<path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+					<span class="border-b border-dashed border-transparent group-hover/name:border-stone-400"
+						>{band.name}</span
+					>
+					<svg
+						xmlns="http://www.w3.org/2000/svg"
+						class="h-5 w-5 text-text-tertiary opacity-0 transition group-hover/name:opacity-100"
+						viewBox="0 0 20 20"
+						fill="currentColor"
+					>
+						<path
+							d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"
+						/>
 					</svg>
 				</button>
 			{/if}
@@ -214,9 +234,9 @@
 
 		<!-- Plots Section -->
 		<div>
-		<div class="mb-2.5">
-			<h2 class="font-serif text-xl font-semibold text-text-primary">Stage Plots</h2>
-		</div>
+			<div class="mb-2.5">
+				<h2 class="font-serif text-xl font-semibold text-text-primary">Stage Plots</h2>
+			</div>
 
 			{#if plots.length === 0}
 				<div
@@ -233,9 +253,9 @@
 			{:else}
 				<div class="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
 					{#each plots as plot (plot.id)}
-					<div
-						class="group relative rounded-xl border border-border-primary bg-surface p-2.5 shadow-sm transition hover:border-stone-400"
-					>
+						<div
+							class="group relative rounded-xl border border-border-primary bg-surface p-2.5 shadow-sm transition hover:border-stone-400"
+						>
 							<a href="/bands/{bandId}/plots/{plot.id}" class="block">
 								<h3 class="font-medium text-text-primary group-hover:text-stone-600">
 									{plot.name}
@@ -245,14 +265,12 @@
 										<span>{plot.event_name}</span>
 										<span class="mx-1">&middot;</span>
 									{/if}
-									<span
-										>Modified {plot.revision_date}</span
-									>
+									<span>Modified {plot.revision_date}</span>
 								</div>
 							</a>
 							<button
 								onclick={() => deletePlot(plot.id)}
-								class="absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-full text-text-tertiary opacity-0 transition hover:bg-red-100 hover:text-red-600 group-hover:opacity-100 dark:hover:bg-red-900/30"
+								class="absolute top-2 right-2 flex h-6 w-6 items-center justify-center rounded-full text-text-tertiary opacity-0 transition group-hover:opacity-100 hover:bg-red-100 hover:text-red-600 dark:hover:bg-red-900/30"
 								title="Delete plot"
 							>
 								<svg
@@ -275,7 +293,12 @@
 						class="group flex min-h-[76px] flex-col items-start justify-center rounded-xl border border-dashed border-border-primary bg-surface px-3 py-2.5 text-left text-sm text-text-tertiary transition hover:border-stone-400 hover:text-text-secondary"
 					>
 						<span class="flex items-center gap-2 text-text-secondary">
-							<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+							<svg
+								xmlns="http://www.w3.org/2000/svg"
+								class="h-4 w-4"
+								viewBox="0 0 20 20"
+								fill="currentColor"
+							>
 								<path
 									fill-rule="evenodd"
 									d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z"

@@ -21,7 +21,9 @@ export async function runMigrations(db: DbAdapter, migrations: Migration[]): Pro
 	`);
 
 	// Get already-applied versions
-	const applied = await db.query<{ version: number }>('SELECT version FROM _migrations ORDER BY version');
+	const applied = await db.query<{ version: number }>(
+		'SELECT version FROM _migrations ORDER BY version'
+	);
 	const appliedSet = new Set(applied.map((r) => r.version));
 
 	// Sort migrations by version and apply only unapplied ones
@@ -30,9 +32,7 @@ export async function runMigrations(db: DbAdapter, migrations: Migration[]): Pro
 	for (const migration of sorted) {
 		if (appliedSet.has(migration.version)) continue;
 
-		console.log(`[migrations] Applying migration ${migration.version}...`);
 		await migration.up(db);
 		await db.run('INSERT INTO _migrations (version) VALUES (?)', [migration.version]);
-		console.log(`[migrations] Migration ${migration.version} applied.`);
 	}
 }

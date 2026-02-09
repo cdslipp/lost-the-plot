@@ -39,14 +39,20 @@
 {#if open}
 	<div class="fixed inset-0 z-50 flex items-center justify-center">
 		<!-- svelte-ignore a11y_no_static_element_interactions -->
-		<div class="absolute inset-0 bg-black/50 backdrop-blur-sm" onclick={onClose} onkeydown={handleKeydown}></div>
+		<div
+			class="absolute inset-0 bg-black/50 backdrop-blur-sm"
+			onclick={onClose}
+			onkeydown={handleKeydown}
+		></div>
 		<div class="relative w-[min(500px,90vw)] rounded-xl bg-surface p-6 shadow-lg">
 			<h2 class="mb-1 text-lg font-semibold text-text-primary">Choose Silhouette</h2>
 			<p class="mb-4 text-sm text-text-secondary">for {personName}</p>
 
 			{#if loading}
 				<div class="flex items-center justify-center py-12">
-					<div class="h-6 w-6 animate-spin rounded-full border-2 border-text-secondary border-t-transparent"></div>
+					<div
+						class="h-6 w-6 animate-spin rounded-full border-2 border-text-secondary border-t-transparent"
+					></div>
 				</div>
 			{:else}
 				<div class="grid max-h-[60vh] grid-cols-4 gap-3 overflow-auto">
@@ -61,7 +67,9 @@
 								class="h-16 w-auto object-contain"
 								draggable="false"
 							/>
-							<span class="text-[10px] text-text-secondary group-hover:text-text-primary">{item.name}</span>
+							<span class="text-[10px] text-text-secondary group-hover:text-text-primary"
+								>{item.name}</span
+							>
 						</button>
 					{/each}
 				</div>

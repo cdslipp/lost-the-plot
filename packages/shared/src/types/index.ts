@@ -84,6 +84,10 @@ export interface ItemData {
 	default_inputs?: DefaultInput[];
 	default_outputs?: DefaultOutput[];
 	instrument_signal?: 'acoustic' | 'electric' | '';
+	// Riser-specific fields
+	riserWidth?: number;
+	riserDepth?: number;
+	riserHeight?: number;
 }
 
 export interface DefaultInput {
@@ -98,6 +102,18 @@ export interface DefaultOutput {
 	type?: Output['type'] | string;
 	link_mode?: 'mono' | 'stereo_pair' | 'stereo_sum';
 }
+
+/** An output item on a plot (e.g. wedge, IEM assigned to an output channel). */
+export interface PlotOutputItem {
+	id: number;
+	name: string;
+	channel: string;
+	itemData?: ItemData;
+	link_mode?: 'mono' | 'stereo_pair';
+}
+
+/** Valid channel-count options for input/output patch lists. */
+export type ChannelMode = 8 | 16 | 24 | 32 | 48;
 
 export interface PlotPerson {
 	id: number;

@@ -9,9 +9,7 @@ import fs from 'fs';
 import path from 'path';
 
 const require = createRequire(import.meta.url);
-const appPackage = JSON.parse(
-	fs.readFileSync(new URL('./package.json', import.meta.url), 'utf-8')
-);
+const appPackage = JSON.parse(fs.readFileSync(new URL('./package.json', import.meta.url), 'utf-8'));
 
 /**
  * Vite plugin to serve sqlite3-opfs-async-proxy.js without ES module transformation.
@@ -26,7 +24,10 @@ function sqliteOpfsProxyPlugin(): Plugin {
 				if (req.url?.includes('sqlite3-opfs-async-proxy.js')) {
 					// Use require.resolve to find the package regardless of node_modules hoisting
 					const sqlitePkg = require.resolve('@sqlite.org/sqlite-wasm/package.json');
-					const filePath = path.resolve(path.dirname(sqlitePkg), 'dist/sqlite3-opfs-async-proxy.js');
+					const filePath = path.resolve(
+						path.dirname(sqlitePkg),
+						'dist/sqlite3-opfs-async-proxy.js'
+					);
 					let content = fs.readFileSync(filePath, 'utf-8');
 					// Remove the ES module export statement that breaks classic workers
 					content = content.replace(/export\s*\{\s*\}\s*;?\s*$/, '');

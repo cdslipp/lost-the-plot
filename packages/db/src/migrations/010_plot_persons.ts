@@ -62,10 +62,10 @@ export async function up(db: DbAdapter): Promise<void> {
 
 		// Insert into plot_persons
 		for (const [, personId] of musicianToPersonId) {
-			await db.run(
-				'INSERT OR IGNORE INTO plot_persons (plot_id, person_id) VALUES (?, ?)',
-				[plot.id, personId]
-			);
+			await db.run('INSERT OR IGNORE INTO plot_persons (plot_id, person_id) VALUES (?, ?)', [
+				plot.id,
+				personId
+			]);
 		}
 
 		// Convert items: musician (string) -> person_id (number | null)

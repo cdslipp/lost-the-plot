@@ -43,13 +43,6 @@ export function pixelsToInches(pixels: number): number {
 }
 
 /**
- * Convert pixels to feet using our established scale
- */
-export function pixelsToFeet(pixels: number): number {
-	return pixelsToInches(pixels) / 12;
-}
-
-/**
  * Get formatted dimensions string
  */
 export function formatDimensions(widthPx: number, heightPx: number): string {
@@ -109,9 +102,7 @@ export function metersToFeet(meters: number): number {
 }
 
 export function displayValue(valueFeet: number, unit: string): number {
-	return unit === 'metric'
-		? Math.round(feetToMeters(valueFeet) * 100) / 100
-		: valueFeet;
+	return unit === 'metric' ? Math.round(feetToMeters(valueFeet) * 100) / 100 : valueFeet;
 }
 
 export function toFeet(displayVal: number, unit: string): number {
@@ -120,34 +111,4 @@ export function toFeet(displayVal: number, unit: string): number {
 
 export function unitLabel(unit: string): string {
 	return unit === 'metric' ? 'm' : 'ft';
-}
-
-/**
- * Scale validation - verify our reference item
- */
-export function validateScale(): {
-	isValid: boolean;
-	details: {
-		referenceWidthPx: number;
-		referenceWidthInches: number;
-		calculatedPixelsPerInch: number;
-		expectedWidthPx: number;
-		actualWidthPx: number;
-		error: number;
-	};
-} {
-	const expectedWidthPx = inchesToPixels(REFERENCE_ITEM_WIDTH_INCHES);
-	const error = Math.abs(expectedWidthPx - REFERENCE_ITEM_WIDTH_PX);
-
-	return {
-		isValid: error < 0.1, // Allow for rounding errors
-		details: {
-			referenceWidthPx: REFERENCE_ITEM_WIDTH_PX,
-			referenceWidthInches: REFERENCE_ITEM_WIDTH_INCHES,
-			calculatedPixelsPerInch: PIXELS_PER_INCH,
-			expectedWidthPx,
-			actualWidthPx: REFERENCE_ITEM_WIDTH_PX,
-			error
-		}
-	};
 }

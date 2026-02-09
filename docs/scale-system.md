@@ -53,9 +53,9 @@ const formatted2 = formatDimensions(57, 36); // "2'0.5" × 1'3.5""
 import { STAGE_SIZES } from '$lib/utils/scale';
 
 // Available sizes:
-STAGE_SIZES['4x4'] // 112 × 112 pixels (4' × 4')
-STAGE_SIZES['4x8'] // 112 × 224 pixels (4' × 8')
-STAGE_SIZES['8x8'] // 224 × 224 pixels (8' × 8')
+STAGE_SIZES['4x4']; // 112 × 112 pixels (4' × 4')
+STAGE_SIZES['4x8']; // 112 × 224 pixels (4' × 8')
+STAGE_SIZES['8x8']; // 224 × 224 pixels (8' × 8')
 ```
 
 ### Custom Dimensions
@@ -63,9 +63,9 @@ STAGE_SIZES['8x8'] // 224 × 224 pixels (8' × 8')
 ```typescript
 // For custom items, calculate dimensions based on real measurements
 const customAmp = {
-  width: inchesToPixels(22), // 22" wide amp
-  height: inchesToPixels(18), // 18" deep amp
-  name: "Custom Amp"
+	width: inchesToPixels(22), // 22" wide amp
+	height: inchesToPixels(18), // 18" deep amp
+	name: 'Custom Amp'
 };
 ```
 
@@ -75,15 +75,10 @@ const customAmp = {
 
 ```svelte
 <script>
-  import { StageDeck } from '$lib';
+	import { StageDeck } from '$lib';
 </script>
 
-<StageDeck
-  size="4x4"
-  x={100}
-  y={200}
-  bind:selected
-/>
+<StageDeck size="4x4" x={100} y={200} bind:selected />
 ```
 
 ### Properties
@@ -100,10 +95,10 @@ const customAmp = {
 ```typescript
 // Based on actual equipment dimensions
 const equipment = {
-  fenderDeluxeReverb: { width: 57, height: 36 }, // 24.5" × 15.5"
-  marshallStack: { width: 70, height: 105 },     // 30" × 45"
-  drumKit: { width: 140, height: 93 },           // 60" × 40"
-  keyboard88: { width: 135, height: 35 },        // 58" × 15"
+	fenderDeluxeReverb: { width: 57, height: 36 }, // 24.5" × 15.5"
+	marshallStack: { width: 70, height: 105 }, // 30" × 45"
+	drumKit: { width: 140, height: 93 }, // 60" × 40"
+	keyboard88: { width: 135, height: 35 } // 58" × 15"
 };
 ```
 
@@ -111,7 +106,7 @@ const equipment = {
 
 ```typescript
 // Plan a 20' × 16' stage
-const stageWidth = feetToPixels(20);  // 465 pixels
+const stageWidth = feetToPixels(20); // 465 pixels
 const stageHeight = feetToPixels(16); // 372 pixels
 
 // Add 4×4 stage decks
@@ -129,9 +124,9 @@ import { validateScale } from '$lib/utils/scale';
 
 const validation = validateScale();
 if (validation.isValid) {
-  console.log('Scale system is accurate');
+	console.log('Scale system is accurate');
 } else {
-  console.warn('Scale validation failed:', validation.details);
+	console.warn('Scale validation failed:', validation.details);
 }
 ```
 

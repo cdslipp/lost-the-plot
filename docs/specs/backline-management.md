@@ -14,11 +14,11 @@ Each `StagePlotItem` gains optional backline fields stored in `itemData`:
 
 ```typescript
 interface BacklineInfo {
-  provision: 'artist' | 'venue' | 'rental' | 'tbd';
-  make?: string;       // e.g., "Fender"
-  model?: string;      // e.g., "Deluxe Reverb"
-  notes?: string;      // e.g., "Must be tube amp"
-  acceptable_subs?: string;  // e.g., "Vox AC30 also acceptable"
+	provision: 'artist' | 'venue' | 'rental' | 'tbd';
+	make?: string; // e.g., "Fender"
+	model?: string; // e.g., "Deluxe Reverb"
+	notes?: string; // e.g., "Must be tube amp"
+	acceptable_subs?: string; // e.g., "Vox AC30 also acceptable"
 }
 ```
 

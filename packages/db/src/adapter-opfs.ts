@@ -13,15 +13,9 @@ import type { DbAdapter } from './types.js';
 export function createOpfsAdapter(workerModule: {
 	initDb: () => Promise<{ opfsAvailable: boolean }>;
 	exec: (sql: string) => Promise<void>;
-	run: (
-		sql: string,
-		params?: unknown[]
-	) => Promise<{ changes: number; lastInsertRowid: number }>;
+	run: (sql: string, params?: unknown[]) => Promise<{ changes: number; lastInsertRowid: number }>;
 	query: <T = Record<string, unknown>>(sql: string, params?: unknown[]) => Promise<T[]>;
-	queryOne: <T = Record<string, unknown>>(
-		sql: string,
-		params?: unknown[]
-	) => Promise<T | null>;
+	queryOne: <T = Record<string, unknown>>(sql: string, params?: unknown[]) => Promise<T | null>;
 	closeDb: () => Promise<void>;
 }): DbAdapter {
 	return {

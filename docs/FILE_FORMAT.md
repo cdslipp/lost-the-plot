@@ -744,21 +744,21 @@ File format migrations follow the same pattern as `packages/db/src/migrations/ru
 
 ```typescript
 interface FileFormatMigration {
-  from: string;  // semver the migration applies to
-  to: string;    // semver after migration
-  migrate: (data: unknown) => unknown;
+	from: string; // semver the migration applies to
+	to: string; // semver after migration
+	migrate: (data: unknown) => unknown;
 }
 
 const migrations: FileFormatMigration[] = [
-  // Example: v1 → v2 migration
-  {
-    from: "1.x.x",
-    to: "2.0.0",
-    migrate: (data) => {
-      // Transform data structure
-      return { ...data, format_version: "2.0.0", /* ...changes */ };
-    }
-  }
+	// Example: v1 → v2 migration
+	{
+		from: '1.x.x',
+		to: '2.0.0',
+		migrate: (data) => {
+			// Transform data structure
+			return { ...data, format_version: '2.0.0' /* ...changes */ };
+		}
+	}
 ];
 ```
 

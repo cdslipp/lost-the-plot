@@ -116,9 +116,7 @@ const VARIANT_MAP = [
 // ─── Catalog Index ───────────────────────────────────────────────────────────
 
 /** Build a map from catalog item path -> index for compact encoding */
-export function buildCatalogIndex(
-	catalog: { path: string }[]
-): Map<string, number> {
+export function buildCatalogIndex(catalog: { path: string }[]): Map<string, number> {
 	const map = new Map<string, number>();
 	for (let i = 0; i < catalog.length; i++) {
 		map.set(catalog[i].path, i);
@@ -194,22 +192,16 @@ export async function encodePayload(
 		]),
 		m: input.musicians.map((m) => [m.name, m.instrument]),
 		i: input.items.map((item) => {
-			const catalogIdx = item.itemData?.path
-				? catalogIndex.get(item.itemData.path) ?? -1
-				: -1;
+			const catalogIdx = item.itemData?.path ? (catalogIndex.get(item.itemData.path) ?? -1) : -1;
 			const variantIdx = Math.max(
 				0,
-				VARIANT_MAP.indexOf(
-					(item.currentVariant ?? 'default') as (typeof VARIANT_MAP)[number]
-				)
+				VARIANT_MAP.indexOf((item.currentVariant ?? 'default') as (typeof VARIANT_MAP)[number])
 			);
 			const typeIdx = Math.max(
 				0,
 				ITEM_TYPE_MAP.indexOf(item.type as (typeof ITEM_TYPE_MAP)[number])
 			);
-			const musicianIdx = item.musician
-				? musicianLookup.get(item.musician) ?? -1
-				: -1;
+			const musicianIdx = item.musician ? (musicianLookup.get(item.musician) ?? -1) : -1;
 
 			const tuple: number[] = [
 				catalogIdx,
@@ -325,38 +317,24 @@ export async function decodePayload(
 	}));
 
 	// Rebuild persons
-	const persons = payload.p.map(
-		([name, role, pronouns, phone, email, memberType, status]) => ({
-			name,
-			role,
-			pronouns,
-			phone,
-			email,
-			member_type: MEMBER_TYPE_MAP[memberType] ?? 'performer',
-			status: MEMBER_STATUS_MAP[status] ?? 'permanent'
-		})
-	);
+	const persons = payload.p.map(([name, role, pronouns, phone, email, memberType, status]) => ({
+		name,
+		role,
+		pronouns,
+		phone,
+		email,
+		member_type: MEMBER_TYPE_MAP[memberType] ?? 'performer',
+		status: MEMBER_STATUS_MAP[status] ?? 'permanent'
+	}));
 
 	// Rebuild items
 	const items = payload.i.map((tuple, idx) => {
-		const [
-			catalogIdx,
-			variantIdx,
-			x,
-			y,
-			w,
-			h,
-			channel,
-			musicianIdx,
-			typeIdx
-		] = tuple;
+		const [catalogIdx, variantIdx, x, y, w, h, channel, musicianIdx, typeIdx] = tuple;
 
 		const typeName = ITEM_TYPE_MAP[typeIdx] ?? 'input';
 		const variantName = VARIANT_MAP[variantIdx] ?? 'default';
 		const musicianName =
-			musicianIdx >= 0 && musicianIdx < musicians.length
-				? musicians[musicianIdx].name
-				: '';
+			musicianIdx >= 0 && musicianIdx < musicians.length ? musicians[musicianIdx].name : '';
 
 		// Reconstruct itemData from catalog
 		let itemData: DecodedPlot['items'][number]['itemData'] = null;

@@ -2,61 +2,28 @@
 	import PersonCombobox from './PersonCombobox.svelte';
 	import { displayValue, toFeet, unitLabel } from '$lib/utils/scale';
 	import { toggleMode } from 'mode-watcher';
+	import { getCurrentImageSrc } from '$lib/utils/canvasUtils';
+	import { getPlotState } from '$lib/state/stagePlotState.svelte';
+	import type { StagePlotItem } from '@stageplotter/shared';
 
-	type Item = {
-		id: number;
-		type?: string;
-		name: string;
-		channel: string;
-		person_id: number | null;
-		itemData: any;
-		currentVariant?: string;
-		width: number;
-		height: number;
-		x: number;
-		y: number;
+	type Props = {
+		selectedItems?: HTMLElement[];
+		onPlaceRiser?: (riserWidth: number, riserDepth: number, riserHeight: number) => void;
 	};
 
-	type Person = {
-		id: number;
-		name: string;
-		role?: string | null;
-	};
+	let { selectedItems = $bindable<HTMLElement[]>([]), onPlaceRiser }: Props = $props();
 
-	let {
-		selectedItems = $bindable<HTMLElement[]>([]),
-		items = $bindable<Item[]>([]),
-		persons = [] as Person[],
-		title = $bindable<string>(''),
-		lastModified = $bindable<string>(''),
-		showZones = $bindable(true),
-		stageWidth = $bindable(24),
-		stageDepth = $bindable(16),
-		unit = $bindable('imperial'),
-		pdfPageFormat = $bindable<'letter' | 'a4'>('letter'),
-		onPlaceRiser = $bindable<
-			((riserWidth: number, riserDepth: number, riserHeight: number) => void) | undefined
-		>(undefined),
-		onUpdateItem = $bindable<
-			((itemId: number, property: string, value: string) => void) | undefined
-		>(undefined),
-		onClose = $bindable<(() => void) | undefined>(undefined),
-		getItemZone = $bindable<((item: Item) => string) | undefined>(undefined),
-		getItemPosition = $bindable<((item: Item) => { x: number; y: number }) | undefined>(undefined),
-		updateItemPosition = $bindable<((itemId: number, x: number, y: number) => void) | undefined>(
-			undefined
-		)
-	} = $props();
+	const ps = getPlotState();
 
 	// Get the actual item objects from the selected DOM elements
 	const selectedItemsData = $derived.by(() => {
-		if (!items || !selectedItems) return [];
+		if (!ps.items || !selectedItems) return [];
 		return selectedItems
 			.map((el) => {
 				const id = parseInt(el.dataset?.id || '0');
-				return items.find((item) => item.id === id);
+				return ps.items.find((item) => item.id === id);
 			})
-			.filter(Boolean) as Item[];
+			.filter(Boolean) as StagePlotItem[];
 	});
 
 	// For bulk editing
@@ -73,126 +40,13 @@
 		{ w: 8, d: 8, label: "8'×8'" }
 	];
 
-	// Handle updating item properties
-	function handleUpdateItem(itemId: number, property: string, value: string) {
-		if (onUpdateItem) {
-			onUpdateItem(itemId, property, value);
-		}
-	}
-
-	function getItemVariants(item: Item) {
-		if (!item.itemData) return null;
-		if (item.itemData.variants) {
-			return item.itemData.variants;
-		}
-		return null;
-	}
-
-	function getVariantKeys(item: Item) {
-		const variants = getItemVariants(item);
-		if (!variants) return ['default'];
-		return Object.keys(variants);
-	}
-
-	function rotateItemLeft(item: Item) {
-		const variants = getItemVariants(item);
-		if (!variants) return;
-
-		const variantKeys = Object.keys(variants);
-		const currentIndex = variantKeys.indexOf(item.currentVariant || 'default');
-		const newIndex = (currentIndex - 1 + variantKeys.length) % variantKeys.length;
-		item.currentVariant = variantKeys[newIndex];
-
-		const newImagePath = variants[item.currentVariant];
-
-		if (newImagePath) {
-			const img = new Image();
-			img.src = buildImagePath(item, newImagePath);
-			img.onload = () => {
-				item.width = img.naturalWidth;
-				item.height = img.naturalHeight;
-			};
-		}
-
-		if (onUpdateItem) {
-			onUpdateItem(item.id, 'currentVariant', item.currentVariant);
-		}
-	}
-
-	// --- Drum kit detection & mic customization ---
-	const isDrumKit = $derived.by(() => {
-		return selectedItemsData.length === 1 && selectedItemsData[0]?.itemData?.item_type === 'drumset';
-	});
-
-	let showDrumMicModal = $state(false);
-
-	const defaultDrumMics = ['Kick', 'Snare', 'Hats', 'Rack Tom', 'Floor Tom', 'Overhead L', 'Overhead R'];
-	let activeDrumMics = $state<string[]>([...defaultDrumMics]);
-
-	function toggleDrumMic(mic: string) {
-		if (activeDrumMics.includes(mic)) {
-			activeDrumMics = activeDrumMics.filter((m) => m !== mic);
-		} else {
-			activeDrumMics = [...activeDrumMics, mic];
-		}
-	}
-
-	function saveDrumMicConfig() {
-		showDrumMicModal = false;
-	}
-
-	function rotateItemRight(item: Item) {
-		const variants = getItemVariants(item);
-		if (!variants) return;
-
-		const variantKeys = Object.keys(variants);
-		const currentIndex = variantKeys.indexOf(item.currentVariant || 'default');
-		const newIndex = (currentIndex + 1) % variantKeys.length;
-		item.currentVariant = variantKeys[newIndex];
-
-		const newImagePath = variants[item.currentVariant];
-
-		if (newImagePath) {
-			const img = new Image();
-			img.src = buildImagePath(item, newImagePath);
-			img.onload = () => {
-				item.width = img.naturalWidth;
-				item.height = img.naturalHeight;
-			};
-		}
-
-		if (onUpdateItem) {
-			onUpdateItem(item.id, 'currentVariant', item.currentVariant);
-		}
-	}
-
-	function getCurrentImageSrc(item: Item) {
-		const variants = getItemVariants(item);
-		if (!variants) return item.itemData?.image || '/img/egt/FenderAmp.png';
-
-		const variant = item.currentVariant || 'default';
-		const imagePath =
-			variants[variant] || variants.default || (Object.values(variants)[0] as string);
-
-		if (!imagePath) return item.itemData?.image || '/img/egt/FenderAmp.png';
-
-		return buildImagePath(item, imagePath);
-	}
-
-	function buildImagePath(item: Item, imagePath: string) {
-		if (item.itemData?.path) {
-			return `/final_assets/${item.itemData.path}/${imagePath}`;
-		}
-		return imagePath.startsWith('/') ? imagePath : '/' + imagePath;
-	}
-
 	// Handle bulk updates
 	function applyBulkPerson() {
 		if (bulkPersonId != null && selectedItemsData.length > 0) {
 			selectedItemsData.forEach((item) => {
 				if (!item) return;
 				item.person_id = bulkPersonId;
-				onUpdateItem?.(item.id, 'person_id', String(bulkPersonId));
+				ps.updateItemProperty(item.id, 'person_id', String(bulkPersonId));
 			});
 			bulkPersonId = null;
 		}
@@ -206,40 +60,52 @@
 			<!-- Quick stats -->
 			<div class="grid grid-cols-2 gap-2">
 				<div class="rounded-lg bg-muted/50 px-3 py-2">
-					<div class="text-lg font-semibold text-text-primary">{items.length}</div>
-					<div class="text-[10px] text-text-tertiary">{items.length === 1 ? 'Item' : 'Items'}</div>
+					<div class="text-lg font-semibold text-text-primary">{ps.items.length}</div>
+					<div class="text-[10px] text-text-tertiary">
+						{ps.items.length === 1 ? 'Item' : 'Items'}
+					</div>
 				</div>
 				<div class="rounded-lg bg-muted/50 px-3 py-2">
-					<div class="text-lg font-semibold text-text-primary">{persons.length}</div>
-					<div class="text-[10px] text-text-tertiary">{persons.length === 1 ? 'Person' : 'People'}</div>
+					<div class="text-lg font-semibold text-text-primary">{ps.plotPersons.length}</div>
+					<div class="text-[10px] text-text-tertiary">
+						{ps.plotPersons.length === 1 ? 'Person' : 'People'}
+					</div>
 				</div>
 				<div class="rounded-lg bg-muted/50 px-3 py-2">
-					<div class="text-lg font-semibold text-text-primary">{items.filter(i => i.channel).length}</div>
+					<div class="text-lg font-semibold text-text-primary">
+						{ps.items.filter((i) => i.channel).length}
+					</div>
 					<div class="text-[10px] text-text-tertiary">Patched</div>
 				</div>
 				<div class="rounded-lg bg-muted/50 px-3 py-2">
-					<div class="text-lg font-semibold text-text-primary">{items.filter(i => !i.channel).length}</div>
+					<div class="text-lg font-semibold text-text-primary">
+						{ps.items.filter((i) => !i.channel).length}
+					</div>
 					<div class="text-[10px] text-text-tertiary">Unpatched</div>
 				</div>
 			</div>
 
 			<div class="rounded-lg border border-border-primary bg-surface px-3 py-2">
-				<div class="mb-2 text-[10px] font-medium uppercase tracking-wider text-text-tertiary">
+				<div class="mb-2 text-[10px] font-medium tracking-wider text-text-tertiary uppercase">
 					PDF Paper
 				</div>
 				<div class="flex items-center justify-between">
 					<span class="text-xs text-text-secondary">Page Size</span>
 					<div class="flex rounded-md border border-border-primary text-xs">
 						<button
-							onclick={() => (pdfPageFormat = 'letter')}
-							class="px-2 py-0.5 transition {pdfPageFormat === 'letter' ? 'bg-stone-900 text-white dark:bg-stone-100 dark:text-stone-900' : 'text-text-secondary hover:bg-surface-hover'}"
+							onclick={() => (ps.pdfPageFormat = 'letter')}
+							class="px-2 py-0.5 transition {ps.pdfPageFormat === 'letter'
+								? 'bg-stone-900 text-white dark:bg-stone-100 dark:text-stone-900'
+								: 'text-text-secondary hover:bg-surface-hover'}"
 							style="border-radius: 0.3rem 0 0 0.3rem;"
 						>
 							Letter
 						</button>
 						<button
-							onclick={() => (pdfPageFormat = 'a4')}
-							class="px-2 py-0.5 transition {pdfPageFormat === 'a4' ? 'bg-stone-900 text-white dark:bg-stone-100 dark:text-stone-900' : 'text-text-secondary hover:bg-surface-hover'}"
+							onclick={() => (ps.pdfPageFormat = 'a4')}
+							class="px-2 py-0.5 transition {ps.pdfPageFormat === 'a4'
+								? 'bg-stone-900 text-white dark:bg-stone-100 dark:text-stone-900'
+								: 'text-text-secondary hover:bg-surface-hover'}"
 							style="border-radius: 0 0.3rem 0.3rem 0;"
 						>
 							A4
@@ -248,24 +114,24 @@
 				</div>
 			</div>
 
-			{#if persons.length > 0}
+			{#if ps.plotPersons.length > 0}
 				<!-- People list -->
 				<div>
-					<h4 class="mb-1.5 text-[10px] font-medium uppercase tracking-wider text-text-tertiary">People</h4>
+					<h4 class="mb-1.5 text-[10px] font-medium tracking-wider text-text-tertiary uppercase">
+						People
+					</h4>
 					<div class="space-y-1">
-						{#each persons as p}
+						{#each ps.plotPersons as p}
 							<div class="flex items-center justify-between text-xs">
-								<span class="text-text-primary truncate">{p.name}</span>
-								<span class="text-text-tertiary truncate ml-2">{p.role || ''}</span>
+								<span class="truncate text-text-primary">{p.name}</span>
+								<span class="ml-2 truncate text-text-tertiary">{p.role || ''}</span>
 							</div>
 						{/each}
 					</div>
 				</div>
 			{/if}
 
-			<div class="text-center text-[10px] text-text-tertiary">
-				Select items to edit properties
-			</div>
+			<div class="text-center text-[10px] text-text-tertiary">Select items to edit properties</div>
 		</div>
 	{:else if selectedItemsData.length === 1}
 		<!-- Single item inspector -->
@@ -276,11 +142,15 @@
 					{#if selectedItemsData[0].type === 'riser'}
 						<div
 							class="flex items-center justify-center rounded border-2 border-gray-500 bg-gray-400/50 dark:border-gray-400 dark:bg-gray-600/50"
-							style="width: 120px; aspect-ratio: {selectedItemsData[0].itemData?.riserWidth ?? 4}/{selectedItemsData[0].itemData?.riserDepth ?? 4};"
+							style="width: 120px; aspect-ratio: {selectedItemsData[0].itemData?.riserWidth ??
+								4}/{selectedItemsData[0].itemData?.riserDepth ?? 4};"
 						>
 							<div class="text-center">
 								<div class="text-xs font-bold text-gray-700 dark:text-gray-200">RISER</div>
-								<div class="text-[10px] text-gray-600 dark:text-gray-300">{selectedItemsData[0].itemData?.riserWidth}' × {selectedItemsData[0].itemData?.riserDepth}'</div>
+								<div class="text-[10px] text-gray-600 dark:text-gray-300">
+									{selectedItemsData[0].itemData?.riserWidth}' × {selectedItemsData[0].itemData
+										?.riserDepth}'
+								</div>
 							</div>
 						</div>
 					{:else}
@@ -298,102 +168,117 @@
 						<input
 							type="text"
 							bind:value={selectedItemsData[0].name}
-							onchange={(e) => { const target = e.target as HTMLInputElement; onUpdateItem?.(selectedItemsData[0].id, 'name', target.value); }}
+							onchange={(e) => {
+								const target = e.target as HTMLInputElement;
+								ps.updateItemProperty(selectedItemsData[0].id, 'name', target.value);
+							}}
 							class="w-full rounded-lg border border-border-primary bg-surface px-2 py-1.5 text-sm text-text-primary focus:border-stone-500 focus:ring-2 focus:ring-stone-500"
 							placeholder="Item name"
 						/>
 					</div>
 					{#if selectedItemsData[0].type !== 'riser'}
-					<div>
-						<label class="mb-1 block text-xs text-text-secondary">Channel</label>
-						<input
-							type="text"
-							bind:value={selectedItemsData[0].channel}
-							onchange={(e) => { const target = e.target as HTMLInputElement; onUpdateItem?.(selectedItemsData[0].id, 'channel', target.value); }}
-							class="w-full rounded-lg border border-border-primary bg-surface px-2 py-1.5 text-sm text-text-primary focus:border-stone-500 focus:ring-2 focus:ring-stone-500"
-							placeholder="Channel"
-						/>
-					</div>
-					<div>
-						<label class="mb-1 block text-xs text-text-secondary">Person</label>
-						<PersonCombobox
-							{persons}
-							value={selectedItemsData[0].person_id}
-							onValueChange={(newValue) =>
-								onUpdateItem?.(selectedItemsData[0].id, 'person_id', String(newValue ?? ''))}
-						/>
-					</div>
+						<div>
+							<label class="mb-1 block text-xs text-text-secondary">Channel</label>
+							<input
+								type="text"
+								bind:value={selectedItemsData[0].channel}
+								onchange={(e) => {
+									const target = e.target as HTMLInputElement;
+									ps.updateItemProperty(selectedItemsData[0].id, 'channel', target.value);
+								}}
+								class="w-full rounded-lg border border-border-primary bg-surface px-2 py-1.5 text-sm text-text-primary focus:border-stone-500 focus:ring-2 focus:ring-stone-500"
+								placeholder="Channel"
+							/>
+						</div>
+						<div>
+							<label class="mb-1 block text-xs text-text-secondary">Person</label>
+							<PersonCombobox
+								persons={ps.plotPersons}
+								value={selectedItemsData[0].person_id}
+								onValueChange={(newValue) =>
+									ps.updateItemProperty(
+										selectedItemsData[0].id,
+										'person_id',
+										String(newValue ?? '')
+									)}
+							/>
+						</div>
 					{/if}
 					<div>
 						<label class="mb-1 block text-xs text-text-secondary">Zone</label>
 						<input
 							type="text"
-							value={getItemZone?.(selectedItemsData[0]) || 'Unknown'}
+							value={ps.getItemZone(selectedItemsData[0]) || 'Unknown'}
 							readonly
 							class="w-full rounded-lg border border-border-primary bg-muted/50 px-2 py-1.5 text-sm text-text-primary"
 						/>
 					</div>
 
 					<!-- Position fields -->
-					{#if getItemPosition && updateItemPosition}
-						<div class="grid grid-cols-2 gap-3">
-							<div>
-								<label class="mb-1 block text-xs text-text-secondary">Position X</label>
-								<input
-									type="number"
-									value={getItemPosition(selectedItemsData[0]).x}
-									onchange={(e) => {
-										const target = e.target as HTMLInputElement;
-										const newPosition = parseInt(target.value);
-										updateItemPosition(
-											selectedItemsData[0].id,
-											newPosition,
-											getItemPosition(selectedItemsData[0]).y
-										);
-									}}
-									class="w-full rounded-lg border border-border-primary bg-surface px-2 py-1.5 text-sm text-text-primary focus:border-stone-500 focus:ring-2 focus:ring-stone-500"
-								/>
-							</div>
-							<div>
-								<label class="mb-1 block text-xs text-text-secondary">Position Y</label>
-								<input
-									type="number"
-									value={getItemPosition(selectedItemsData[0]).y}
-									onchange={(e) => {
-													const target = e.target as HTMLInputElement;
-													const newPosition = parseInt(target.value);
-													updateItemPosition(
-														selectedItemsData[0].id,
-														getItemPosition(selectedItemsData[0]).x,
-														newPosition
-													);
-												}}
-									class="w-full rounded-lg border border-border-primary bg-surface px-2 py-1.5 text-sm text-text-primary focus:border-stone-500 focus:ring-2 focus:ring-stone-500"
-								/>
-							</div>
+					<div class="grid grid-cols-2 gap-3">
+						<div>
+							<label class="mb-1 block text-xs text-text-secondary">Position X</label>
+							<input
+								type="number"
+								value={ps.getItemPosition(selectedItemsData[0]).x}
+								onchange={(e) => {
+									const target = e.target as HTMLInputElement;
+									const newPosition = parseInt(target.value);
+									ps.updateItemPosition(
+										selectedItemsData[0].id,
+										newPosition,
+										ps.getItemPosition(selectedItemsData[0]).y
+									);
+								}}
+								class="w-full rounded-lg border border-border-primary bg-surface px-2 py-1.5 text-sm text-text-primary focus:border-stone-500 focus:ring-2 focus:ring-stone-500"
+							/>
 						</div>
-						<div class="mt-1 text-xs text-text-secondary">
-							<p>X: Stage left (-) to right (+) | Y: Downstage (0) to upstage (+)</p>
+						<div>
+							<label class="mb-1 block text-xs text-text-secondary">Position Y</label>
+							<input
+								type="number"
+								value={ps.getItemPosition(selectedItemsData[0]).y}
+								onchange={(e) => {
+									const target = e.target as HTMLInputElement;
+									const newPosition = parseInt(target.value);
+									ps.updateItemPosition(
+										selectedItemsData[0].id,
+										ps.getItemPosition(selectedItemsData[0]).x,
+										newPosition
+									);
+								}}
+								class="w-full rounded-lg border border-border-primary bg-surface px-2 py-1.5 text-sm text-text-primary focus:border-stone-500 focus:ring-2 focus:ring-stone-500"
+							/>
 						</div>
-					{/if}
+					</div>
+					<div class="mt-1 text-xs text-text-secondary">
+						<p>X: Stage left (-) to right (+) | Y: Downstage (0) to upstage (+)</p>
+					</div>
 
 					<!-- Riser dimensions (when a riser is selected) -->
 					{#if selectedItemsData[0].type === 'riser'}
 						<div>
-							<label class="mb-1 block text-xs text-text-secondary">Riser Size ({unitLabel(unit)})</label>
+							<label class="mb-1 block text-xs text-text-secondary"
+								>Riser Size ({unitLabel(ps.unit)})</label
+							>
 							<div class="grid grid-cols-3 gap-2">
 								<div>
 									<label class="block text-[10px] text-text-tertiary">Width</label>
 									<input
 										type="number"
-										value={displayValue(selectedItemsData[0].itemData?.riserWidth ?? 4, unit)}
+										value={displayValue(selectedItemsData[0].itemData?.riserWidth ?? 4, ps.unit)}
 										onchange={(e) => {
 											const target = e.target as HTMLInputElement;
 											const val = parseFloat(target.value);
-											if (!isNaN(val) && val > 0) onUpdateItem?.(selectedItemsData[0].id, 'riserWidth', String(toFeet(val, unit)));
+											if (!isNaN(val) && val > 0)
+												ps.updateItemProperty(
+													selectedItemsData[0].id,
+													'riserWidth',
+													String(toFeet(val, ps.unit))
+												);
 										}}
 										min="1"
-										step={unit === 'metric' ? '0.5' : '1'}
+										step={ps.unit === 'metric' ? '0.5' : '1'}
 										class="w-full rounded-lg border border-border-primary bg-surface px-2 py-1.5 text-xs text-text-primary focus:border-stone-500 focus:ring-2 focus:ring-stone-500"
 									/>
 								</div>
@@ -401,14 +286,19 @@
 									<label class="block text-[10px] text-text-tertiary">Depth</label>
 									<input
 										type="number"
-										value={displayValue(selectedItemsData[0].itemData?.riserDepth ?? 4, unit)}
+										value={displayValue(selectedItemsData[0].itemData?.riserDepth ?? 4, ps.unit)}
 										onchange={(e) => {
 											const target = e.target as HTMLInputElement;
 											const val = parseFloat(target.value);
-											if (!isNaN(val) && val > 0) onUpdateItem?.(selectedItemsData[0].id, 'riserDepth', String(toFeet(val, unit)));
+											if (!isNaN(val) && val > 0)
+												ps.updateItemProperty(
+													selectedItemsData[0].id,
+													'riserDepth',
+													String(toFeet(val, ps.unit))
+												);
 										}}
 										min="1"
-										step={unit === 'metric' ? '0.5' : '1'}
+										step={ps.unit === 'metric' ? '0.5' : '1'}
 										class="w-full rounded-lg border border-border-primary bg-surface px-2 py-1.5 text-xs text-text-primary focus:border-stone-500 focus:ring-2 focus:ring-stone-500"
 									/>
 								</div>
@@ -416,11 +306,16 @@
 									<label class="block text-[10px] text-text-tertiary">Height</label>
 									<input
 										type="number"
-										value={displayValue(selectedItemsData[0].itemData?.riserHeight ?? 1, unit)}
+										value={displayValue(selectedItemsData[0].itemData?.riserHeight ?? 1, ps.unit)}
 										onchange={(e) => {
 											const target = e.target as HTMLInputElement;
 											const val = parseFloat(target.value);
-											if (!isNaN(val) && val > 0) onUpdateItem?.(selectedItemsData[0].id, 'riserHeight', String(toFeet(val, unit)));
+											if (!isNaN(val) && val > 0)
+												ps.updateItemProperty(
+													selectedItemsData[0].id,
+													'riserHeight',
+													String(toFeet(val, ps.unit))
+												);
 										}}
 										min="0.5"
 										step="0.5"
@@ -430,17 +325,6 @@
 							</div>
 						</div>
 					{/if}
-
-	
-
-				{#if isDrumKit}
-					<button
-						onclick={() => (showDrumMicModal = true)}
-						class="w-full rounded-lg bg-green-600 px-3 py-2 text-sm text-white transition hover:bg-green-700 mt-4"
-					>
-						Customize Micing
-					</button>
-				{/if}
 				</div>
 			</div>
 		</div>
@@ -456,7 +340,7 @@
 					<h4 class="mb-3 font-medium text-text-primary">Assign Person</h4>
 					<div class="space-y-3">
 						<PersonCombobox
-							{persons}
+							persons={ps.plotPersons}
 							value={bulkPersonId}
 							onValueChange={(newValue) => (bulkPersonId = newValue)}
 						/>
@@ -483,21 +367,25 @@
 	{/if}
 
 	<!-- Stage Settings -->
-	<div class="mt-4 border-t border-border-primary pt-4 space-y-3">
+	<div class="mt-4 space-y-3 border-t border-border-primary pt-4">
 		<!-- Unit toggle -->
 		<div class="flex items-center justify-between">
 			<span class="text-xs text-text-secondary">Units</span>
 			<div class="flex rounded-md border border-border-primary text-xs">
 				<button
-					onclick={() => (unit = 'imperial')}
-					class="px-2 py-0.5 transition {unit === 'imperial' ? 'bg-stone-900 text-white dark:bg-stone-100 dark:text-stone-900' : 'text-text-secondary hover:bg-surface-hover'}"
+					onclick={() => (ps.unit = 'imperial')}
+					class="px-2 py-0.5 transition {ps.unit === 'imperial'
+						? 'bg-stone-900 text-white dark:bg-stone-100 dark:text-stone-900'
+						: 'text-text-secondary hover:bg-surface-hover'}"
 					style="border-radius: 0.3rem 0 0 0.3rem;"
 				>
 					ft
 				</button>
 				<button
-					onclick={() => (unit = 'metric')}
-					class="px-2 py-0.5 transition {unit === 'metric' ? 'bg-stone-900 text-white dark:bg-stone-100 dark:text-stone-900' : 'text-text-secondary hover:bg-surface-hover'}"
+					onclick={() => (ps.unit = 'metric')}
+					class="px-2 py-0.5 transition {ps.unit === 'metric'
+						? 'bg-stone-900 text-white dark:bg-stone-100 dark:text-stone-900'
+						: 'text-text-secondary hover:bg-surface-hover'}"
 					style="border-radius: 0 0.3rem 0.3rem 0;"
 				>
 					m
@@ -506,32 +394,35 @@
 		</div>
 
 		<div>
-			<label class="mb-1 block text-xs text-text-secondary">Stage Size ({unitLabel(unit)})</label>
+			<label class="mb-1 block text-xs text-text-secondary">Stage Size ({unitLabel(ps.unit)})</label
+			>
 			<div class="flex gap-2">
 				<input
 					type="number"
-					value={Math.round(displayValue(stageWidth, unit) * 100) / 100}
+					value={Math.round(displayValue(ps.stageWidth, ps.unit) * 100) / 100}
 					onchange={(e) => {
 						const target = e.target as HTMLInputElement;
 						const val = parseFloat(target.value);
-						if (!isNaN(val) && val > 0) stageWidth = Math.round(toFeet(val, unit) * 100) / 100;
+						if (!isNaN(val) && val > 0)
+							ps.stageWidth = Math.round(toFeet(val, ps.unit) * 100) / 100;
 					}}
 					min="1"
-					step={unit === 'metric' ? '0.5' : '1'}
+					step={ps.unit === 'metric' ? '0.5' : '1'}
 					placeholder="Width"
 					class="w-full rounded-lg border border-border-primary bg-surface px-2 py-1.5 text-sm text-text-primary focus:border-stone-500 focus:ring-2 focus:ring-stone-500"
 				/>
 				<span class="self-center text-xs text-text-tertiary">x</span>
 				<input
 					type="number"
-					value={Math.round(displayValue(stageDepth, unit) * 100) / 100}
+					value={Math.round(displayValue(ps.stageDepth, ps.unit) * 100) / 100}
 					onchange={(e) => {
 						const target = e.target as HTMLInputElement;
 						const val = parseFloat(target.value);
-						if (!isNaN(val) && val > 0) stageDepth = Math.round(toFeet(val, unit) * 100) / 100;
+						if (!isNaN(val) && val > 0)
+							ps.stageDepth = Math.round(toFeet(val, ps.unit) * 100) / 100;
 					}}
 					min="1"
-					step={unit === 'metric' ? '0.5' : '1'}
+					step={ps.unit === 'metric' ? '0.5' : '1'}
 					placeholder="Depth"
 					class="w-full rounded-lg border border-border-primary bg-surface px-2 py-1.5 text-sm text-text-primary focus:border-stone-500 focus:ring-2 focus:ring-stone-500"
 				/>
@@ -540,12 +431,15 @@
 
 		<!-- Add Riser -->
 		{#if showRiserForm}
-			<div class="rounded-lg border border-border-primary p-2 space-y-2">
+			<div class="space-y-2 rounded-lg border border-border-primary p-2">
 				<div class="flex items-center justify-between">
 					<span class="text-xs font-medium text-text-primary">Add Riser</span>
-					<button onclick={() => (showRiserForm = false)} class="text-xs text-text-tertiary hover:text-text-primary">&times;</button>
+					<button
+						onclick={() => (showRiserForm = false)}
+						class="text-xs text-text-tertiary hover:text-text-primary">&times;</button
+					>
 				</div>
-				<div class="text-xs text-text-secondary mb-1">Presets:</div>
+				<div class="mb-1 text-xs text-text-secondary">Presets:</div>
 				<div class="flex flex-wrap gap-1">
 					{#each riserPresets as preset}
 						<button
@@ -553,21 +447,21 @@
 								if (onPlaceRiser) onPlaceRiser(preset.w, preset.d, customRiserHeight);
 								showRiserForm = false;
 							}}
-							class="rounded bg-muted px-2 py-1 text-xs text-text-primary hover:bg-surface-hover transition"
+							class="rounded bg-muted px-2 py-1 text-xs text-text-primary transition hover:bg-surface-hover"
 						>
 							{preset.label}
 						</button>
 					{/each}
 				</div>
-				<div class="text-xs text-text-secondary mt-1">Custom ({unitLabel(unit)}):</div>
-				<div class="flex gap-1.5 items-end">
+				<div class="mt-1 text-xs text-text-secondary">Custom ({unitLabel(ps.unit)}):</div>
+				<div class="flex items-end gap-1.5">
 					<div class="flex-1">
 						<label class="block text-[10px] text-text-tertiary">W</label>
 						<input
 							type="number"
 							bind:value={customRiserW}
 							min="1"
-							step={unit === 'metric' ? '0.5' : '1'}
+							step={ps.unit === 'metric' ? '0.5' : '1'}
 							class="w-full rounded border border-border-primary bg-surface px-1.5 py-1 text-xs text-text-primary"
 						/>
 					</div>
@@ -577,7 +471,7 @@
 							type="number"
 							bind:value={customRiserD}
 							min="1"
-							step={unit === 'metric' ? '0.5' : '1'}
+							step={ps.unit === 'metric' ? '0.5' : '1'}
 							class="w-full rounded border border-border-primary bg-surface px-1.5 py-1 text-xs text-text-primary"
 						/>
 					</div>
@@ -594,12 +488,12 @@
 				</div>
 				<button
 					onclick={() => {
-						const w = toFeet(customRiserW, unit);
-						const d = toFeet(customRiserD, unit);
+						const w = toFeet(customRiserW, ps.unit);
+						const d = toFeet(customRiserD, ps.unit);
 						if (onPlaceRiser && w > 0 && d > 0) onPlaceRiser(w, d, customRiserHeight);
 						showRiserForm = false;
 					}}
-					class="w-full rounded bg-stone-900 px-2 py-1.5 text-xs text-white hover:bg-stone-800 dark:bg-stone-100 dark:text-stone-900 dark:hover:bg-stone-200 transition"
+					class="w-full rounded bg-stone-900 px-2 py-1.5 text-xs text-white transition hover:bg-stone-800 dark:bg-stone-100 dark:text-stone-900 dark:hover:bg-stone-200"
 				>
 					Place Custom Riser
 				</button>
@@ -607,7 +501,7 @@
 		{:else}
 			<button
 				onclick={() => (showRiserForm = true)}
-				class="w-full rounded-lg border border-dashed border-border-primary px-3 py-2 text-sm text-text-secondary hover:border-stone-400 hover:text-text-primary transition"
+				class="w-full rounded-lg border border-dashed border-border-primary px-3 py-2 text-sm text-text-secondary transition hover:border-stone-400 hover:text-text-primary"
 			>
 				+ Add Riser
 			</button>
@@ -617,13 +511,17 @@
 		<div class="flex items-center justify-between">
 			<span class="text-xs text-text-secondary">Stage Zones</span>
 			<button
-				onclick={() => (showZones = !showZones)}
-				class="relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full transition-colors duration-200 {showZones ? 'bg-stone-900 dark:bg-stone-100' : 'bg-gray-300 dark:bg-gray-600'}"
+				onclick={() => (ps.showZones = !ps.showZones)}
+				class="relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full transition-colors duration-200 {ps.showZones
+					? 'bg-stone-900 dark:bg-stone-100'
+					: 'bg-gray-300 dark:bg-gray-600'}"
 				role="switch"
-				aria-checked={showZones}
+				aria-checked={ps.showZones}
 			>
 				<span
-					class="pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-sm ring-0 transition-transform duration-200 dark:bg-gray-900 {showZones ? 'translate-x-4' : 'translate-x-0.5'}"
+					class="pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-sm ring-0 transition-transform duration-200 dark:bg-gray-900 {ps.showZones
+						? 'translate-x-4'
+						: 'translate-x-0.5'}"
 					style="margin-top: 2px;"
 				></span>
 			</button>
@@ -639,7 +537,7 @@
 		>
 			<svg
 				xmlns="http://www.w3.org/2000/svg"
-				class="h-3.5 w-3.5 hidden dark:block"
+				class="hidden h-3.5 w-3.5 dark:block"
 				viewBox="0 0 20 20"
 				fill="currentColor"
 			>
@@ -651,7 +549,7 @@
 			</svg>
 			<svg
 				xmlns="http://www.w3.org/2000/svg"
-				class="h-3.5 w-3.5 block dark:hidden"
+				class="block h-3.5 w-3.5 dark:hidden"
 				viewBox="0 0 20 20"
 				fill="currentColor"
 			>
@@ -662,24 +560,3 @@
 		</button>
 	</div>
 </div>
-
-{#if showDrumMicModal}
-	<div class="fixed inset-0 z-50 flex items-center justify-center">
-		<div class="absolute inset-0 bg-black/50 backdrop-blur-sm" onclick={() => (showDrumMicModal = false)}></div>
-		<div class="relative w-[min(400px,90vw)] rounded-xl bg-surface p-6 shadow-lg">
-			<h2 class="mb-4 text-lg font-semibold">Customize Drum Micing</h2>
-			<div class="max-h-60 space-y-3 overflow-y-auto">
-				{#each defaultDrumMics as mic}
-					<label class="flex items-center gap-2 text-sm">
-						<input type="checkbox" checked={activeDrumMics.includes(mic)} onchange={() => toggleDrumMic(mic)} />
-						{mic}
-					</label>
-				{/each}
-			</div>
-			<div class="mt-6 flex justify-end gap-2">
-				<button class="rounded-lg bg-muted px-3 py-2 text-sm" onclick={() => (showDrumMicModal = false)}>Cancel</button>
-				<button class="rounded-lg bg-stone-900 px-3 py-2 text-sm text-white hover:bg-stone-800 dark:bg-stone-100 dark:text-stone-900 dark:hover:bg-stone-200" onclick={saveDrumMicConfig}>Save</button>
-			</div>
-		</div>
-	</div>
-{/if}

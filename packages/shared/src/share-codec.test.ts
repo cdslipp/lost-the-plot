@@ -246,9 +246,7 @@ async function test() {
 			pass = false;
 		}
 		if (dec.musician !== (orig.musician || '')) {
-			console.error(
-				`FAIL: Item ${i} musician mismatch: '${dec.musician}' !== '${orig.musician}'`
-			);
+			console.error(`FAIL: Item ${i} musician mismatch: '${dec.musician}' !== '${orig.musician}'`);
 			pass = false;
 		}
 	}
@@ -256,7 +254,11 @@ async function test() {
 	// Check riser specifically
 	const riser = decoded.items.find((i) => i.type === 'riser');
 	if (riser) {
-		if (riser.itemData?.riserWidth !== 8 || riser.itemData?.riserDepth !== 4 || riser.itemData?.riserHeight !== 1) {
+		if (
+			riser.itemData?.riserWidth !== 8 ||
+			riser.itemData?.riserDepth !== 4 ||
+			riser.itemData?.riserHeight !== 1
+		) {
 			console.error(`FAIL: Riser dimensions mismatch`);
 			console.error(`  Got: ${JSON.stringify(riser.itemData)}`);
 			pass = false;

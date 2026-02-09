@@ -4,8 +4,8 @@
  * Canvas and Stage utilities for standardized layouts
  */
 
-export type PaperFormat = 'letter';
-export type Orientation = 'landscape' | 'portrait';
+type PaperFormat = 'letter';
+type Orientation = 'landscape' | 'portrait';
 
 export interface CanvasConfig {
 	format: PaperFormat;
@@ -41,7 +41,7 @@ const PAPER_SIZES: Record<PaperFormat, { width: number; height: number }> = {
 /**
  * Calculate canvas dimensions from paper format and orientation
  */
-export function getCanvasDimensions(
+function getCanvasDimensions(
 	format: PaperFormat,
 	orientation: Orientation,
 	dpi: number = 96
@@ -105,48 +105,4 @@ export function getStandardConfig(): {
 		canvas: { ...canvasConfig, ...canvasDimensions },
 		stage
 	};
-}
-
-/**
- * Convert stage coordinates to canvas coordinates
- */
-export function stageToCanvas(
-	stageX: number,
-	stageY: number,
-	stageArea: StageArea
-): { x: number; y: number } {
-	return {
-		x: stageArea.x + stageX,
-		y: stageArea.y + stageY
-	};
-}
-
-/**
- * Convert canvas coordinates to stage coordinates
- */
-export function canvasToStage(
-	canvasX: number,
-	canvasY: number,
-	stageArea: StageArea
-): { x: number; y: number } {
-	return {
-		x: canvasX - stageArea.x,
-		y: canvasY - stageArea.y
-	};
-}
-
-/**
- * Check if coordinates are within stage bounds
- */
-export function isWithinStage(
-	x: number,
-	y: number,
-	stageArea: StageArea
-): boolean {
-	return (
-		x >= 0 &&
-		y >= 0 &&
-		x <= stageArea.width &&
-		y <= stageArea.height
-	);
 }
