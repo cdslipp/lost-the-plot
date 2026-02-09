@@ -9,13 +9,13 @@
 </script>
 
 <svelte:head>
-	<title>StagePlotter — Tablet</title>
+	<title>Lost the Plot — Tablet</title>
 </svelte:head>
 
 <div class="flex min-h-[80vh] flex-col items-center justify-center px-6 text-center">
-	<h1 class="text-2xl font-bold text-text-primary">StagePlotter</h1>
+	<h1 class="text-2xl font-bold text-text-primary">Lost the Plot</h1>
 	<p class="mt-4 max-w-sm text-text-secondary">
-		StagePlotter works best on a desktop or laptop browser. Tablet support with touch-friendly
+		Lost the Plot works best on a desktop or laptop browser. Tablet support with touch-friendly
 		controls is on our roadmap.
 	</p>
 	<p class="mt-6 text-sm text-text-tertiary">

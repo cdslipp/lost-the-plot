@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { APP_NAME } from '$lib/config';
+	import { APP_NAME, GITHUB_REPO, GITHUB_SPONSORS_URL } from '$lib/config';
 </script>
 
 <footer class="px-6 pt-4 pb-10">
@@ -22,15 +22,15 @@
 			>
 			<div class="flex gap-6 font-sans text-sm text-stone-400 dark:text-stone-500">
 				<a
-					href="https://github.com/cdslipp/stageplotter"
+					href={GITHUB_REPO}
 					class="transition hover:text-stone-700 dark:hover:text-stone-300">GitHub</a
 				>
 				<a
-					href="https://github.com/sponsors/cdslipp"
+					href={GITHUB_SPONSORS_URL}
 					class="transition hover:text-stone-700 dark:hover:text-stone-300">Sponsor</a
 				>
 				<a
-					href="https://github.com/cdslipp/stageplotter/blob/main/LICENSE"
+					href="{GITHUB_REPO}/blob/main/LICENSE"
 					class="transition hover:text-stone-700 dark:hover:text-stone-300">License</a
 				>
 			</div>

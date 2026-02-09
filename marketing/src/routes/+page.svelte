@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { APP_NAME, APP_URL } from '$lib/config';
+	import { APP_NAME, APP_URL, GITHUB_REPO } from '$lib/config';
 	import SketchyLine from '$lib/components/SketchyLine.svelte';
 	import SketchyLineShort from '$lib/components/SketchyLineShort.svelte';
 	import Footer from '$lib/components/Footer.svelte';
@@ -328,7 +328,7 @@
 						Start plotting
 					</a>
 					<a
-						href="https://github.com/cdslipp/stageplotter"
+						href={GITHUB_REPO}
 						class="inline-flex items-center font-sans text-sm text-stone-500 transition hover:text-stone-800 dark:text-stone-400 dark:hover:text-stone-200"
 					>
 						View source on GitHub

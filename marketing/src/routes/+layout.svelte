@@ -1,6 +1,6 @@
 <script lang="ts">
 	import './layout.css';
-	import { APP_NAME } from '$lib/config';
+	import { APP_NAME, GITHUB_REPO, GITHUB_SPONSORS_URL } from '$lib/config';
 	import { onMount } from 'svelte';
 
 	let { children } = $props();
@@ -21,8 +21,8 @@
 		{ href: '/download', label: 'Download' },
 		{ href: '/changelog', label: 'Changelog' },
 		{ href: '/gear-library', label: 'Gear Library' },
-		{ href: 'https://github.com/cdslipp/stageplotter', label: 'GitHub' },
-		{ href: 'https://github.com/sponsors/cdslipp', label: 'Support' }
+		{ href: GITHUB_REPO, label: 'GitHub' },
+		{ href: GITHUB_SPONSORS_URL, label: 'Support' }
 	];
 </script>
 

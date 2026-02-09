@@ -12,6 +12,9 @@
 	import { exportToPdf } from '$lib/utils/pdf';
 	import { getCurrentImageSrc } from '$lib/utils/canvasUtils';
 
+	const MARKETING_URL = 'https://plot.slipp.cam';
+	const APP_URL = 'https://ltp.slipp.cam';
+
 	let bandName = $derived(
 		decodeURIComponent(($page.params as Record<string, string>).bandName ?? '')
 	);
@@ -169,7 +172,7 @@
 </script>
 
 <svelte:head>
-	<title>{plotName} - {bandName} | StagePlotter</title>
+	<title>{plotName} - {bandName} | Lost the Plot</title>
 </svelte:head>
 
 <div class="flex h-[calc(100dvh-4.25rem)] flex-col gap-3 overflow-hidden py-3">
@@ -424,6 +427,20 @@
 							</div>
 						</div>
 					{/if}
+				<!-- Promo links -->
+					<div class="mt-auto border-t border-border-primary pt-4 text-center">
+						<p class="mb-2 text-xs text-text-tertiary">
+							Made with <a href={MARKETING_URL} class="font-medium text-text-secondary underline hover:text-text-primary" target="_blank" rel="noopener noreferrer">Lost the Plot</a>
+						</p>
+						<a
+							href={APP_URL}
+							target="_blank"
+							rel="noopener noreferrer"
+							class="inline-block rounded-lg border border-border-primary px-4 py-1.5 text-xs font-medium text-text-primary transition hover:bg-surface-hover"
+						>
+							Create your own stage plot
+						</a>
+					</div>
 				</div>
 			</div>
 		</div>

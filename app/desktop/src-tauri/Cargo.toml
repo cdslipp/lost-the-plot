@@ -1,7 +1,7 @@
 [package]
 name = "stageplotter-desktop"
 version = "0.1.0"
-description = "StagePlotter Desktop - Professional stage plot creator"
+description = "Lost the Plot Desktop - Professional stage plot creator"
 authors = ["you"]
 edition = "2021"
 

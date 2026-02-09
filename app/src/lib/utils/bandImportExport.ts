@@ -16,7 +16,7 @@ export function safeSlug(value: string): string {
 			.trim()
 			.toLowerCase()
 			.replace(/[^a-z0-9]+/g, '-')
-			.replace(/(^-|-$)+/g, '') || 'stageplotter'
+			.replace(/(^-|-$)+/g, '') || 'lost-the-plot'
 	);
 }
 
@@ -46,7 +46,7 @@ function buildFileMetadata() {
 		created_at: now,
 		modified_at: now,
 		created_by: {
-			app: 'StagePlotter',
+			app: 'Lost the Plot',
 			version: APP_VERSION,
 			platform: getPlatformLabel()
 		}

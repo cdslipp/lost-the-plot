@@ -65,8 +65,8 @@ export default defineConfig({
 				enabled: false
 			},
 			manifest: {
-				name: 'StagePlotter',
-				short_name: 'StagePlotter',
+				name: 'Lost the Plot',
+				short_name: 'Lost the Plot',
 				description: 'Create professional stage plots for live music',
 				theme_color: '#1e40af',
 				background_color: '#ffffff',
