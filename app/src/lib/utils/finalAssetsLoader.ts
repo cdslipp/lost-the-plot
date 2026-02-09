@@ -10,7 +10,21 @@ export interface FinalAssetItem {
 	default_inputs?: any[];
 	default_outputs?: any[];
 	instrument_signal?: 'acoustic' | 'electric' | '';
-	path: string; // Path from the consolidate script
+	path: string;
+	slug?: string;
+	category?: string;
+	subcategory?: string;
+	tags?: string[];
+	is_backline?: boolean;
+	brands?: string[];
+	brand?: string;
+	model?: string;
+	dimensions?: { width_in: number; depth_in: number; height_in: number };
+	provision_default?: string;
+	connectors?: string[];
+	notes?: string;
+	auto_number_prefix?: string;
+	person_subcategory?: string;
 }
 
 export interface ProcessedItem {
@@ -18,50 +32,18 @@ export interface ProcessedItem {
 	name: string;
 	type: string;
 	category: string;
+	subcategory?: string;
 	image: string;
 	keywords: string[];
 	description?: string;
 	variants?: Record<string, string>;
 	variant_order?: string[];
-	path: string; // Directory path for context
+	path: string;
 	default_inputs?: any[];
 	default_outputs?: any[];
 	instrument_signal?: 'acoustic' | 'electric' | '';
+	is_backline?: boolean;
 }
-
-// Map directory paths to human-readable categories
-const CATEGORY_MAP: Record<string, string> = {
-	mics: 'Microphones',
-	'mics/boom': 'Microphones - Boom',
-	'mics/hand_held': 'Microphones - Hand Held',
-	'mics/headset': 'Microphones - Headset',
-	'mics/straight': 'Microphones - Straight',
-	more: 'Equipment & Accessories',
-	'more/laptop': 'Computers & Tech',
-	'more/mixer': 'Audio Equipment',
-	'more/dj_gear': 'DJ Equipment',
-	'more/video': 'Video Equipment',
-	'more/furniture': 'Furniture',
-	'more/rack': 'Racks & Cases',
-	drums: 'Drums',
-	'drums/hardware': 'Drums - Hardware',
-	'drums/individual_drums': 'Drums - Individual',
-	'drums/drum_kits': 'Drum Kits',
-	guitars: 'Guitars',
-	'guitars/bass': 'Bass',
-	keys: 'Keyboards & Piano',
-	amps: 'Amplifiers',
-	'amps/bass': 'Bass Amplifiers',
-	strings: 'String Instruments',
-	winds: 'Wind Instruments',
-	percussion: 'Percussion',
-	people: 'People',
-	stagecraft: 'Stage & Production',
-	outputs: 'Outputs',
-	symbols: 'Symbols',
-	numerals: 'Numbers',
-	alphabet: 'Letters'
-};
 
 /**
  * Load all items from the consolidated items.json file.
@@ -73,28 +55,14 @@ export async function loadFinalAssets(): Promise<ProcessedItem[]> {
 			throw new Error(`HTTP error! status: ${response.status}`);
 		}
 		const itemsData: FinalAssetItem[] = await response.json();
-		return itemsData
-			.map((item) => processItem(item, item.path, getCategoryPath(item.path)))
-			.filter(Boolean) as ProcessedItem[];
+		return itemsData.map(processItem).filter(Boolean) as ProcessedItem[];
 	} catch (error) {
 		console.error('Error loading final assets:', error);
 		return [];
 	}
 }
 
-function getCategoryPath(path: string): string {
-	const parts = path.split('/');
-	if (parts.length > 1) {
-		return parts.slice(0, -1).join('/');
-	}
-	return parts[0];
-}
-
-function processItem(
-	itemData: FinalAssetItem,
-	path: string,
-	categoryPath: string
-): ProcessedItem | null {
+function processItem(itemData: FinalAssetItem): ProcessedItem | null {
 	if (!itemData.name || !itemData.variants) {
 		return null;
 	}
@@ -104,31 +72,34 @@ function processItem(
 		return null;
 	}
 
-	const imagePath = `/final_assets/${path}/${defaultImage}`;
-	const category = CATEGORY_MAP[categoryPath] || categoryPath;
+	const imagePath = `/final_assets/${itemData.path}/${defaultImage}`;
+	const category = itemData.category || itemData.path.split('/')[0];
 
 	const keywords = [
 		itemData.name.toLowerCase(),
 		itemData.item_type.toLowerCase(),
 		...itemData.name.toLowerCase().split(/\s+/),
-		...category.toLowerCase().split(/\s+/),
-		categoryPath.split('/').join(' ').toLowerCase()
+		...(itemData.tags || []).map((t) => t.toLowerCase()),
+		category.toLowerCase(),
+		...(itemData.subcategory ? [itemData.subcategory.toLowerCase()] : [])
 	].filter(Boolean);
 
 	return {
-		id: `final-asset-${path.replace(/[^a-zA-Z0-9]/g, '-')}`,
+		id: itemData.slug || `final-asset-${itemData.path.replace(/[^a-zA-Z0-9]/g, '-')}`,
 		name: itemData.name,
 		type: itemData.item_type,
 		category,
+		subcategory: itemData.subcategory,
 		image: imagePath,
-		keywords,
+		keywords: [...new Set(keywords)],
 		description: `${itemData.name} - ${category}`,
 		variants: itemData.variants,
 		variant_order: itemData.variant_order,
-		path,
+		path: itemData.path,
 		default_inputs: itemData.default_inputs,
 		default_outputs: itemData.default_outputs,
-		instrument_signal: itemData.instrument_signal
+		instrument_signal: itemData.instrument_signal,
+		is_backline: itemData.is_backline
 	};
 }
 

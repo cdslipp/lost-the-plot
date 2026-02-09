@@ -31,7 +31,7 @@
 	<p class="mt-2 text-lg text-text-tertiary tabular-nums">{page.status}</p>
 	<p class="mt-4 text-lg text-text-secondary">
 		{#if page.status === 404}
-			This page wandered offstage.
+			Huh... it looks like that page doesn't exist.
 		{:else}
 			Something went wrong.
 		{/if}

@@ -5,16 +5,16 @@ import { join } from 'path';
 import type { RequestHandler } from './$types';
 import type { CatalogItem } from '$lib/types';
 
-const ENRICHED_PATH = join(process.cwd(), 'data', 'enriched-items.json');
+const ITEMS_PATH = join(process.cwd(), '..', 'app', 'static', 'final_assets', 'items.json');
 
 export const POST: RequestHandler = async ({ request }) => {
 	const item: CatalogItem = await request.json();
 
-	if (!existsSync(ENRICHED_PATH)) {
-		return json({ error: 'Enriched data not initialized' }, { status: 500 });
+	if (!existsSync(ITEMS_PATH)) {
+		return json({ error: 'Items data not found' }, { status: 500 });
 	}
 
-	const data = await readFile(ENRICHED_PATH, 'utf-8');
+	const data = await readFile(ITEMS_PATH, 'utf-8');
 	const items: CatalogItem[] = JSON.parse(data);
 
 	const index = items.findIndex((i) => i.path === item.path);
@@ -25,7 +25,7 @@ export const POST: RequestHandler = async ({ request }) => {
 	item._enriched = true;
 	items[index] = item;
 
-	await writeFile(ENRICHED_PATH, JSON.stringify(items, null, 2));
+	await writeFile(ITEMS_PATH, JSON.stringify(items, null, 2));
 
 	return json({ success: true });
 };

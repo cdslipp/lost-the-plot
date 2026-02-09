@@ -654,16 +654,7 @@ export class StagePlotState {
 		const variantKeys = getVariantKeys(item);
 		const currentIndex = variantKeys.indexOf(item.currentVariant || 'default');
 		const newIndex = (currentIndex - 1 + variantKeys.length) % variantKeys.length;
-		item.currentVariant = variantKeys[newIndex];
-		const newImagePath = variants[item.currentVariant];
-		const img = new Image();
-		img.src = buildImagePath(item, newImagePath);
-		img.onload = () => {
-			item.position.width = img.naturalWidth;
-			item.position.height = img.naturalHeight;
-			this.commitChange();
-		};
-		this.updateItemProperty(item.id, 'currentVariant', item.currentVariant);
+		this.setVariant(item, variantKeys[newIndex]);
 	}
 
 	rotateItemRight(item: any) {
@@ -672,8 +663,14 @@ export class StagePlotState {
 		const variantKeys = getVariantKeys(item);
 		const currentIndex = variantKeys.indexOf(item.currentVariant || 'default');
 		const newIndex = (currentIndex + 1) % variantKeys.length;
-		item.currentVariant = variantKeys[newIndex];
-		const newImagePath = variants[item.currentVariant];
+		this.setVariant(item, variantKeys[newIndex]);
+	}
+
+	setVariant(item: any, variantKey: string) {
+		const variants = getItemVariants(item);
+		if (!variants || !variants[variantKey]) return;
+		item.currentVariant = variantKey;
+		const newImagePath = variants[variantKey];
 		const img = new Image();
 		img.src = buildImagePath(item, newImagePath);
 		img.onload = () => {
@@ -681,6 +678,6 @@ export class StagePlotState {
 			item.position.height = img.naturalHeight;
 			this.commitChange();
 		};
-		this.updateItemProperty(item.id, 'currentVariant', item.currentVariant);
+		this.updateItemProperty(item.id, 'currentVariant', variantKey);
 	}
 }

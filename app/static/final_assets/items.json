@@ -1,59 +1,123 @@
 [
 	{
-		"name": "Electric",
+		"name": "Power Outlet",
 		"item_type": "power",
 		"variants": {
 			"default": "electric.png"
 		},
 		"path": "ac/electric/electric",
-		"is_backline": false,
-		"auto_number_prefix": "",
-		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"slug": "ac-electric-electric",
+		"category": "power",
+		"subcategory": "power_outlet",
+		"tags": ["power", "power_outlet", "electric"],
+		"default_inputs": [],
+		"dimensions": {
+			"width_in": 0,
+			"depth_in": 0,
+			"height_in": 0
+		},
+		"provision_default": "venue_provided",
+		"is_backline": false,
+		"connectors": [],
+		"power_requirements": "",
+		"notes": "",
+		"auto_number_prefix": "",
+		"person_subcategory": "",
+		"_enriched": true,
+		"_original_name": "Power Outlet"
 	},
 	{
-		"name": "Electric 240 UK",
+		"name": "UK 240V Outlet",
 		"item_type": "power",
 		"variants": {
 			"default": "electric240_uk_electric240UK.png"
 		},
 		"path": "ac/electric/electric240_uk",
-		"is_backline": false,
-		"auto_number_prefix": "",
-		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"slug": "ac-electric-electric240-uk",
+		"category": "power",
+		"subcategory": "power_outlet",
+		"tags": ["power", "power_outlet", "electric"],
+		"default_inputs": [],
+		"dimensions": {
+			"width_in": 0,
+			"depth_in": 0,
+			"height_in": 0
+		},
+		"provision_default": "venue_provided",
+		"is_backline": false,
+		"connectors": ["IEC"],
+		"power_requirements": "",
+		"notes": "",
+		"auto_number_prefix": "",
+		"person_subcategory": "",
+		"_enriched": true,
+		"_original_name": "UK 240V Outlet"
 	},
 	{
-		"name": "Electric 240 UK 4",
+		"name": "UK 240V Quad Outlet",
 		"item_type": "power",
 		"variants": {
 			"default": "electric240_uk4_electric240UK4.png"
 		},
 		"path": "ac/electric/electric240_uk4",
-		"is_backline": false,
-		"auto_number_prefix": "",
-		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"slug": "ac-electric-electric240-uk4",
+		"category": "power",
+		"subcategory": "power_outlet",
+		"tags": ["power", "power_outlet", "electric"],
+		"default_inputs": [],
+		"dimensions": {
+			"width_in": 0,
+			"depth_in": 0,
+			"height_in": 0
+		},
+		"provision_default": "venue_provided",
+		"is_backline": false,
+		"connectors": ["IEC"],
+		"power_requirements": "",
+		"notes": "",
+		"auto_number_prefix": "",
+		"person_subcategory": "",
+		"_enriched": true,
+		"_original_name": "UK 240V Quad Outlet"
 	},
 	{
-		"name": "Electric 4",
+		"name": "Quad Power Outlet",
 		"item_type": "power",
 		"variants": {
 			"default": "electric4.png"
 		},
 		"path": "ac/electric/electric4",
-		"is_backline": false,
-		"auto_number_prefix": "",
-		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"slug": "ac-electric-electric4",
+		"category": "power",
+		"subcategory": "power_outlet",
+		"tags": ["power", "power_outlet", "electric"],
+		"default_inputs": [],
+		"dimensions": {
+			"width_in": 0,
+			"depth_in": 0,
+			"height_in": 0
+		},
+		"provision_default": "venue_provided",
+		"is_backline": false,
+		"connectors": ["IEC"],
+		"power_requirements": "",
+		"notes": "",
+		"auto_number_prefix": "",
+		"person_subcategory": "",
+		"_enriched": true,
+		"_original_name": "Quad Power Outlet"
 	},
 	{
 		"name": "Euro Outlet",
@@ -63,15 +127,31 @@
 			"default": "euro.png"
 		},
 		"path": "ac/electric/euro",
-		"is_backline": false,
-		"auto_number_prefix": "",
-		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"slug": "ac-electric-euro",
+		"category": "power",
+		"subcategory": "power_outlet",
+		"tags": ["power", "power_outlet", "electric"],
+		"default_inputs": [],
+		"dimensions": {
+			"width_in": 0,
+			"depth_in": 0,
+			"height_in": 0
+		},
+		"provision_default": "venue_provided",
+		"is_backline": false,
+		"connectors": ["IEC"],
+		"power_requirements": "",
+		"notes": "",
+		"auto_number_prefix": "",
+		"person_subcategory": "",
+		"_enriched": true,
+		"_original_name": "Euro Outlet"
 	},
 	{
-		"name": "Bassamp",
+		"name": "Bass Amp",
 		"item_type": "amp",
 		"variants": {
 			"L": "BassAmpL.png",
@@ -80,16 +160,43 @@
 			"R": "BassAmpR.png",
 			"default": "BassAmp.png"
 		},
+		"variant_order": ["default", "LA", "L", "R", "RA"],
 		"path": "amps/bass/bassamp",
+		"brands": [],
+		"model": "",
+		"common_models": ["Ampeg SVT", "Fender Rumble", "GK 800RB"],
+		"slug": "amps-bass-bassamp",
+		"category": "amps",
+		"subcategory": "bass_amp",
+		"tags": ["amps", "amp", "bass_amp", "bass", "backline", "markbass"],
+		"default_inputs": [
+			{
+				"name": "Amp",
+				"connector": "XLR",
+				"stand": "none",
+				"link_mode": "mono",
+				"phantom_power": false
+			}
+		],
+		"default_outputs": [],
+		"dimensions": {
+			"width": 24,
+			"depth": 12,
+			"height": 20
+		},
+		"provision_default": "artist_provided",
 		"is_backline": true,
+		"connectors": ["TS", "speakon"],
+		"power_requirements": "",
+		"notes": "",
+		"instrument_signal": "",
 		"auto_number_prefix": "Bass",
 		"person_subcategory": "",
-		"brand": "",
-		"model": "",
-		"common_models": []
+		"_enriched": true,
+		"_original_name": "Bass Amp"
 	},
 	{
-		"name": "Blondebassman",
+		"name": "Blonde Bassman",
 		"item_type": "amp",
 		"variants": {
 			"L": "BlondeBassmanL.png",
@@ -98,16 +205,40 @@
 			"RA": "BlondeBassmanRA.png",
 			"LA": "BlondeBassmanLA.png"
 		},
+		"variant_order": ["default", "LA", "L", "R", "RA"],
 		"path": "amps/bass/blondebassman",
+		"brands": ["Fender"],
+		"model": "Bassman (Blonde)",
+		"common_models": [],
+		"slug": "amps-bass-blondebassman",
+		"category": "amps",
+		"subcategory": "bass_amp",
+		"tags": ["amps", "amp", "bass_amp", "bass", "backline"],
+		"default_inputs": [
+			{
+				"name": "Amp",
+				"connector": "XLR"
+			}
+		],
+		"default_outputs": [],
+		"dimensions": {
+			"width": 24,
+			"depth": 12,
+			"height": 20
+		},
+		"provision_default": "artist_provided",
 		"is_backline": true,
+		"connectors": ["TS", "speakon"],
+		"power_requirements": "",
+		"notes": "",
+		"instrument_signal": "",
 		"auto_number_prefix": "Bass",
 		"person_subcategory": "",
-		"brand": "",
-		"model": "",
-		"common_models": []
+		"_enriched": true,
+		"_original_name": "Blonde Bassman"
 	},
 	{
-		"name": "Ampeg",
+		"name": "Ampeg SVT",
 		"item_type": "amp",
 		"variants": {
 			"LA": "AmpegLA.png",
@@ -116,16 +247,43 @@
 			"L": "AmpegL.png",
 			"default": "Ampeg.png"
 		},
+		"variant_order": ["default", "LA", "L", "R", "RA"],
 		"path": "amps/bass/ampeg",
+		"brands": ["Ampeg"],
+		"model": "SVT",
+		"common_models": [],
+		"slug": "amps-bass-ampeg",
+		"category": "amps",
+		"subcategory": "bass_amp",
+		"tags": ["amps", "amp", "bass_amp", "bass", "ampeg", "backline"],
+		"default_inputs": [
+			{
+				"name": "Amp",
+				"connector": "XLR",
+				"stand": "none",
+				"link_mode": "mono",
+				"phantom_power": false
+			}
+		],
+		"default_outputs": [],
+		"dimensions": {
+			"width": 24,
+			"depth": 12,
+			"height": 20
+		},
+		"provision_default": "artist_provided",
 		"is_backline": true,
+		"connectors": ["TS", "speakon"],
+		"power_requirements": "",
+		"notes": "",
+		"instrument_signal": "",
 		"auto_number_prefix": "Bass",
 		"person_subcategory": "",
-		"brand": "Ampeg",
-		"model": "SVT",
-		"common_models": []
+		"_enriched": true,
+		"_original_name": "Ampeg SVT"
 	},
 	{
-		"name": "Fender Amp",
+		"name": "Fender Deluxe Reverb",
 		"item_type": "amp",
 		"variants": {
 			"default": "FenderAmp.png",
@@ -135,32 +293,80 @@
 			"L": "FenderAmpL.png",
 			"LA": "FenderAmpLA.png"
 		},
+		"variant_order": ["default", "LA", "L", "back", "R", "RA"],
 		"path": "amps/guitar/fender_amp",
+		"brands": ["Fender"],
+		"model": "Deluxe Reverb",
+		"common_models": [],
+		"slug": "amps-guitar-fender-amp",
+		"category": "amps",
+		"subcategory": "guitar_amp",
+		"tags": ["amps", "amp", "guitar_amp", "guitar", "fender", "backline"],
+		"default_inputs": [
+			{
+				"name": "Amp",
+				"connector": "XLR"
+			}
+		],
+		"default_outputs": [],
+		"dimensions": {
+			"width": 24,
+			"depth": 10,
+			"height": 18
+		},
+		"provision_default": "artist_provided",
 		"is_backline": true,
+		"connectors": ["TS", "speakon"],
+		"power_requirements": "",
+		"notes": "",
+		"instrument_signal": "",
 		"auto_number_prefix": "Gtr",
 		"person_subcategory": "",
-		"brand": "Fender",
-		"model": "Deluxe Reverb",
-		"common_models": []
+		"_enriched": true,
+		"_original_name": "Fender Deluxe Reverb"
 	},
 	{
-		"name": "Keyamp",
+		"name": "Keyboard Amp",
 		"item_type": "amp",
 		"variants": {
 			"RA": "keyampRA.png",
 			"LA": "keyampLA.png",
 			"default": "keyamp.png"
 		},
+		"variant_order": ["default", "LA", "RA"],
 		"path": "amps/keyboard/keyamp",
-		"is_backline": true,
-		"auto_number_prefix": "Gtr",
-		"person_subcategory": "",
-		"brand": "",
+		"brands": [],
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"slug": "amps-keyboard-keyamp",
+		"category": "amps",
+		"subcategory": "keyboard_amp",
+		"tags": ["amps", "amp", "keyboard_amp", "keyboard", "backline"],
+		"default_inputs": [
+			{
+				"name": "Amp",
+				"connector": "XLR"
+			}
+		],
+		"default_outputs": [],
+		"dimensions": {
+			"width": 20,
+			"depth": 12,
+			"height": 16
+		},
+		"provision_default": "artist_provided",
+		"is_backline": true,
+		"connectors": ["TS", "speakon"],
+		"power_requirements": "",
+		"notes": "",
+		"instrument_signal": "",
+		"auto_number_prefix": "Keys",
+		"person_subcategory": "",
+		"_enriched": true,
+		"_original_name": "Keyboard Amp"
 	},
 	{
-		"name": "Marshall 4x12",
+		"name": "Marshall 4x12 Cabinet",
 		"item_type": "amp",
 		"variants": {
 			"default": "Marshall412A.png",
@@ -169,13 +375,37 @@
 			"LA": "Marshall412ALA.png",
 			"RA": "Marshall412ARA.png"
 		},
+		"variant_order": ["default", "LA", "L", "R", "RA"],
 		"path": "amps/guitar/marshall412",
+		"brands": ["Marshall"],
+		"model": "4x12 Cabinet",
+		"common_models": [],
+		"slug": "amps-guitar-marshall412",
+		"category": "amps",
+		"subcategory": "guitar_amp",
+		"tags": ["amps", "amp", "guitar_amp", "guitar", "marshall", "backline"],
+		"default_inputs": [
+			{
+				"name": "Amp",
+				"connector": "XLR"
+			}
+		],
+		"default_outputs": [],
+		"dimensions": {
+			"width": 30,
+			"depth": 14,
+			"height": 30
+		},
+		"provision_default": "artist_provided",
 		"is_backline": true,
+		"connectors": ["TS", "speakon"],
+		"power_requirements": "",
+		"notes": "",
+		"instrument_signal": "",
 		"auto_number_prefix": "Gtr",
 		"person_subcategory": "",
-		"brand": "Marshall",
-		"model": "4x12 Cabinet",
-		"common_models": []
+		"_enriched": true,
+		"_original_name": "Marshall 4x12 Cabinet"
 	},
 	{
 		"name": "Marshall Amp",
@@ -188,16 +418,40 @@
 			"L": "marshallL.png",
 			"RA": "marshallRA.png"
 		},
+		"variant_order": ["default", "LA", "L", "back", "R", "RA"],
 		"path": "amps/guitar/marshall_amp",
+		"brands": ["Marshall"],
+		"model": "JCM800",
+		"common_models": [],
+		"slug": "amps-guitar-marshall-amp",
+		"category": "amps",
+		"subcategory": "guitar_amp",
+		"tags": ["amps", "amp", "guitar_amp", "guitar", "marshall", "backline"],
+		"default_inputs": [
+			{
+				"name": "Amp",
+				"connector": "XLR"
+			}
+		],
+		"default_outputs": [],
+		"dimensions": {
+			"width": 24,
+			"depth": 10,
+			"height": 18
+		},
+		"provision_default": "artist_provided",
 		"is_backline": true,
+		"connectors": ["TS", "speakon"],
+		"power_requirements": "",
+		"notes": "",
+		"instrument_signal": "",
 		"auto_number_prefix": "Gtr",
 		"person_subcategory": "",
-		"brand": "Marshall",
-		"model": "JCM800",
-		"common_models": []
+		"_enriched": true,
+		"_original_name": "Marshall Amp"
 	},
 	{
-		"name": "Marshallcabs",
+		"name": "Marshall Cabinets",
 		"item_type": "amp",
 		"variants": {
 			"default": "MarshallCabs.png"
@@ -208,10 +462,26 @@
 		"person_subcategory": "",
 		"brand": "Marshall",
 		"model": "4x12 Cabinet",
-		"common_models": []
+		"common_models": [],
+		"category": "amps",
+		"subcategory": "guitar_amp",
+		"provision_default": "artist_provided",
+		"connectors": ["TS", "speakon"],
+		"tags": ["amps", "amp", "guitar_amp", "guitar", "marshall", "backline"],
+		"dimensions": {
+			"width": 30,
+			"depth": 14,
+			"height": 30
+		},
+		"default_inputs": [
+			{
+				"name": "Amp",
+				"connector": "XLR"
+			}
+		]
 	},
 	{
-		"name": "Marshallhead",
+		"name": "Marshall Head",
 		"item_type": "amp",
 		"variants": {
 			"default": "marshallhead.png"
@@ -222,7 +492,23 @@
 		"person_subcategory": "",
 		"brand": "Marshall",
 		"model": "Head",
-		"common_models": []
+		"common_models": [],
+		"category": "amps",
+		"subcategory": "guitar_amp",
+		"provision_default": "artist_provided",
+		"connectors": ["TS", "speakon"],
+		"tags": ["amps", "amp", "guitar_amp", "guitar", "marshall", "backline"],
+		"dimensions": {
+			"width": 30,
+			"depth": 10,
+			"height": 12
+		},
+		"default_inputs": [
+			{
+				"name": "Amp",
+				"connector": "XLR"
+			}
+		]
 	},
 	{
 		"name": "Nashville Amp",
@@ -239,12 +525,28 @@
 		"is_backline": true,
 		"auto_number_prefix": "Gtr",
 		"person_subcategory": "",
-		"brand": "",
+		"brand": "Peavey",
 		"model": "Nashville 400",
-		"common_models": []
+		"common_models": [],
+		"category": "amps",
+		"subcategory": "guitar_amp",
+		"provision_default": "artist_provided",
+		"connectors": ["TS", "speakon"],
+		"tags": ["amps", "amp", "guitar_amp", "guitar", "backline"],
+		"dimensions": {
+			"width": 24,
+			"depth": 10,
+			"height": 18
+		},
+		"default_inputs": [
+			{
+				"name": "Amp",
+				"connector": "XLR"
+			}
+		]
 	},
 	{
-		"name": "Vox",
+		"name": "Vox AC30",
 		"item_type": "amp",
 		"variants": {
 			"B": "voxB.png",
@@ -260,10 +562,26 @@
 		"person_subcategory": "",
 		"brand": "Vox",
 		"model": "AC30",
-		"common_models": []
+		"common_models": [],
+		"category": "amps",
+		"subcategory": "guitar_amp",
+		"provision_default": "artist_provided",
+		"connectors": ["TS", "speakon"],
+		"tags": ["amps", "amp", "guitar_amp", "guitar", "vox", "backline"],
+		"dimensions": {
+			"width": 24,
+			"depth": 10,
+			"height": 18
+		},
+		"default_inputs": [
+			{
+				"name": "Amp",
+				"connector": "XLR"
+			}
+		]
 	},
 	{
-		"name": "Femalexlrtoquarter",
+		"name": "Female XLR to 1/4\"",
 		"item_type": "cable_connector",
 		"variants": {
 			"default": "femaleXLRtoquarter.png"
@@ -274,10 +592,15 @@
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "connectors",
+		"subcategory": "adapter",
+		"provision_default": "venue_provided",
+		"connectors": [],
+		"tags": ["connectors", "cable_connector", "adapter"]
 	},
 	{
-		"name": "Femalexlrtoquartertrs",
+		"name": "Female XLR to 1/4\" TRS",
 		"item_type": "cable_connector",
 		"variants": {
 			"default": "femaleXLRtoquartertrs.png"
@@ -288,10 +611,15 @@
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "connectors",
+		"subcategory": "adapter",
+		"provision_default": "venue_provided",
+		"connectors": [],
+		"tags": ["connectors", "cable_connector", "adapter"]
 	},
 	{
-		"name": "Maletodoublefemale",
+		"name": "Male to Double Female",
 		"item_type": "cable_connector",
 		"variants": {
 			"default": "maletodoublefemale.png"
@@ -302,10 +630,15 @@
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "connectors",
+		"subcategory": "adapter",
+		"provision_default": "venue_provided",
+		"connectors": [],
+		"tags": ["connectors", "cable_connector", "adapter"]
 	},
 	{
-		"name": "Quartertomalexl",
+		"name": "1/4\" to Male XLR",
 		"item_type": "cable_connector",
 		"variants": {
 			"R": "quartertomaleXLR.png"
@@ -316,10 +649,15 @@
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "connectors",
+		"subcategory": "adapter",
+		"provision_default": "venue_provided",
+		"connectors": [],
+		"tags": ["connectors", "cable_connector", "adapter"]
 	},
 	{
-		"name": "Quartertrstomalexl",
+		"name": "1/4\" TRS to Male XLR",
 		"item_type": "cable_connector",
 		"variants": {
 			"R": "quartertrstomaleXLR.png"
@@ -330,10 +668,15 @@
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "connectors",
+		"subcategory": "adapter",
+		"provision_default": "venue_provided",
+		"connectors": [],
+		"tags": ["connectors", "cable_connector", "adapter"]
 	},
 	{
-		"name": "Quartermale",
+		"name": "1/4\" Male",
 		"item_type": "cable_connector",
 		"variants": {
 			"default": "quartermale.png"
@@ -344,10 +687,15 @@
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "connectors",
+		"subcategory": "quarter_inch",
+		"provision_default": "venue_provided",
+		"connectors": [],
+		"tags": ["connectors", "cable_connector", "quarter_inch"]
 	},
 	{
-		"name": "Quartermale Balanced",
+		"name": "1/4\" Male Balanced",
 		"item_type": "cable_connector",
 		"variants": {
 			"default": "quartermale_balanced.png"
@@ -358,63 +706,108 @@
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "connectors",
+		"subcategory": "quarter_inch",
+		"provision_default": "venue_provided",
+		"connectors": [],
+		"tags": ["connectors", "cable_connector", "quarter_inch"]
 	},
 	{
-		"name": "Stagebox 12",
+		"name": "Stagebox 12-Channel",
 		"item_type": "stagebox",
 		"variants": {
 			"default": "stagebox12.png"
 		},
 		"path": "snakes/stagebox12",
 		"is_backline": false,
-		"auto_number_prefix": "",
+		"auto_number_prefix": "SB",
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "snakes",
+		"subcategory": "stagebox",
+		"provision_default": "venue_provided",
+		"connectors": ["XLR"],
+		"tags": ["snakes", "stagebox"],
+		"dimensions": {
+			"width": 12,
+			"depth": 10,
+			"height": 4
+		}
 	},
 	{
-		"name": "Stagebox 16",
+		"name": "Stagebox 16-Channel",
 		"item_type": "stagebox",
 		"variants": {
 			"default": "stagebox16.png"
 		},
 		"path": "snakes/stagebox16",
 		"is_backline": false,
-		"auto_number_prefix": "",
+		"auto_number_prefix": "SB",
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "snakes",
+		"subcategory": "stagebox",
+		"provision_default": "venue_provided",
+		"connectors": ["XLR"],
+		"tags": ["snakes", "stagebox"],
+		"dimensions": {
+			"width": 12,
+			"depth": 10,
+			"height": 4
+		}
 	},
 	{
-		"name": "Stagebox 24",
+		"name": "Stagebox 24-Channel",
 		"item_type": "stagebox",
 		"variants": {
 			"default": "stagebox24.png"
 		},
 		"path": "snakes/stagebox24",
 		"is_backline": false,
-		"auto_number_prefix": "",
+		"auto_number_prefix": "SB",
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "snakes",
+		"subcategory": "stagebox",
+		"provision_default": "venue_provided",
+		"connectors": ["XLR"],
+		"tags": ["snakes", "stagebox"],
+		"dimensions": {
+			"width": 12,
+			"depth": 10,
+			"height": 4
+		}
 	},
 	{
-		"name": "Stagebox 8",
+		"name": "Stagebox 8-Channel",
 		"item_type": "stagebox",
 		"variants": {
 			"default": "stagebox8.png"
 		},
 		"path": "snakes/stagebox8",
 		"is_backline": false,
-		"auto_number_prefix": "",
+		"auto_number_prefix": "SB",
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "snakes",
+		"subcategory": "stagebox",
+		"provision_default": "venue_provided",
+		"connectors": ["XLR"],
+		"tags": ["snakes", "stagebox"],
+		"dimensions": {
+			"width": 12,
+			"depth": 10,
+			"height": 4
+		}
 	},
 	{
 		"name": "HDMI",
@@ -428,7 +821,12 @@
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "connectors",
+		"subcategory": "video",
+		"provision_default": "venue_provided",
+		"connectors": [],
+		"tags": ["connectors", "cable_connector", "video"]
 	},
 	{
 		"name": "VGA",
@@ -442,10 +840,15 @@
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "connectors",
+		"subcategory": "video",
+		"provision_default": "venue_provided",
+		"connectors": [],
+		"tags": ["connectors", "cable_connector", "video"]
 	},
 	{
-		"name": "Doublefemalexl",
+		"name": "Double Female XLR",
 		"item_type": "cable_connector",
 		"variants": {
 			"R": "doublefemaleXLR.png"
@@ -456,10 +859,15 @@
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "connectors",
+		"subcategory": "xlr",
+		"provision_default": "venue_provided",
+		"connectors": [],
+		"tags": ["connectors", "cable_connector", "xlr"]
 	},
 	{
-		"name": "Doublemalexl",
+		"name": "Double Male XLR",
 		"item_type": "cable_connector",
 		"variants": {
 			"R": "doublemaleXLR.png"
@@ -470,10 +878,15 @@
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "connectors",
+		"subcategory": "xlr",
+		"provision_default": "venue_provided",
+		"connectors": [],
+		"tags": ["connectors", "cable_connector", "xlr"]
 	},
 	{
-		"name": "Xlrmale",
+		"name": "XLR Male",
 		"item_type": "cable_connector",
 		"variants": {
 			"default": "XLRmale.png"
@@ -484,7 +897,12 @@
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "connectors",
+		"subcategory": "xlr",
+		"provision_default": "venue_provided",
+		"connectors": [],
+		"tags": ["connectors", "cable_connector", "xlr"]
 	},
 	{
 		"name": "Cymbal",
@@ -500,10 +918,26 @@
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "drums",
+		"subcategory": "cymbal",
+		"provision_default": "artist_provided",
+		"connectors": ["XLR"],
+		"tags": ["drums", "instrument", "cymbal", "backline"],
+		"dimensions": {
+			"width": 18,
+			"depth": 18,
+			"height": 48
+		},
+		"default_inputs": [
+			{
+				"name": "Drum",
+				"connector": "XLR"
+			}
+		]
 	},
 	{
-		"name": "Doublekick",
+		"name": "Double Kick Drum Kit",
 		"item_type": "drumset",
 		"variants": {
 			"RA": "doublekickRA.png",
@@ -518,10 +952,42 @@
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "drums",
+		"subcategory": "kit",
+		"provision_default": "artist_provided",
+		"connectors": [],
+		"tags": ["drums", "drumset", "kit", "backline"],
+		"dimensions": {
+			"width": 72,
+			"depth": 48,
+			"height": 48
+		},
+		"default_inputs": [
+			{
+				"name": "Kick",
+				"connector": "XLR"
+			},
+			{
+				"name": "Snare",
+				"connector": "XLR"
+			},
+			{
+				"name": "HH",
+				"connector": "XLR"
+			},
+			{
+				"name": "OH L",
+				"connector": "XLR"
+			},
+			{
+				"name": "OH R",
+				"connector": "XLR"
+			}
+		]
 	},
 	{
-		"name": "Edrums",
+		"name": "Electronic Drums",
 		"item_type": "drumset",
 		"variants": {
 			"LA": "edrumsLA.png",
@@ -536,10 +1002,42 @@
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "drums",
+		"subcategory": "kit",
+		"provision_default": "artist_provided",
+		"connectors": [],
+		"tags": ["drums", "drumset", "kit", "backline"],
+		"dimensions": {
+			"width": 72,
+			"depth": 48,
+			"height": 48
+		},
+		"default_inputs": [
+			{
+				"name": "Kick",
+				"connector": "XLR"
+			},
+			{
+				"name": "Snare",
+				"connector": "XLR"
+			},
+			{
+				"name": "HH",
+				"connector": "XLR"
+			},
+			{
+				"name": "OH L",
+				"connector": "XLR"
+			},
+			{
+				"name": "OH R",
+				"connector": "XLR"
+			}
+		]
 	},
 	{
-		"name": "Fourtoms",
+		"name": "Drum Kit - Four Toms",
 		"item_type": "drumset",
 		"variants": {
 			"R": "FourTomsR.png",
@@ -554,10 +1052,42 @@
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "drums",
+		"subcategory": "kit",
+		"provision_default": "artist_provided",
+		"connectors": [],
+		"tags": ["drums", "drumset", "kit", "backline"],
+		"dimensions": {
+			"width": 72,
+			"depth": 48,
+			"height": 48
+		},
+		"default_inputs": [
+			{
+				"name": "Kick",
+				"connector": "XLR"
+			},
+			{
+				"name": "Snare",
+				"connector": "XLR"
+			},
+			{
+				"name": "HH",
+				"connector": "XLR"
+			},
+			{
+				"name": "OH L",
+				"connector": "XLR"
+			},
+			{
+				"name": "OH R",
+				"connector": "XLR"
+			}
+		]
 	},
 	{
-		"name": "Rototomset",
+		"name": "Rototom Set",
 		"item_type": "drumset",
 		"variants": {
 			"default": "rototomset.png",
@@ -572,81 +1102,63 @@
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "drums",
+		"subcategory": "kit",
+		"provision_default": "artist_provided",
+		"connectors": [],
+		"tags": ["drums", "drumset", "kit", "backline"],
+		"dimensions": {
+			"width": 72,
+			"depth": 48,
+			"height": 48
+		},
+		"default_inputs": [
+			{
+				"name": "Kick",
+				"connector": "XLR"
+			},
+			{
+				"name": "Snare",
+				"connector": "XLR"
+			},
+			{
+				"name": "HH",
+				"connector": "XLR"
+			},
+			{
+				"name": "OH L",
+				"connector": "XLR"
+			},
+			{
+				"name": "OH R",
+				"connector": "XLR"
+			}
+		]
 	},
 	{
 		"name": "Drum Kit - Three Toms",
 		"item_type": "drumset",
 		"default_inputs": [
 			{
-				"ch": 1,
-				"name": "Kick In",
-				"short": "Kick In",
-				"position": "DSC",
-				"48V": false
+				"name": "Kick",
+				"connector": "XLR"
 			},
 			{
-				"ch": 2,
-				"name": "Kick Out",
-				"short": "Kick Out",
-				"position": "DSC",
-				"48V": false
+				"name": "Snare",
+				"connector": "XLR"
 			},
 			{
-				"ch": 3,
-				"name": "Snare Top",
-				"short": "Sn Top",
-				"position": "DSC",
-				"48V": false
+				"name": "HH",
+				"connector": "XLR"
 			},
 			{
-				"ch": 4,
-				"name": "Snare Bottom",
-				"short": "Sn Bot",
-				"position": "DSC",
-				"48V": false
+				"name": "OH L",
+				"connector": "XLR"
 			},
 			{
-				"ch": 5,
-				"name": "Hi-Hat",
-				"short": "HH",
-				"position": "DSC",
-				"48V": true
-			},
-			{
-				"ch": 6,
-				"name": "Tom 1",
-				"short": "T1",
-				"position": "DSC",
-				"48V": false
-			},
-			{
-				"ch": 7,
-				"name": "Tom 2",
-				"short": "T2",
-				"position": "DSC",
-				"48V": false
-			},
-			{
-				"ch": 8,
-				"name": "Tom 3",
-				"short": "T3",
-				"position": "DSC",
-				"48V": false
-			},
-			{
-				"ch": 9,
-				"name": "Overhead L",
-				"short": "OH L",
-				"position": "USC",
-				"48V": true
-			},
-			{
-				"ch": 10,
-				"name": "Overhead R",
-				"short": "OH R",
-				"position": "USC",
-				"48V": true
+				"name": "OH R",
+				"connector": "XLR"
 			}
 		],
 		"variants": {
@@ -662,10 +1174,20 @@
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "drums",
+		"subcategory": "kit",
+		"provision_default": "artist_provided",
+		"connectors": [],
+		"tags": ["drums", "drumset", "kit", "backline"],
+		"dimensions": {
+			"width": 72,
+			"depth": 48,
+			"height": 48
+		}
 	},
 	{
-		"name": "Twotoms",
+		"name": "Drum Kit - Two Toms",
 		"item_type": "drumset",
 		"variants": {
 			"RA": "TwoTomsRA.png",
@@ -680,10 +1202,42 @@
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "drums",
+		"subcategory": "kit",
+		"provision_default": "artist_provided",
+		"connectors": [],
+		"tags": ["drums", "drumset", "kit", "backline"],
+		"dimensions": {
+			"width": 72,
+			"depth": 48,
+			"height": 48
+		},
+		"default_inputs": [
+			{
+				"name": "Kick",
+				"connector": "XLR"
+			},
+			{
+				"name": "Snare",
+				"connector": "XLR"
+			},
+			{
+				"name": "HH",
+				"connector": "XLR"
+			},
+			{
+				"name": "OH L",
+				"connector": "XLR"
+			},
+			{
+				"name": "OH R",
+				"connector": "XLR"
+			}
+		]
 	},
 	{
-		"name": "Bassdrum",
+		"name": "Bass Drum",
 		"item_type": "instrument",
 		"variants": {
 			"R": "BassdrumR.png",
@@ -701,7 +1255,18 @@
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "drums",
+		"subcategory": "hardware",
+		"provision_default": "artist_provided",
+		"connectors": ["XLR"],
+		"tags": ["drums", "instrument", "hardware", "backline"],
+		"default_inputs": [
+			{
+				"name": "Drum",
+				"connector": "XLR"
+			}
+		]
 	},
 	{
 		"name": "Cowbell",
@@ -715,10 +1280,21 @@
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "drums",
+		"subcategory": "hardware",
+		"provision_default": "artist_provided",
+		"connectors": ["XLR"],
+		"tags": ["drums", "instrument", "hardware", "backline"],
+		"default_inputs": [
+			{
+				"name": "Drum",
+				"connector": "XLR"
+			}
+		]
 	},
 	{
-		"name": "Crash",
+		"name": "Crash Cymbal",
 		"item_type": "instrument",
 		"variants": {
 			"default": "crash.png"
@@ -729,10 +1305,21 @@
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "drums",
+		"subcategory": "hardware",
+		"provision_default": "artist_provided",
+		"connectors": ["XLR"],
+		"tags": ["drums", "instrument", "hardware", "backline"],
+		"default_inputs": [
+			{
+				"name": "Drum",
+				"connector": "XLR"
+			}
+		]
 	},
 	{
-		"name": "Drummat",
+		"name": "Drum Mat",
 		"item_type": "furniture",
 		"variants": {
 			"default": "drummat.png"
@@ -743,10 +1330,15 @@
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "drums",
+		"subcategory": "hardware",
+		"provision_default": "venue_provided",
+		"connectors": [],
+		"tags": ["drums", "furniture", "hardware"]
 	},
 	{
-		"name": "Drumshield One",
+		"name": "Drum Shield (1 Panel)",
 		"item_type": "stagecraft",
 		"variants": {
 			"default": "drumshield_one.png"
@@ -757,10 +1349,15 @@
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "drums",
+		"subcategory": "hardware",
+		"provision_default": "venue_provided",
+		"connectors": [],
+		"tags": ["drums", "stagecraft", "hardware"]
 	},
 	{
-		"name": "Drumshield Three",
+		"name": "Drum Shield (3 Panel)",
 		"item_type": "stagecraft",
 		"variants": {
 			"default": "drumshield_three.png"
@@ -771,10 +1368,15 @@
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "drums",
+		"subcategory": "hardware",
+		"provision_default": "venue_provided",
+		"connectors": [],
+		"tags": ["drums", "stagecraft", "hardware"]
 	},
 	{
-		"name": "Drumshield Two",
+		"name": "Drum Shield (2 Panel)",
 		"item_type": "stagecraft",
 		"variants": {
 			"default": "drumshield_two.png"
@@ -785,10 +1387,15 @@
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "drums",
+		"subcategory": "hardware",
+		"provision_default": "venue_provided",
+		"connectors": [],
+		"tags": ["drums", "stagecraft", "hardware"]
 	},
 	{
-		"name": "Hihat",
+		"name": "Hi-Hat",
 		"item_type": "instrument",
 		"variants": {
 			"default": "hihat.png"
@@ -799,10 +1406,21 @@
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "drums",
+		"subcategory": "hardware",
+		"provision_default": "artist_provided",
+		"connectors": ["XLR"],
+		"tags": ["drums", "instrument", "hardware", "backline"],
+		"default_inputs": [
+			{
+				"name": "Drum",
+				"connector": "XLR"
+			}
+		]
 	},
 	{
-		"name": "Ride",
+		"name": "Ride Cymbal",
 		"item_type": "instrument",
 		"variants": {
 			"default": "ride.png"
@@ -813,10 +1431,21 @@
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "drums",
+		"subcategory": "hardware",
+		"provision_default": "artist_provided",
+		"connectors": ["XLR"],
+		"tags": ["drums", "instrument", "hardware", "backline"],
+		"default_inputs": [
+			{
+				"name": "Drum",
+				"connector": "XLR"
+			}
+		]
 	},
 	{
-		"name": "Sixbass",
+		"name": "Six Bass Drums",
 		"item_type": "instrument",
 		"variants": {
 			"B": "sixbassB.png",
@@ -829,12 +1458,33 @@
 			"L": "sixbassL.png"
 		},
 		"path": "drums/hardware/sixbass",
-		"is_backline": true,
-		"auto_number_prefix": "Drums",
-		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"slug": "drums-hardware-sixbass",
+		"category": "drums",
+		"subcategory": "hardware",
+		"tags": ["drums", "instrument", "hardware", "backline", "steelpan"],
+		"default_inputs": [
+			{
+				"name": "Drum",
+				"connector": "XLR"
+			}
+		],
+		"dimensions": {
+			"width_in": 0,
+			"depth_in": 0,
+			"height_in": 0
+		},
+		"provision_default": "artist_provided",
+		"is_backline": true,
+		"connectors": ["XLR"],
+		"power_requirements": "",
+		"notes": "",
+		"auto_number_prefix": "Drums",
+		"person_subcategory": "",
+		"_enriched": true,
+		"_original_name": "Six Bass Drums"
 	},
 	{
 		"name": "Throne",
@@ -843,12 +1493,28 @@
 			"default": "throne.png"
 		},
 		"path": "drums/hardware/throne",
-		"is_backline": false,
-		"auto_number_prefix": "Drums",
-		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"slug": "drums-hardware-throne",
+		"category": "drums",
+		"subcategory": "hardware",
+		"tags": ["drums", "furniture", "hardware"],
+		"default_inputs": [],
+		"dimensions": {
+			"width_in": 0,
+			"depth_in": 0,
+			"height_in": 0
+		},
+		"provision_default": "venue_provided",
+		"is_backline": false,
+		"connectors": [],
+		"power_requirements": "",
+		"notes": "",
+		"auto_number_prefix": "Drums",
+		"person_subcategory": "",
+		"_enriched": true,
+		"_original_name": "Throne"
 	},
 	{
 		"name": "Kick Drum",
@@ -857,12 +1523,36 @@
 			"default": "kick.png"
 		},
 		"path": "drums/individual_drums/kick",
-		"is_backline": true,
-		"auto_number_prefix": "Drums",
-		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"slug": "drums-individual-drums-kick",
+		"category": "drums",
+		"subcategory": "individual_drum",
+		"tags": ["drums", "instrument", "individual_drum", "backline"],
+		"default_inputs": [
+			{
+				"name": "Drum",
+				"connector": "XLR",
+				"stand": "none",
+				"link_mode": "mono",
+				"phantom_power": false
+			}
+		],
+		"dimensions": {
+			"width": 22,
+			"depth": 16,
+			"height": 22
+		},
+		"provision_default": "artist_provided",
+		"is_backline": true,
+		"connectors": ["XLR"],
+		"power_requirements": "",
+		"notes": "",
+		"auto_number_prefix": "Drums",
+		"person_subcategory": "",
+		"_enriched": true,
+		"_original_name": "Kick Drum"
 	},
 	{
 		"name": "Snare Drum",
@@ -871,12 +1561,33 @@
 			"default": "snare.png"
 		},
 		"path": "drums/individual_drums/snare",
-		"is_backline": true,
-		"auto_number_prefix": "Drums",
-		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"slug": "drums-individual-drums-snare",
+		"category": "drums",
+		"subcategory": "individual_drum",
+		"tags": ["drums", "instrument", "individual_drum", "backline"],
+		"default_inputs": [
+			{
+				"name": "Drum",
+				"connector": "XLR"
+			}
+		],
+		"dimensions": {
+			"width": 14,
+			"depth": 14,
+			"height": 6
+		},
+		"provision_default": "artist_provided",
+		"is_backline": true,
+		"connectors": ["XLR"],
+		"power_requirements": "",
+		"notes": "",
+		"auto_number_prefix": "Drums",
+		"person_subcategory": "",
+		"_enriched": true,
+		"_original_name": "Snare Drum"
 	},
 	{
 		"name": "Floor Tom",
@@ -885,12 +1596,33 @@
 			"default": "floortom.png"
 		},
 		"path": "drums/individual_drums/floortom",
-		"is_backline": true,
-		"auto_number_prefix": "Drums",
-		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"slug": "drums-individual-drums-floortom",
+		"category": "drums",
+		"subcategory": "individual_drum",
+		"tags": ["drums", "instrument", "individual_drum", "backline"],
+		"default_inputs": [
+			{
+				"name": "Drum",
+				"connector": "XLR"
+			}
+		],
+		"dimensions": {
+			"width": 16,
+			"depth": 16,
+			"height": 16
+		},
+		"provision_default": "artist_provided",
+		"is_backline": true,
+		"connectors": ["XLR"],
+		"power_requirements": "",
+		"notes": "",
+		"auto_number_prefix": "Drums",
+		"person_subcategory": "",
+		"_enriched": true,
+		"_original_name": "Floor Tom"
 	},
 	{
 		"name": "Rack Tom 1",
@@ -899,12 +1631,33 @@
 			"default": "tom1.png"
 		},
 		"path": "drums/individual_drums/tom1",
-		"is_backline": true,
-		"auto_number_prefix": "Drums",
-		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"slug": "drums-individual-drums-tom1",
+		"category": "drums",
+		"subcategory": "individual_drum",
+		"tags": ["drums", "instrument", "individual_drum", "backline"],
+		"default_inputs": [
+			{
+				"name": "Drum",
+				"connector": "XLR"
+			}
+		],
+		"dimensions": {
+			"width": 12,
+			"depth": 12,
+			"height": 10
+		},
+		"provision_default": "artist_provided",
+		"is_backline": true,
+		"connectors": ["XLR"],
+		"power_requirements": "",
+		"notes": "",
+		"auto_number_prefix": "Drums",
+		"person_subcategory": "",
+		"_enriched": true,
+		"_original_name": "Rack Tom 1"
 	},
 	{
 		"name": "Rack Tom 2",
@@ -913,12 +1666,33 @@
 			"default": "tom2.png"
 		},
 		"path": "drums/individual_drums/tom2",
-		"is_backline": true,
-		"auto_number_prefix": "Drums",
-		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"slug": "drums-individual-drums-tom2",
+		"category": "drums",
+		"subcategory": "individual_drum",
+		"tags": ["drums", "instrument", "individual_drum", "backline"],
+		"default_inputs": [
+			{
+				"name": "Drum",
+				"connector": "XLR"
+			}
+		],
+		"dimensions": {
+			"width": 13,
+			"depth": 13,
+			"height": 11
+		},
+		"provision_default": "artist_provided",
+		"is_backline": true,
+		"connectors": ["XLR"],
+		"power_requirements": "",
+		"notes": "",
+		"auto_number_prefix": "Drums",
+		"person_subcategory": "",
+		"_enriched": true,
+		"_original_name": "Rack Tom 2"
 	},
 	{
 		"name": "Boss Pedal",
@@ -931,12 +1705,28 @@
 			"L": "BossPedalL.png"
 		},
 		"path": "equipment/bosspedal",
-		"is_backline": false,
-		"auto_number_prefix": "",
-		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"slug": "equipment-bosspedal",
+		"category": "equipment",
+		"subcategory": "pedal",
+		"tags": ["equipment", "pedal", "signal_chain"],
+		"default_inputs": [],
+		"dimensions": {
+			"width": 6,
+			"depth": 4,
+			"height": 2
+		},
+		"provision_default": "artist_provided",
+		"is_backline": false,
+		"connectors": ["TS"],
+		"power_requirements": "",
+		"notes": "",
+		"auto_number_prefix": "",
+		"person_subcategory": "",
+		"_enriched": true,
+		"_original_name": "Boss Pedal"
 	},
 	{
 		"name": "CD Player",
@@ -945,12 +1735,28 @@
 			"default": "CDplayer.png"
 		},
 		"path": "equipment/cdplayer",
-		"is_backline": false,
-		"auto_number_prefix": "",
-		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"slug": "equipment-cdplayer",
+		"category": "equipment",
+		"subcategory": "signal_processor",
+		"tags": ["equipment", "signal_processor"],
+		"default_inputs": [],
+		"dimensions": {
+			"width_in": 0,
+			"depth_in": 0,
+			"height_in": 0
+		},
+		"provision_default": "venue_provided",
+		"is_backline": false,
+		"connectors": [],
+		"power_requirements": "",
+		"notes": "",
+		"auto_number_prefix": "",
+		"person_subcategory": "",
+		"_enriched": true,
+		"_original_name": "CD Player"
 	},
 	{
 		"name": "DI Box",
@@ -959,12 +1765,28 @@
 			"default": "DI.png"
 		},
 		"path": "equipment/di",
-		"is_backline": false,
-		"auto_number_prefix": "",
-		"person_subcategory": "",
-		"brand": "",
+		"brand": "Radial, Digiflex",
 		"model": "",
-		"common_models": []
+		"common_models": ["Radial J48", "Countryman Type 85"],
+		"slug": "equipment-di",
+		"category": "equipment",
+		"subcategory": "di_box",
+		"tags": ["equipment", "di_box", "signal_chain"],
+		"default_inputs": [],
+		"dimensions": {
+			"width": 5,
+			"depth": 4,
+			"height": 2
+		},
+		"provision_default": "venue_provided",
+		"is_backline": false,
+		"connectors": ["TS", "XLR"],
+		"power_requirements": "",
+		"notes": "",
+		"auto_number_prefix": "DI",
+		"person_subcategory": "",
+		"_enriched": true,
+		"_original_name": "DI Box"
 	},
 	{
 		"name": "EQ",
@@ -978,7 +1800,12 @@
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "equipment",
+		"subcategory": "signal_processor",
+		"provision_default": "venue_provided",
+		"connectors": [],
+		"tags": ["equipment", "signal_processor"]
 	},
 	{
 		"name": "Flight Case",
@@ -996,7 +1823,12 @@
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "equipment",
+		"subcategory": "signal_processor",
+		"provision_default": "venue_provided",
+		"connectors": [],
+		"tags": ["equipment", "signal_processor"]
 	},
 	{
 		"name": "Floor Box",
@@ -1010,10 +1842,15 @@
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "equipment",
+		"subcategory": "signal_processor",
+		"provision_default": "venue_provided",
+		"connectors": [],
+		"tags": ["equipment", "signal_processor"]
 	},
 	{
-		"name": "Gates",
+		"name": "Noise Gate",
 		"item_type": "equipment",
 		"variants": {
 			"default": "Gates.png"
@@ -1024,7 +1861,12 @@
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "equipment",
+		"subcategory": "signal_processor",
+		"provision_default": "venue_provided",
+		"connectors": [],
+		"tags": ["equipment", "signal_processor"]
 	},
 	{
 		"name": "LED Wall",
@@ -1038,7 +1880,12 @@
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "equipment",
+		"subcategory": "video",
+		"provision_default": "venue_provided",
+		"connectors": [],
+		"tags": ["equipment", "video"]
 	},
 	{
 		"name": "Pedalboard",
@@ -1059,7 +1906,17 @@
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "equipment",
+		"subcategory": "pedal",
+		"provision_default": "artist_provided",
+		"connectors": ["TS"],
+		"tags": ["equipment", "pedal", "signal_chain"],
+		"dimensions": {
+			"width": 6,
+			"depth": 4,
+			"height": 2
+		}
 	},
 	{
 		"name": "Sampler",
@@ -1073,7 +1930,12 @@
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "equipment",
+		"subcategory": "signal_processor",
+		"provision_default": "venue_provided",
+		"connectors": [],
+		"tags": ["equipment", "signal_processor"]
 	},
 	{
 		"name": "Stereo DI",
@@ -1083,11 +1945,21 @@
 		},
 		"path": "equipment/stereodi",
 		"is_backline": false,
-		"auto_number_prefix": "",
+		"auto_number_prefix": "DI",
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": ["Radial JDI Duplex", "Radial ProD2"],
+		"category": "equipment",
+		"subcategory": "di_box",
+		"provision_default": "venue_provided",
+		"connectors": ["TS", "XLR"],
+		"tags": ["equipment", "di_box", "signal_chain"],
+		"dimensions": {
+			"width": 5,
+			"depth": 4,
+			"height": 2
+		}
 	},
 	{
 		"name": "Music Stand",
@@ -1108,10 +1980,20 @@
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "equipment",
+		"subcategory": "music_stand",
+		"provision_default": "venue_provided",
+		"connectors": [],
+		"tags": ["furniture", "stand", "music_stand"],
+		"dimensions": {
+			"width": 18,
+			"depth": 6,
+			"height": 48
+		}
 	},
 	{
-		"name": "Orchestra Seat",
+		"name": "Orchestra Chair",
 		"item_type": "furniture",
 		"variants": {
 			"default": "OrchSeat.png"
@@ -1122,7 +2004,17 @@
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "equipment",
+		"subcategory": "chair",
+		"provision_default": "venue_provided",
+		"connectors": [],
+		"tags": ["furniture", "chair"],
+		"dimensions": {
+			"width": 18,
+			"depth": 18,
+			"height": 32
+		}
 	},
 	{
 		"name": "Piano Bench",
@@ -1143,10 +2035,20 @@
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "equipment",
+		"subcategory": "bench",
+		"provision_default": "venue_provided",
+		"connectors": [],
+		"tags": ["furniture", "bench"],
+		"dimensions": {
+			"width": 36,
+			"depth": 14,
+			"height": 20
+		}
 	},
 	{
-		"name": "Standw2 Lamps",
+		"name": "Music Stand with 2 Lamps",
 		"item_type": "stand",
 		"variants": {
 			"R": "standw2lampsR.png",
@@ -1164,10 +2066,20 @@
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "furniture",
+		"subcategory": "music_stand",
+		"provision_default": "venue_provided",
+		"connectors": [],
+		"tags": ["furniture", "stand", "music_stand"],
+		"dimensions": {
+			"width": 18,
+			"depth": 6,
+			"height": 48
+		}
 	},
 	{
-		"name": "Standwlamp",
+		"name": "Music Stand with Lamp",
 		"item_type": "stand",
 		"variants": {
 			"L": "standwlampL.png",
@@ -1185,10 +2097,20 @@
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "furniture",
+		"subcategory": "music_stand",
+		"provision_default": "venue_provided",
+		"connectors": [],
+		"tags": ["furniture", "stand", "music_stand"],
+		"dimensions": {
+			"width": 18,
+			"depth": 6,
+			"height": 48
+		}
 	},
 	{
-		"name": "Acousticguitar",
+		"name": "Acoustic Guitar",
 		"item_type": "instrument",
 		"variants": {
 			"RA": "acousticguitarRA.png",
@@ -1200,10 +2122,21 @@
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": ["Martin D-28", "Taylor 314ce", "Gibson J-45"],
+		"category": "guitars",
+		"subcategory": "acoustic",
+		"provision_default": "artist_provided",
+		"connectors": ["TS"],
+		"tags": ["guitars", "instrument", "acoustic", "backline"],
+		"default_inputs": [
+			{
+				"name": "Acoustic DI",
+				"connector": "TS"
+			}
+		]
 	},
 	{
-		"name": "Azerisaz",
+		"name": "Azeri Saz",
 		"item_type": "instrument",
 		"variants": {
 			"default": "azerisaz.png",
@@ -1215,7 +2148,26 @@
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "guitars",
+		"subcategory": "world_string",
+		"provision_default": "artist_provided",
+		"connectors": ["TS"],
+		"tags": [
+			"guitars",
+			"instrument",
+			"world_string",
+			"world",
+			"middle_eastern",
+			"azeri",
+			"backline"
+		],
+		"default_inputs": [
+			{
+				"name": "Guitar",
+				"connector": "TS"
+			}
+		]
 	},
 	{
 		"name": "Balalaika",
@@ -1230,7 +2182,18 @@
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "guitars",
+		"subcategory": "world_string",
+		"provision_default": "artist_provided",
+		"connectors": ["TS"],
+		"tags": ["guitars", "instrument", "world_string", "world", "russian", "folk", "backline"],
+		"default_inputs": [
+			{
+				"name": "Guitar",
+				"connector": "TS"
+			}
+		]
 	},
 	{
 		"name": "Banjo",
@@ -1244,10 +2207,21 @@
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "guitars",
+		"subcategory": "banjo",
+		"provision_default": "artist_provided",
+		"connectors": ["TS"],
+		"tags": ["guitars", "instrument", "banjo", "backline"],
+		"default_inputs": [
+			{
+				"name": "Guitar",
+				"connector": "TS"
+			}
+		]
 	},
 	{
-		"name": "P Bass",
+		"name": "P-Bass",
 		"item_type": "instrument",
 		"variants": {
 			"RA": "P_BassRA.png",
@@ -1255,25 +2229,47 @@
 		},
 		"path": "guitars/bass/p_bass",
 		"is_backline": true,
-		"auto_number_prefix": "Gtr",
+		"auto_number_prefix": "Bass",
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": ["Fender Precision Bass", "Fender Jazz Bass"],
+		"category": "bass",
+		"subcategory": "bass",
+		"provision_default": "artist_provided",
+		"connectors": ["TS"],
+		"tags": ["guitars", "instrument", "bass", "backline"],
+		"default_inputs": [
+			{
+				"name": "Bass",
+				"connector": "TS"
+			}
+		]
 	},
 	{
-		"name": "Stringbass",
+		"name": "Upright Bass",
 		"item_type": "instrument",
 		"variants": {
 			"default": "stringbass.png"
 		},
 		"path": "guitars/bass/stringbass",
 		"is_backline": true,
-		"auto_number_prefix": "Gtr",
+		"auto_number_prefix": "Bass",
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "bass",
+		"subcategory": "bass",
+		"provision_default": "artist_provided",
+		"connectors": ["TS"],
+		"tags": ["guitars", "instrument", "bass", "backline"],
+		"default_inputs": [
+			{
+				"name": "Bass",
+				"connector": "TS"
+			}
+		]
 	},
 	{
 		"name": "Bouzouki",
@@ -1288,7 +2284,18 @@
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "guitars",
+		"subcategory": "world_string",
+		"provision_default": "artist_provided",
+		"connectors": ["TS"],
+		"tags": ["guitars", "instrument", "world_string", "world", "greek", "folk", "backline"],
+		"default_inputs": [
+			{
+				"name": "Guitar",
+				"connector": "TS"
+			}
+		]
 	},
 	{
 		"name": "Charango",
@@ -1303,7 +2310,18 @@
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "guitars",
+		"subcategory": "world_string",
+		"provision_default": "artist_provided",
+		"connectors": ["TS"],
+		"tags": ["guitars", "instrument", "world_string", "world", "latin", "andean", "backline"],
+		"default_inputs": [
+			{
+				"name": "Guitar",
+				"connector": "TS"
+			}
+		]
 	},
 	{
 		"name": "Cuatro",
@@ -1318,10 +2336,21 @@
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "guitars",
+		"subcategory": "world_string",
+		"provision_default": "artist_provided",
+		"connectors": ["TS"],
+		"tags": ["guitars", "instrument", "world_string", "world", "latin", "venezuelan", "backline"],
+		"default_inputs": [
+			{
+				"name": "Guitar",
+				"connector": "TS"
+			}
+		]
 	},
 	{
-		"name": "Electricguitar",
+		"name": "Electric Guitar",
 		"item_type": "instrument",
 		"variants": {
 			"default": "electricguitar.png"
@@ -1332,10 +2361,26 @@
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [
+			"Fender Stratocaster",
+			"Gibson Les Paul",
+			"Fender Telecaster",
+			"PRS Custom 24"
+		],
+		"category": "guitars",
+		"subcategory": "electric",
+		"provision_default": "artist_provided",
+		"connectors": ["TS"],
+		"tags": ["guitars", "instrument", "electric", "backline"],
+		"default_inputs": [
+			{
+				"name": "Guitar",
+				"connector": "TS"
+			}
+		]
 	},
 	{
-		"name": "Guitaronstand",
+		"name": "Guitar on Stand",
 		"item_type": "instrument",
 		"variants": {
 			"R": "guitaronstandR.png",
@@ -1350,10 +2395,21 @@
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "guitars",
+		"subcategory": "electric",
+		"provision_default": "artist_provided",
+		"connectors": ["TS"],
+		"tags": ["guitars", "instrument", "electric", "backline"],
+		"default_inputs": [
+			{
+				"name": "Guitar",
+				"connector": "TS"
+			}
+		]
 	},
 	{
-		"name": "Guitarron",
+		"name": "Guitarrón",
 		"item_type": "instrument",
 		"variants": {
 			"default": "guitarron.png",
@@ -1365,10 +2421,30 @@
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "guitars",
+		"subcategory": "world_string",
+		"provision_default": "artist_provided",
+		"connectors": ["TS"],
+		"tags": [
+			"guitars",
+			"instrument",
+			"world_string",
+			"world",
+			"latin",
+			"mexican",
+			"mariachi",
+			"backline"
+		],
+		"default_inputs": [
+			{
+				"name": "Guitar",
+				"connector": "TS"
+			}
+		]
 	},
 	{
-		"name": "Guitarstand",
+		"name": "Guitar Stand",
 		"item_type": "stand",
 		"variants": {
 			"default": "guitarstand.png",
@@ -1386,10 +2462,15 @@
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "guitars",
+		"subcategory": "stand",
+		"provision_default": "venue_provided",
+		"connectors": [],
+		"tags": ["guitars", "stand"]
 	},
 	{
-		"name": "Guitarsynth",
+		"name": "Guitar Synth",
 		"item_type": "instrument",
 		"variants": {
 			"default": "guitarsynth.png",
@@ -1404,7 +2485,18 @@
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "guitars",
+		"subcategory": "world_string",
+		"provision_default": "artist_provided",
+		"connectors": ["TS"],
+		"tags": ["guitars", "instrument", "world_string", "backline"],
+		"default_inputs": [
+			{
+				"name": "Guitar",
+				"connector": "TS"
+			}
+		]
 	},
 	{
 		"name": "Flute",
@@ -1418,11 +2510,16 @@
 		},
 		"path": "winds/flute",
 		"is_backline": true,
-		"auto_number_prefix": "Gtr",
+		"auto_number_prefix": "Fl",
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "winds",
+		"subcategory": "flute",
+		"provision_default": "artist_provided",
+		"connectors": [],
+		"tags": ["winds", "instrument", "flute", "backline"]
 	},
 	{
 		"name": "Lute",
@@ -1437,7 +2534,18 @@
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "guitars",
+		"subcategory": "lute",
+		"provision_default": "artist_provided",
+		"connectors": ["TS"],
+		"tags": ["guitars", "instrument", "lute", "backline"],
+		"default_inputs": [
+			{
+				"name": "Guitar",
+				"connector": "TS"
+			}
+		]
 	},
 	{
 		"name": "Mandolin",
@@ -1452,10 +2560,21 @@
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "guitars",
+		"subcategory": "mandolin",
+		"provision_default": "artist_provided",
+		"connectors": ["TS"],
+		"tags": ["guitars", "instrument", "mandolin", "backline"],
+		"default_inputs": [
+			{
+				"name": "Guitar",
+				"connector": "TS"
+			}
+		]
 	},
 	{
-		"name": "National",
+		"name": "National Resonator",
 		"item_type": "instrument",
 		"variants": {
 			"R": "NationalR.png",
@@ -1468,7 +2587,18 @@
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "guitars",
+		"subcategory": "world_string",
+		"provision_default": "artist_provided",
+		"connectors": ["TS"],
+		"tags": ["guitars", "instrument", "world_string", "backline"],
+		"default_inputs": [
+			{
+				"name": "Guitar",
+				"connector": "TS"
+			}
+		]
 	},
 	{
 		"name": "Oud",
@@ -1483,7 +2613,26 @@
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "guitars",
+		"subcategory": "world_string",
+		"provision_default": "artist_provided",
+		"connectors": ["TS"],
+		"tags": [
+			"guitars",
+			"instrument",
+			"world_string",
+			"world",
+			"middle_eastern",
+			"arabic",
+			"backline"
+		],
+		"default_inputs": [
+			{
+				"name": "Guitar",
+				"connector": "TS"
+			}
+		]
 	},
 	{
 		"name": "Sitar",
@@ -1498,10 +2647,21 @@
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "guitars",
+		"subcategory": "world_string",
+		"provision_default": "artist_provided",
+		"connectors": ["TS"],
+		"tags": ["guitars", "instrument", "world_string", "world", "indian", "hindustani", "backline"],
+		"default_inputs": [
+			{
+				"name": "Guitar",
+				"connector": "TS"
+			}
+		]
 	},
 	{
-		"name": "Lapsteel",
+		"name": "Lap Steel",
 		"item_type": "instrument",
 		"variants": {
 			"default": "lapsteel.png",
@@ -1516,10 +2676,21 @@
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "guitars",
+		"subcategory": "steel",
+		"provision_default": "artist_provided",
+		"connectors": ["TS"],
+		"tags": ["guitars", "instrument", "steel", "backline"],
+		"default_inputs": [
+			{
+				"name": "Guitar",
+				"connector": "TS"
+			}
+		]
 	},
 	{
-		"name": "Steel",
+		"name": "Pedal Steel",
 		"item_type": "instrument",
 		"variants": {
 			"R": "SteelR.png",
@@ -1534,7 +2705,18 @@
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "guitars",
+		"subcategory": "steel",
+		"provision_default": "artist_provided",
+		"connectors": ["TS"],
+		"tags": ["guitars", "instrument", "steel", "backline"],
+		"default_inputs": [
+			{
+				"name": "Guitar",
+				"connector": "TS"
+			}
+		]
 	},
 	{
 		"name": "Tiple",
@@ -1549,7 +2731,18 @@
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "guitars",
+		"subcategory": "world_string",
+		"provision_default": "artist_provided",
+		"connectors": ["TS"],
+		"tags": ["guitars", "instrument", "world_string", "world", "latin", "colombian", "backline"],
+		"default_inputs": [
+			{
+				"name": "Guitar",
+				"connector": "TS"
+			}
+		]
 	},
 	{
 		"name": "Tumbi",
@@ -1564,7 +2757,18 @@
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "guitars",
+		"subcategory": "world_string",
+		"provision_default": "artist_provided",
+		"connectors": ["TS"],
+		"tags": ["guitars", "instrument", "world_string", "world", "indian", "punjabi", "backline"],
+		"default_inputs": [
+			{
+				"name": "Guitar",
+				"connector": "TS"
+			}
+		]
 	},
 	{
 		"name": "Ukulele",
@@ -1579,7 +2783,18 @@
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "guitars",
+		"subcategory": "world_string",
+		"provision_default": "artist_provided",
+		"connectors": ["TS"],
+		"tags": ["guitars", "instrument", "world_string", "backline"],
+		"default_inputs": [
+			{
+				"name": "Guitar",
+				"connector": "TS"
+			}
+		]
 	},
 	{
 		"name": "Zinfonia",
@@ -1593,7 +2808,18 @@
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "guitars",
+		"subcategory": "zinfonia",
+		"provision_default": "artist_provided",
+		"connectors": ["TS"],
+		"tags": ["guitars", "instrument", "zinfonia", "world", "folk", "backline"],
+		"default_inputs": [
+			{
+				"name": "Guitar",
+				"connector": "TS"
+			}
+		]
 	},
 	{
 		"name": "Accordion",
@@ -1611,10 +2837,20 @@
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "keys",
+		"subcategory": "accordion",
+		"provision_default": "artist_provided",
+		"connectors": [],
+		"tags": ["keys", "instrument", "accordion", "backline"],
+		"dimensions": {
+			"width": 20,
+			"depth": 20,
+			"height": 18
+		}
 	},
 	{
-		"name": "Baby Grand",
+		"name": "Baby Grand Piano",
 		"item_type": "instrument",
 		"variants": {
 			"L": "BabyGrandL.png",
@@ -1632,7 +2868,27 @@
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "keys",
+		"subcategory": "baby_grand",
+		"provision_default": "artist_provided",
+		"connectors": [],
+		"tags": ["keys", "instrument", "baby_grand", "backline"],
+		"dimensions": {
+			"width": 58,
+			"depth": 72,
+			"height": 40
+		},
+		"default_inputs": [
+			{
+				"name": "Keys L",
+				"connector": "XLR"
+			},
+			{
+				"name": "Keys R",
+				"connector": "XLR"
+			}
+		]
 	},
 	{
 		"name": "Celesta",
@@ -1653,7 +2909,22 @@
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "keys",
+		"subcategory": "harpsichord",
+		"provision_default": "artist_provided",
+		"connectors": [],
+		"tags": ["keys", "instrument", "harpsichord", "backline"],
+		"default_inputs": [
+			{
+				"name": "Keys L",
+				"connector": "XLR"
+			},
+			{
+				"name": "Keys R",
+				"connector": "XLR"
+			}
+		]
 	},
 	{
 		"name": "Clavinet",
@@ -1672,12 +2943,32 @@
 		"is_backline": true,
 		"auto_number_prefix": "Keys",
 		"person_subcategory": "",
-		"brand": "",
-		"model": "",
-		"common_models": []
+		"brand": "Hohner",
+		"model": "Clavinet D6",
+		"common_models": [],
+		"category": "keys",
+		"subcategory": "clavinet",
+		"provision_default": "artist_provided",
+		"connectors": ["TRS"],
+		"tags": ["keys", "instrument", "clavinet", "backline"],
+		"dimensions": {
+			"width": 40,
+			"depth": 16,
+			"height": 32
+		},
+		"default_inputs": [
+			{
+				"name": "Keys L",
+				"connector": "TRS"
+			},
+			{
+				"name": "Keys R",
+				"connector": "TRS"
+			}
+		]
 	},
 	{
-		"name": "Closed Grand",
+		"name": "Closed Grand Piano",
 		"item_type": "instrument",
 		"variants": {
 			"default": "ClosedGrand.png",
@@ -1695,10 +2986,30 @@
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "keys",
+		"subcategory": "grand_piano",
+		"provision_default": "artist_provided",
+		"connectors": [],
+		"tags": ["keys", "instrument", "grand_piano", "backline"],
+		"dimensions": {
+			"width": 60,
+			"depth": 90,
+			"height": 40
+		},
+		"default_inputs": [
+			{
+				"name": "Keys L",
+				"connector": "XLR"
+			},
+			{
+				"name": "Keys R",
+				"connector": "XLR"
+			}
+		]
 	},
 	{
-		"name": "Doublekeystand",
+		"name": "Double Keyboard Stand",
 		"item_type": "stand",
 		"variants": {
 			"R": "doublekeystandR.png",
@@ -1716,7 +3027,12 @@
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "keys",
+		"subcategory": "stand",
+		"provision_default": "venue_provided",
+		"connectors": [],
+		"tags": ["keys", "stand"]
 	},
 	{
 		"name": "Drum Machine",
@@ -1737,10 +3053,25 @@
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "keys",
+		"subcategory": "drum_machine",
+		"provision_default": "artist_provided",
+		"connectors": ["TRS"],
+		"tags": ["keys", "instrument", "drum_machine", "backline"],
+		"default_inputs": [
+			{
+				"name": "Keys L",
+				"connector": "TRS"
+			},
+			{
+				"name": "Keys R",
+				"connector": "TRS"
+			}
+		]
 	},
 	{
-		"name": "Fantom",
+		"name": "Roland Fantom",
 		"item_type": "instrument",
 		"variants": {
 			"default": "Fantom.png",
@@ -1758,7 +3089,27 @@
 		"person_subcategory": "",
 		"brand": "Roland",
 		"model": "Fantom",
-		"common_models": []
+		"common_models": [],
+		"category": "keys",
+		"subcategory": "stage_piano",
+		"provision_default": "artist_provided",
+		"connectors": ["TRS"],
+		"tags": ["keys", "instrument", "stage_piano", "roland", "backline"],
+		"dimensions": {
+			"width": 52,
+			"depth": 14,
+			"height": 36
+		},
+		"default_inputs": [
+			{
+				"name": "Keys L",
+				"connector": "TRS"
+			},
+			{
+				"name": "Keys R",
+				"connector": "TRS"
+			}
+		]
 	},
 	{
 		"name": "Grand Piano",
@@ -1779,10 +3130,30 @@
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "keys",
+		"subcategory": "grand_piano",
+		"provision_default": "artist_provided",
+		"connectors": [],
+		"tags": ["keys", "instrument", "grand_piano", "backline"],
+		"dimensions": {
+			"width": 60,
+			"depth": 90,
+			"height": 40
+		},
+		"default_inputs": [
+			{
+				"name": "Keys L",
+				"connector": "XLR"
+			},
+			{
+				"name": "Keys R",
+				"connector": "XLR"
+			}
+		]
 	},
 	{
-		"name": "Grand Piano Alt",
+		"name": "Grand Piano (Alt)",
 		"item_type": "instrument",
 		"variants": {
 			"L": "grandpiano1L.png",
@@ -1799,7 +3170,27 @@
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "keys",
+		"subcategory": "grand_piano",
+		"provision_default": "artist_provided",
+		"connectors": [],
+		"tags": ["keys", "instrument", "grand_piano", "backline"],
+		"dimensions": {
+			"width": 60,
+			"depth": 90,
+			"height": 40
+		},
+		"default_inputs": [
+			{
+				"name": "Keys L",
+				"connector": "XLR"
+			},
+			{
+				"name": "Keys R",
+				"connector": "XLR"
+			}
+		]
 	},
 	{
 		"name": "Harpsichord",
@@ -1820,10 +3211,25 @@
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "keys",
+		"subcategory": "harpsichord",
+		"provision_default": "artist_provided",
+		"connectors": [],
+		"tags": ["keys", "instrument", "harpsichord", "backline"],
+		"default_inputs": [
+			{
+				"name": "Keys L",
+				"connector": "XLR"
+			},
+			{
+				"name": "Keys R",
+				"connector": "XLR"
+			}
+		]
 	},
 	{
-		"name": "Keystand",
+		"name": "Keyboard Stand",
 		"item_type": "stand",
 		"variants": {
 			"B": "keystandB.png",
@@ -1841,7 +3247,12 @@
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "keys",
+		"subcategory": "stand",
+		"provision_default": "venue_provided",
+		"connectors": [],
+		"tags": ["keys", "stand"]
 	},
 	{
 		"name": "Keytar",
@@ -1855,10 +3266,25 @@
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "keys",
+		"subcategory": "keytar",
+		"provision_default": "artist_provided",
+		"connectors": ["TRS"],
+		"tags": ["keys", "instrument", "keytar", "backline"],
+		"default_inputs": [
+			{
+				"name": "Keys L",
+				"connector": "TRS"
+			},
+			{
+				"name": "Keys R",
+				"connector": "TRS"
+			}
+		]
 	},
 	{
-		"name": "Leslie",
+		"name": "Leslie Speaker",
 		"item_type": "speaker",
 		"variants": {
 			"R": "LeslieR.png",
@@ -1871,9 +3297,14 @@
 		"is_backline": true,
 		"auto_number_prefix": "Keys",
 		"person_subcategory": "",
-		"brand": "",
-		"model": "",
-		"common_models": []
+		"brand": "Leslie",
+		"model": "Rotary Speaker",
+		"common_models": [],
+		"category": "keys",
+		"subcategory": "rotary_speaker",
+		"provision_default": "venue_provided",
+		"connectors": ["XLR", "speakon"],
+		"tags": ["keys", "speaker", "rotary_speaker", "backline"]
 	},
 	{
 		"name": "Mellotron",
@@ -1892,12 +3323,32 @@
 		"is_backline": true,
 		"auto_number_prefix": "Keys",
 		"person_subcategory": "",
-		"brand": "",
-		"model": "",
-		"common_models": []
+		"brand": "Mellotron",
+		"model": "M400",
+		"common_models": [],
+		"category": "keys",
+		"subcategory": "mellotron",
+		"provision_default": "artist_provided",
+		"connectors": ["TRS"],
+		"tags": ["keys", "instrument", "mellotron", "backline"],
+		"dimensions": {
+			"width": 36,
+			"depth": 20,
+			"height": 32
+		},
+		"default_inputs": [
+			{
+				"name": "Keys L",
+				"connector": "TRS"
+			},
+			{
+				"name": "Keys R",
+				"connector": "TRS"
+			}
+		]
 	},
 	{
-		"name": "Nordstage88",
+		"name": "Nord Stage 88",
 		"item_type": "instrument",
 		"variants": {
 			"LA": "NordStage88LA.png",
@@ -1915,7 +3366,27 @@
 		"person_subcategory": "",
 		"brand": "Nord",
 		"model": "Stage 88",
-		"common_models": []
+		"common_models": [],
+		"category": "keys",
+		"subcategory": "stage_piano",
+		"provision_default": "artist_provided",
+		"connectors": ["TRS"],
+		"tags": ["keys", "instrument", "stage_piano", "nord", "backline"],
+		"dimensions": {
+			"width": 52,
+			"depth": 14,
+			"height": 36
+		},
+		"default_inputs": [
+			{
+				"name": "Keys L",
+				"connector": "TRS"
+			},
+			{
+				"name": "Keys R",
+				"connector": "TRS"
+			}
+		]
 	},
 	{
 		"name": "Upright Piano",
@@ -1936,10 +3407,30 @@
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "keys",
+		"subcategory": "upright_piano",
+		"provision_default": "artist_provided",
+		"connectors": [],
+		"tags": ["keys", "instrument", "upright_piano", "backline"],
+		"dimensions": {
+			"width": 58,
+			"depth": 24,
+			"height": 48
+		},
+		"default_inputs": [
+			{
+				"name": "Keys L",
+				"connector": "XLR"
+			},
+			{
+				"name": "Keys R",
+				"connector": "XLR"
+			}
+		]
 	},
 	{
-		"name": "Yamahacp70",
+		"name": "Yamaha CP-70",
 		"item_type": "instrument",
 		"variants": {
 			"L": "yamahaCP70L.png",
@@ -1955,12 +3446,32 @@
 		"is_backline": true,
 		"auto_number_prefix": "Keys",
 		"person_subcategory": "",
-		"brand": "",
-		"model": "",
-		"common_models": []
+		"brand": "Yamaha",
+		"model": "CP-70",
+		"common_models": [],
+		"category": "keys",
+		"subcategory": "stage_piano",
+		"provision_default": "artist_provided",
+		"connectors": ["TRS"],
+		"tags": ["keys", "instrument", "stage_piano", "backline"],
+		"dimensions": {
+			"width": 52,
+			"depth": 14,
+			"height": 36
+		},
+		"default_inputs": [
+			{
+				"name": "Keys L",
+				"connector": "TRS"
+			},
+			{
+				"name": "Keys R",
+				"connector": "TRS"
+			}
+		]
 	},
 	{
-		"name": "Yamahagt2",
+		"name": "Yamaha GT-2",
 		"item_type": "instrument",
 		"variants": {
 			"R": "YamahaGT2R.png",
@@ -1976,12 +3487,32 @@
 		"is_backline": true,
 		"auto_number_prefix": "Keys",
 		"person_subcategory": "",
-		"brand": "",
-		"model": "",
-		"common_models": []
+		"brand": "Yamaha",
+		"model": "GT-2",
+		"common_models": [],
+		"category": "keys",
+		"subcategory": "stage_piano",
+		"provision_default": "artist_provided",
+		"connectors": ["TRS"],
+		"tags": ["keys", "instrument", "stage_piano", "backline"],
+		"dimensions": {
+			"width": 52,
+			"depth": 14,
+			"height": 36
+		},
+		"default_inputs": [
+			{
+				"name": "Keys L",
+				"connector": "TRS"
+			},
+			{
+				"name": "Keys R",
+				"connector": "TRS"
+			}
+		]
 	},
 	{
-		"name": "Boom57",
+		"name": "Boom Mic (57)",
 		"item_type": "microphone",
 		"variants": {
 			"L": "Boom57L.png",
@@ -1995,14 +3526,25 @@
 		},
 		"path": "mics/boom/boom57",
 		"is_backline": false,
-		"auto_number_prefix": "",
+		"auto_number_prefix": "Mic",
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": ["Shure SM57"],
+		"category": "mics",
+		"subcategory": "boom",
+		"provision_default": "venue_provided",
+		"connectors": ["XLR"],
+		"tags": ["mics", "microphone", "boom"],
+		"default_inputs": [
+			{
+				"name": "Vocal",
+				"connector": "XLR"
+			}
+		]
 	},
 	{
-		"name": "Boomlshort",
+		"name": "Short Boom Mic (Left)",
 		"item_type": "microphone",
 		"variants": {
 			"R": "BoomLshortR.png",
@@ -2013,14 +3555,25 @@
 		},
 		"path": "mics/boom/boomlshort",
 		"is_backline": false,
-		"auto_number_prefix": "",
+		"auto_number_prefix": "Mic",
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "mics",
+		"subcategory": "boom",
+		"provision_default": "venue_provided",
+		"connectors": ["XLR"],
+		"tags": ["mics", "microphone", "boom"],
+		"default_inputs": [
+			{
+				"name": "Vocal",
+				"connector": "XLR"
+			}
+		]
 	},
 	{
-		"name": "Boomlshortback",
+		"name": "Short Boom Mic (Left, Back)",
 		"item_type": "microphone",
 		"variants": {
 			"LA": "BoomLshortBackLA.png",
@@ -2029,14 +3582,25 @@
 		},
 		"path": "mics/boom/boomlshortback",
 		"is_backline": false,
-		"auto_number_prefix": "",
+		"auto_number_prefix": "Mic",
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "mics",
+		"subcategory": "boom",
+		"provision_default": "venue_provided",
+		"connectors": ["XLR"],
+		"tags": ["mics", "microphone", "boom"],
+		"default_inputs": [
+			{
+				"name": "Vocal",
+				"connector": "XLR"
+			}
+		]
 	},
 	{
-		"name": "Boomrshort",
+		"name": "Short Boom Mic (Right)",
 		"item_type": "microphone",
 		"variants": {
 			"R": "BoomRshortR.png",
@@ -2047,14 +3611,25 @@
 		},
 		"path": "mics/boom/boomrshort",
 		"is_backline": false,
-		"auto_number_prefix": "",
+		"auto_number_prefix": "Mic",
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "mics",
+		"subcategory": "boom",
+		"provision_default": "venue_provided",
+		"connectors": ["XLR"],
+		"tags": ["mics", "microphone", "boom"],
+		"default_inputs": [
+			{
+				"name": "Vocal",
+				"connector": "XLR"
+			}
+		]
 	},
 	{
-		"name": "Boomrshortback",
+		"name": "Short Boom Mic (Right, Back)",
 		"item_type": "microphone",
 		"variants": {
 			"LA": "BoomRshortBackLA.png",
@@ -2063,11 +3638,22 @@
 		},
 		"path": "mics/boom/boomrshortback",
 		"is_backline": false,
-		"auto_number_prefix": "",
+		"auto_number_prefix": "Mic",
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "mics",
+		"subcategory": "boom",
+		"provision_default": "venue_provided",
+		"connectors": ["XLR"],
+		"tags": ["mics", "microphone", "boom"],
+		"default_inputs": [
+			{
+				"name": "Vocal",
+				"connector": "XLR"
+			}
+		]
 	},
 	{
 		"name": "Wired Mic",
@@ -2077,11 +3663,22 @@
 		},
 		"path": "mics/hand_held/wired_mic",
 		"is_backline": false,
-		"auto_number_prefix": "",
+		"auto_number_prefix": "Mic",
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": ["Shure SM58", "Sennheiser e835"],
+		"category": "mics",
+		"subcategory": "handheld",
+		"provision_default": "venue_provided",
+		"connectors": ["XLR"],
+		"tags": ["mics", "microphone", "handheld"],
+		"default_inputs": [
+			{
+				"name": "Vocal",
+				"connector": "XLR"
+			}
+		]
 	},
 	{
 		"name": "Wireless Mic",
@@ -2091,14 +3688,19 @@
 		},
 		"path": "mics/hand_held/wireless_mic",
 		"is_backline": false,
-		"auto_number_prefix": "",
+		"auto_number_prefix": "Mic",
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "mics",
+		"subcategory": "handheld",
+		"provision_default": "venue_provided",
+		"connectors": [],
+		"tags": ["mics", "microphone", "handheld"]
 	},
 	{
-		"name": "Headsetmic",
+		"name": "Headset Mic",
 		"item_type": "microphone",
 		"variants": {
 			"R": "headsetmicR.png",
@@ -2109,14 +3711,25 @@
 		},
 		"path": "mics/headset",
 		"is_backline": false,
-		"auto_number_prefix": "",
+		"auto_number_prefix": "Mic",
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "mics",
+		"subcategory": "headset",
+		"provision_default": "venue_provided",
+		"connectors": ["XLR"],
+		"tags": ["mics", "microphone", "headset"],
+		"default_inputs": [
+			{
+				"name": "Vocal",
+				"connector": "XLR"
+			}
+		]
 	},
 	{
-		"name": "Boom 57",
+		"name": "Boom Stand (57)",
 		"item_type": "stand",
 		"variants": {
 			"L": "Boom57L.png",
@@ -2134,10 +3747,15 @@
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "mics",
+		"subcategory": "stand",
+		"provision_default": "venue_provided",
+		"connectors": [],
+		"tags": ["mics", "stand"]
 	},
 	{
-		"name": "Boom L Short",
+		"name": "Short Boom Stand (Left)",
 		"item_type": "stand",
 		"variants": {
 			"BLA": "BoomLshortBackLA.png",
@@ -2155,10 +3773,15 @@
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "mics",
+		"subcategory": "stand",
+		"provision_default": "venue_provided",
+		"connectors": [],
+		"tags": ["mics", "stand"]
 	},
 	{
-		"name": "Boom R Short",
+		"name": "Short Boom Stand (Right)",
 		"item_type": "stand",
 		"variants": {
 			"R": "BoomRshortR.png",
@@ -2176,7 +3799,12 @@
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "mics",
+		"subcategory": "stand",
+		"provision_default": "venue_provided",
+		"connectors": [],
+		"tags": ["mics", "stand"]
 	},
 	{
 		"name": "Center Vocal Stand",
@@ -2197,10 +3825,15 @@
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "mics",
+		"subcategory": "stand",
+		"provision_default": "venue_provided",
+		"connectors": [],
+		"tags": ["mics", "stand"]
 	},
 	{
-		"name": "K&M Stand",
+		"name": "Boom Mic Stand",
 		"item_type": "stand",
 		"variants": {
 			"RA": "K&MstandRA.png",
@@ -2213,12 +3846,29 @@
 			"B": "K&MstandB.png"
 		},
 		"path": "mics/stands/kmstand",
-		"is_backline": false,
-		"auto_number_prefix": "",
-		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"slug": "mics-stands-kmstand",
+		"category": "mics",
+		"subcategory": "stand",
+		"tags": ["mics", "stand"],
+		"default_inputs": [],
+		"default_outputs": [],
+		"dimensions": {
+			"width_in": 0,
+			"depth_in": 0,
+			"height_in": 0
+		},
+		"provision_default": "venue_provided",
+		"is_backline": false,
+		"connectors": [],
+		"power_requirements": "",
+		"notes": "",
+		"auto_number_prefix": "",
+		"person_subcategory": "",
+		"_enriched": true,
+		"_original_name": "K&M Mic Stand"
 	},
 	{
 		"name": "Straight Mic Stand (Short)",
@@ -2235,9 +3885,25 @@
 		"is_backline": false,
 		"auto_number_prefix": "",
 		"person_subcategory": "",
-		"brand": "",
+		"brands": [],
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "mics",
+		"subcategory": "stand",
+		"provision_default": "venue_provided",
+		"connectors": [],
+		"tags": ["mics", "stand"],
+		"default_inputs": [],
+		"default_outputs": [],
+		"dimensions": {
+			"width_in": 0,
+			"depth_in": 0,
+			"height_in": 0
+		},
+		"power_requirements": "",
+		"notes": "",
+		"_enriched": true,
+		"_original_name": "Straight Mic Stand"
 	},
 	{
 		"name": "Straight Mic Stand (Vocal Round Base)",
@@ -2253,12 +3919,28 @@
 		"is_backline": false,
 		"auto_number_prefix": "",
 		"person_subcategory": "",
-		"brand": "",
+		"brands": [],
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "mics",
+		"subcategory": "stand",
+		"provision_default": "venue_provided",
+		"connectors": [],
+		"tags": ["mics", "stand"],
+		"default_inputs": [],
+		"default_outputs": [],
+		"dimensions": {
+			"width_in": 0,
+			"depth_in": 0,
+			"height_in": 0
+		},
+		"power_requirements": "",
+		"notes": "",
+		"_enriched": true,
+		"_original_name": "Straight Mic Stand"
 	},
 	{
-		"name": "Standstraight No- Mic",
+		"name": "Straight Stand (No Mic)",
 		"item_type": "stand",
 		"variants": {
 			"default": "standstraight_no-mic.png"
@@ -2269,10 +3951,15 @@
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "mics",
+		"subcategory": "straight",
+		"provision_default": "venue_provided",
+		"connectors": [],
+		"tags": ["mics", "stand", "straight"]
 	},
 	{
-		"name": "Straight Short",
+		"name": "Short Straight Mic",
 		"item_type": "microphone",
 		"variants": {
 			"default": "Straight_short.png",
@@ -2283,28 +3970,50 @@
 		},
 		"path": "mics/straight/straight_short",
 		"is_backline": false,
-		"auto_number_prefix": "",
+		"auto_number_prefix": "Mic",
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "mics",
+		"subcategory": "straight",
+		"provision_default": "venue_provided",
+		"connectors": ["XLR"],
+		"tags": ["mics", "microphone", "straight"],
+		"default_inputs": [
+			{
+				"name": "Vocal",
+				"connector": "XLR"
+			}
+		]
 	},
 	{
-		"name": "Straight Shortback",
+		"name": "Short Straight Mic (Back)",
 		"item_type": "microphone",
 		"variants": {
 			"default": "Straight_shortBack.png"
 		},
 		"path": "mics/straight/straight_shortback",
 		"is_backline": false,
-		"auto_number_prefix": "",
+		"auto_number_prefix": "Mic",
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "mics",
+		"subcategory": "straight",
+		"provision_default": "venue_provided",
+		"connectors": ["XLR"],
+		"tags": ["mics", "microphone", "straight"],
+		"default_inputs": [
+			{
+				"name": "Vocal",
+				"connector": "XLR"
+			}
+		]
 	},
 	{
-		"name": "Straight Vocal",
+		"name": "Straight Vocal Mic",
 		"item_type": "microphone",
 		"variants": {
 			"R": "Straight_VocalR.png",
@@ -2319,7 +4028,18 @@
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": ["Shure SM58", "Sennheiser e835"],
+		"category": "mics",
+		"subcategory": "straight",
+		"provision_default": "venue_provided",
+		"connectors": ["XLR"],
+		"tags": ["mics", "microphone", "straight"],
+		"default_inputs": [
+			{
+				"name": "Vocal",
+				"connector": "XLR"
+			}
+		]
 	},
 	{
 		"name": "Bose L1",
@@ -2329,11 +4049,21 @@
 		},
 		"path": "monitors/bosel1",
 		"is_backline": false,
-		"auto_number_prefix": "",
+		"auto_number_prefix": "Mon",
 		"person_subcategory": "",
 		"brand": "Bose",
 		"model": "L1",
-		"common_models": []
+		"common_models": [],
+		"category": "monitors",
+		"subcategory": "column_speaker",
+		"provision_default": "venue_provided",
+		"connectors": ["XLR", "speakon"],
+		"tags": ["monitors", "speaker", "column_speaker", "bose"],
+		"dimensions": {
+			"width": 14,
+			"depth": 14,
+			"height": 84
+		}
 	},
 	{
 		"name": "In-Ear Monitor",
@@ -2343,11 +4073,21 @@
 		},
 		"path": "monitors/inear",
 		"is_backline": false,
-		"auto_number_prefix": "",
+		"auto_number_prefix": "Mon",
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": ["Shure PSM300", "Sennheiser EW IEM G4"],
+		"category": "monitors",
+		"subcategory": "in_ear",
+		"provision_default": "venue_provided",
+		"connectors": ["XLR", "speakon"],
+		"tags": ["monitors", "monitor", "in_ear"],
+		"dimensions": {
+			"width": 4,
+			"depth": 4,
+			"height": 1
+		}
 	},
 	{
 		"name": "Line Array",
@@ -2357,11 +4097,21 @@
 		},
 		"path": "monitors/linearray",
 		"is_backline": false,
-		"auto_number_prefix": "",
+		"auto_number_prefix": "Mon",
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": ["JBL VTX", "L-Acoustics KARA", "d&b E Series"],
+		"category": "monitors",
+		"subcategory": "in_ear",
+		"provision_default": "venue_provided",
+		"connectors": ["XLR", "speakon"],
+		"tags": ["monitors", "speaker", "in_ear"],
+		"dimensions": {
+			"width": 4,
+			"depth": 4,
+			"height": 1
+		}
 	},
 	{
 		"name": "Low Profile Monitor",
@@ -2378,11 +4128,21 @@
 		},
 		"path": "monitors/lowprofile",
 		"is_backline": false,
-		"auto_number_prefix": "",
+		"auto_number_prefix": "Mon",
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "monitors",
+		"subcategory": "low_profile",
+		"provision_default": "venue_provided",
+		"connectors": ["XLR", "speakon"],
+		"tags": ["monitors", "speaker", "low_profile"],
+		"dimensions": {
+			"width": 20,
+			"depth": 14,
+			"height": 6
+		}
 	},
 	{
 		"name": "Personal Monitor System",
@@ -2396,11 +4156,16 @@
 		},
 		"path": "monitors/personalsys",
 		"is_backline": false,
-		"auto_number_prefix": "",
+		"auto_number_prefix": "Mon",
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "monitors",
+		"subcategory": "personal_system",
+		"provision_default": "venue_provided",
+		"connectors": ["XLR", "speakon"],
+		"tags": ["monitors", "monitor", "personal_system"]
 	},
 	{
 		"name": "Sidefill",
@@ -2417,14 +4182,24 @@
 		},
 		"path": "monitors/sidefill",
 		"is_backline": false,
-		"auto_number_prefix": "",
+		"auto_number_prefix": "Mon",
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": ["JBL SRX", "QSC KW"],
+		"category": "monitors",
+		"subcategory": "sidefill",
+		"provision_default": "venue_provided",
+		"connectors": ["XLR", "speakon"],
+		"tags": ["monitors", "speaker", "sidefill"],
+		"dimensions": {
+			"width": 24,
+			"depth": 18,
+			"height": 42
+		}
 	},
 	{
-		"name": "Speaker w/ Stand",
+		"name": "Speaker on Stand",
 		"item_type": "speaker",
 		"variants": {
 			"L": "speakwstandL.png",
@@ -2438,14 +4213,24 @@
 		},
 		"path": "monitors/speakerwstand",
 		"is_backline": false,
-		"auto_number_prefix": "",
+		"auto_number_prefix": "Mon",
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": ["JBL EON", "QSC K12"],
+		"category": "monitors",
+		"subcategory": "pa_speaker",
+		"provision_default": "venue_provided",
+		"connectors": ["XLR", "speakon"],
+		"tags": ["monitors", "speaker", "pa_speaker"],
+		"dimensions": {
+			"width": 14,
+			"depth": 14,
+			"height": 72
+		}
 	},
 	{
-		"name": "Speaker & Sub w/ Stand",
+		"name": "Speaker & Sub on Stand",
 		"item_type": "speaker",
 		"variants": {
 			"L": "speaknsubwstandL.png",
@@ -2459,39 +4244,59 @@
 		},
 		"path": "monitors/speaknsubwstand",
 		"is_backline": false,
-		"auto_number_prefix": "",
+		"auto_number_prefix": "Mon",
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "monitors",
+		"subcategory": "pa_speaker",
+		"provision_default": "venue_provided",
+		"connectors": ["XLR", "speakon"],
+		"tags": ["monitors", "speaker", "pa_speaker"],
+		"dimensions": {
+			"width": 14,
+			"depth": 14,
+			"height": 72
+		}
 	},
 	{
-		"name": "Stageplotproleft",
+		"name": "StagePlot Pro (Left)",
 		"item_type": "monitor",
 		"variants": {
 			"default": "stageplotproleft.png"
 		},
 		"path": "monitors/stageplotproleft",
 		"is_backline": false,
-		"auto_number_prefix": "",
+		"auto_number_prefix": "Mon",
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "monitors",
+		"subcategory": "branding",
+		"provision_default": "venue_provided",
+		"connectors": ["XLR", "speakon"],
+		"tags": ["monitors", "monitor", "branding"]
 	},
 	{
-		"name": "Stageplotprologo",
+		"name": "StagePlot Pro Logo",
 		"item_type": "monitor",
 		"variants": {
 			"default": "stageplotprologo.png"
 		},
 		"path": "monitors/stageplotprologo",
 		"is_backline": false,
-		"auto_number_prefix": "",
+		"auto_number_prefix": "Mon",
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "monitors",
+		"subcategory": "branding",
+		"provision_default": "venue_provided",
+		"connectors": ["XLR", "speakon"],
+		"tags": ["monitors", "monitor", "branding"]
 	},
 	{
 		"name": "Subwoofer",
@@ -2501,11 +4306,21 @@
 		},
 		"path": "monitors/subwoofer",
 		"is_backline": false,
-		"auto_number_prefix": "",
+		"auto_number_prefix": "Mon",
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "monitors",
+		"subcategory": "subwoofer",
+		"provision_default": "venue_provided",
+		"connectors": ["XLR", "speakon"],
+		"tags": ["monitors", "speaker", "subwoofer"],
+		"dimensions": {
+			"width": 24,
+			"depth": 24,
+			"height": 24
+		}
 	},
 	{
 		"name": "Wedge Monitor",
@@ -2522,11 +4337,21 @@
 		},
 		"path": "monitors/wedge",
 		"is_backline": false,
-		"auto_number_prefix": "",
+		"auto_number_prefix": "Mon",
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": ["JBL SRX", "QSC KW"],
+		"category": "monitors",
+		"subcategory": "wedge",
+		"provision_default": "venue_provided",
+		"connectors": ["XLR", "speakon"],
+		"tags": ["monitors", "monitor", "wedge"],
+		"dimensions": {
+			"width": 16,
+			"depth": 14,
+			"height": 10
+		}
 	},
 	{
 		"name": "Barricade",
@@ -2540,7 +4365,12 @@
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "furniture",
+		"subcategory": "stage_utility",
+		"provision_default": "venue_provided",
+		"connectors": [],
+		"tags": ["equipment", "stagecraft", "stage_utility"]
 	},
 	{
 		"name": "Compressor",
@@ -2554,10 +4384,15 @@
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "furniture",
+		"subcategory": "signal_processor",
+		"provision_default": "venue_provided",
+		"connectors": [],
+		"tags": ["equipment", "signal_processor"]
 	},
 	{
-		"name": "Dj Setup",
+		"name": "DJ Setup",
 		"item_type": "equipment",
 		"variants": {
 			"LB": "dj_setupLB.png",
@@ -2575,10 +4410,15 @@
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "equipment",
+		"subcategory": "dj",
+		"provision_default": "artist_provided",
+		"connectors": [],
+		"tags": ["equipment", "dj"]
 	},
 	{
-		"name": "Djm800",
+		"name": "Pioneer DJM-800",
 		"item_type": "equipment",
 		"variants": {
 			"L": "DJM800L.png",
@@ -2596,10 +4436,15 @@
 		"person_subcategory": "",
 		"brand": "Pioneer",
 		"model": "DJM-800",
-		"common_models": []
+		"common_models": [],
+		"category": "equipment",
+		"subcategory": "dj",
+		"provision_default": "artist_provided",
+		"connectors": [],
+		"tags": ["equipment", "dj", "pioneer"]
 	},
 	{
-		"name": "Djsetup",
+		"name": "DJ Setup (Compact)",
 		"item_type": "equipment",
 		"variants": {
 			"RA": "DJsetupRA.png",
@@ -2617,10 +4462,15 @@
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "equipment",
+		"subcategory": "dj",
+		"provision_default": "artist_provided",
+		"connectors": [],
+		"tags": ["equipment", "dj"]
 	},
 	{
-		"name": "Djsetup3",
+		"name": "DJ Setup (3 Deck)",
 		"item_type": "equipment",
 		"variants": {
 			"RA": "DJsetup3RA.png",
@@ -2635,10 +4485,15 @@
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "equipment",
+		"subcategory": "dj",
+		"provision_default": "artist_provided",
+		"connectors": [],
+		"tags": ["equipment", "dj"]
 	},
 	{
-		"name": "Pioneercdj2000",
+		"name": "Pioneer CDJ-2000",
 		"item_type": "equipment",
 		"variants": {
 			"LB": "PioneerCDJ2000LB.png",
@@ -2656,7 +4511,12 @@
 		"person_subcategory": "",
 		"brand": "Pioneer",
 		"model": "CDJ-2000",
-		"common_models": []
+		"common_models": [],
+		"category": "equipment",
+		"subcategory": "dj",
+		"provision_default": "artist_provided",
+		"connectors": [],
+		"tags": ["equipment", "dj", "pioneer"]
 	},
 	{
 		"name": "Technics SL-1200",
@@ -2677,7 +4537,12 @@
 		"person_subcategory": "",
 		"brand": "Technics",
 		"model": "SL-1200",
-		"common_models": []
+		"common_models": [],
+		"category": "furniture",
+		"subcategory": "dj",
+		"provision_default": "artist_provided",
+		"connectors": [],
+		"tags": ["equipment", "dj", "technics"]
 	},
 	{
 		"name": "Fan",
@@ -2698,7 +4563,12 @@
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "furniture",
+		"subcategory": "utility",
+		"provision_default": "venue_provided",
+		"connectors": [],
+		"tags": ["equipment", "utility"]
 	},
 	{
 		"name": "Chair",
@@ -2706,6 +4576,8 @@
 		"variants": {
 			"RA": "chairRA.png",
 			"back": "chairback.png",
+			"back_RA": "chairbackRA.png",
+			"back_LA": "chairbackLA.png",
 			"R": "chairR.png",
 			"LA": "chairLA.png",
 			"default": "chair.png",
@@ -2717,22 +4589,12 @@
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
-	},
-	{
-		"name": "Chairback",
-		"item_type": "furniture",
-		"variants": {
-			"RA": "chairbackRA.png",
-			"LA": "chairbackLA.png"
-		},
-		"path": "more/furniture/chair/chairback",
-		"is_backline": false,
-		"auto_number_prefix": "",
-		"person_subcategory": "",
-		"brand": "",
-		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "furniture",
+		"subcategory": "furniture",
+		"provision_default": "venue_provided",
+		"connectors": [],
+		"tags": ["equipment", "furniture"]
 	},
 	{
 		"name": "Sofa",
@@ -2753,10 +4615,15 @@
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "furniture",
+		"subcategory": "furniture",
+		"provision_default": "venue_provided",
+		"connectors": [],
+		"tags": ["equipment", "furniture"]
 	},
 	{
-		"name": "Barstool",
+		"name": "Bar Stool",
 		"item_type": "furniture",
 		"variants": {
 			"R": "barstoolR.png",
@@ -2771,7 +4638,12 @@
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "furniture",
+		"subcategory": "furniture",
+		"provision_default": "venue_provided",
+		"connectors": [],
+		"tags": ["equipment", "furniture"]
 	},
 	{
 		"name": "Stool",
@@ -2787,10 +4659,15 @@
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "furniture",
+		"subcategory": "furniture",
+		"provision_default": "venue_provided",
+		"connectors": [],
+		"tags": ["equipment", "furniture"]
 	},
 	{
-		"name": "Rectable",
+		"name": "Rectangular Table",
 		"item_type": "furniture",
 		"variants": {
 			"RA": "rectableRA.png",
@@ -2805,10 +4682,15 @@
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "furniture",
+		"subcategory": "furniture",
+		"provision_default": "venue_provided",
+		"connectors": [],
+		"tags": ["equipment", "furniture"]
 	},
 	{
-		"name": "Roundtable",
+		"name": "Round Table",
 		"item_type": "furniture",
 		"variants": {
 			"default": "roundtable.png"
@@ -2819,7 +4701,12 @@
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "furniture",
+		"subcategory": "furniture",
+		"provision_default": "venue_provided",
+		"connectors": [],
+		"tags": ["equipment", "furniture"]
 	},
 	{
 		"name": "Table",
@@ -2835,7 +4722,12 @@
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "furniture",
+		"subcategory": "furniture",
+		"provision_default": "venue_provided",
+		"connectors": [],
+		"tags": ["equipment", "furniture"]
 	},
 	{
 		"name": "Gobo",
@@ -2856,10 +4748,15 @@
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "equipment",
+		"subcategory": "stage_utility",
+		"provision_default": "venue_provided",
+		"connectors": [],
+		"tags": ["equipment", "stagecraft", "stage_utility"]
 	},
 	{
-		"name": "Ipad",
+		"name": "iPad",
 		"item_type": "equipment",
 		"variants": {
 			"LA": "ipadLA.png",
@@ -2872,7 +4769,12 @@
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "equipment",
+		"subcategory": "computer",
+		"provision_default": "artist_provided",
+		"connectors": [],
+		"tags": ["equipment", "computer"]
 	},
 	{
 		"name": "Laptop",
@@ -2893,7 +4795,12 @@
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "equipment",
+		"subcategory": "computer",
+		"provision_default": "artist_provided",
+		"connectors": [],
+		"tags": ["equipment", "computer"]
 	},
 	{
 		"name": "Mixer",
@@ -2911,7 +4818,17 @@
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "equipment",
+		"subcategory": "mixer",
+		"provision_default": "venue_provided",
+		"connectors": ["XLR", "TRS"],
+		"tags": ["equipment", "mixer"],
+		"dimensions": {
+			"width": 30,
+			"depth": 20,
+			"height": 8
+		}
 	},
 	{
 		"name": "Podium",
@@ -2932,10 +4849,15 @@
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "furniture",
+		"subcategory": "furniture",
+		"provision_default": "venue_provided",
+		"connectors": [],
+		"tags": ["equipment", "furniture"]
 	},
 	{
-		"name": "Podium Mic",
+		"name": "Podium with Mic",
 		"item_type": "furniture",
 		"variants": {
 			"default": "podium_mic.png",
@@ -2953,10 +4875,15 @@
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "furniture",
+		"subcategory": "furniture",
+		"provision_default": "venue_provided",
+		"connectors": [],
+		"tags": ["equipment", "furniture"]
 	},
 	{
-		"name": "Gunrack",
+		"name": "Guitar Rack",
 		"item_type": "equipment",
 		"variants": {
 			"R": "gunrackR.png",
@@ -2971,17 +4898,30 @@
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "equipment",
+		"subcategory": "rack",
+		"provision_default": "venue_provided",
+		"connectors": [],
+		"tags": ["equipment", "rack"],
+		"dimensions": {
+			"width": 20,
+			"depth": 20,
+			"height": 42
+		}
 	},
 	{
-		"name": "Rack",
+		"name": "Equipment Rack",
 		"item_type": "equipment",
 		"variants": {
 			"R": "RackR.png",
 			"default": "Rack.png",
 			"L": "RackL.png",
 			"LA": "RackLA.png",
-			"RA": "RackRA.png"
+			"RA": "RackRA.png",
+			"back": "RackBack.png",
+			"back_LA": "RackBackLA.png",
+			"back_RA": "RackBackRA.png"
 		},
 		"path": "more/rack/rack",
 		"is_backline": false,
@@ -2989,23 +4929,17 @@
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
-	},
-	{
-		"name": "Rackback",
-		"item_type": "equipment",
-		"variants": {
-			"LA": "RackBackLA.png",
-			"RA": "RackBackRA.png",
-			"default": "RackBack.png"
-		},
-		"path": "more/rack/rackback",
-		"is_backline": false,
-		"auto_number_prefix": "",
-		"person_subcategory": "",
-		"brand": "",
-		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "equipment",
+		"subcategory": "rack",
+		"provision_default": "venue_provided",
+		"connectors": [],
+		"tags": ["equipment", "rack"],
+		"dimensions": {
+			"width": 20,
+			"depth": 20,
+			"height": 42
+		}
 	},
 	{
 		"name": "Sandbag",
@@ -3023,10 +4957,15 @@
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "equipment",
+		"subcategory": "stage_utility",
+		"provision_default": "venue_provided",
+		"connectors": [],
+		"tags": ["equipment", "stagecraft", "stage_utility"]
 	},
 	{
-		"name": "Video",
+		"name": "Video Monitor",
 		"item_type": "equipment",
 		"variants": {
 			"default": "video.png"
@@ -3037,7 +4976,12 @@
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "equipment",
+		"subcategory": "video",
+		"provision_default": "venue_provided",
+		"connectors": [],
+		"tags": ["equipment", "video"]
 	},
 	{
 		"name": "IEM Wired",
@@ -3047,11 +4991,21 @@
 		},
 		"path": "outputs/monitors",
 		"is_backline": false,
-		"auto_number_prefix": "",
+		"auto_number_prefix": "Mon",
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "monitors",
+		"subcategory": "in_ear",
+		"provision_default": "venue_provided",
+		"connectors": ["XLR", "speakon"],
+		"tags": ["monitors", "monitor", "in_ear"],
+		"dimensions": {
+			"width": 4,
+			"depth": 4,
+			"height": 1
+		}
 	},
 	{
 		"name": "Choir",
@@ -3069,10 +5023,15 @@
 		"person_subcategory": "player",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "people",
+		"subcategory": "ensemble",
+		"provision_default": "",
+		"connectors": [],
+		"tags": ["people", "person", "ensemble"]
 	},
 	{
-		"name": "Woman1",
+		"name": "Woman 1",
 		"item_type": "person",
 		"variants": {
 			"LB": "Woman1LB.png",
@@ -3090,10 +5049,15 @@
 		"person_subcategory": "generic",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "people",
+		"subcategory": "generic",
+		"provision_default": "",
+		"connectors": [],
+		"tags": ["people", "person", "generic"]
 	},
 	{
-		"name": "Woman2",
+		"name": "Woman 2",
 		"item_type": "person",
 		"variants": {
 			"B": "Woman2B.png",
@@ -3111,10 +5075,15 @@
 		"person_subcategory": "generic",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "people",
+		"subcategory": "generic",
+		"provision_default": "",
+		"connectors": [],
+		"tags": ["people", "person", "generic"]
 	},
 	{
-		"name": "Woman3",
+		"name": "Woman 3",
 		"item_type": "person",
 		"variants": {
 			"LA": "Woman3LA.png",
@@ -3132,10 +5101,15 @@
 		"person_subcategory": "generic",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "people",
+		"subcategory": "generic",
+		"provision_default": "",
+		"connectors": [],
+		"tags": ["people", "person", "generic"]
 	},
 	{
-		"name": "Man1",
+		"name": "Man 1",
 		"item_type": "person",
 		"variants": {
 			"RA": "Man1RA.png",
@@ -3153,10 +5127,15 @@
 		"person_subcategory": "generic",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "people",
+		"subcategory": "generic",
+		"provision_default": "",
+		"connectors": [],
+		"tags": ["people", "person", "generic"]
 	},
 	{
-		"name": "Man2",
+		"name": "Man 2",
 		"item_type": "person",
 		"variants": {
 			"LB": "Man2LB.png",
@@ -3174,10 +5153,15 @@
 		"person_subcategory": "generic",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "people",
+		"subcategory": "generic",
+		"provision_default": "",
+		"connectors": [],
+		"tags": ["people", "person", "generic"]
 	},
 	{
-		"name": "Man3",
+		"name": "Man 3",
 		"item_type": "person",
 		"variants": {
 			"RB": "Man3RB.png",
@@ -3195,10 +5179,15 @@
 		"person_subcategory": "generic",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "people",
+		"subcategory": "generic",
+		"provision_default": "",
+		"connectors": [],
+		"tags": ["people", "person", "generic"]
 	},
 	{
-		"name": "Acubassist",
+		"name": "Acoustic Bassist",
 		"item_type": "person",
 		"variants": {
 			"default": "AcuBassist.png",
@@ -3216,7 +5205,12 @@
 		"person_subcategory": "player",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "people",
+		"subcategory": "player",
+		"provision_default": "",
+		"connectors": [],
+		"tags": ["people", "person", "player"]
 	},
 	{
 		"name": "Accordionist",
@@ -3237,10 +5231,15 @@
 		"person_subcategory": "player",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "people",
+		"subcategory": "player",
+		"provision_default": "",
+		"connectors": [],
+		"tags": ["people", "person", "player"]
 	},
 	{
-		"name": "Banjo Guy",
+		"name": "Banjo Player",
 		"item_type": "person",
 		"variants": {
 			"R": "banjo_guyR.png",
@@ -3258,7 +5257,12 @@
 		"person_subcategory": "player",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "people",
+		"subcategory": "player",
+		"provision_default": "",
+		"connectors": [],
+		"tags": ["people", "person", "player"]
 	},
 	{
 		"name": "Bassist",
@@ -3279,10 +5283,15 @@
 		"person_subcategory": "player",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "people",
+		"subcategory": "player",
+		"provision_default": "",
+		"connectors": [],
+		"tags": ["people", "person", "player"]
 	},
 	{
-		"name": "Beguitarist",
+		"name": "Beginner Guitarist",
 		"item_type": "person",
 		"variants": {
 			"default": "Beguitarist.png",
@@ -3300,7 +5309,12 @@
 		"person_subcategory": "player",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "people",
+		"subcategory": "player",
+		"provision_default": "",
+		"connectors": [],
+		"tags": ["people", "person", "player"]
 	},
 	{
 		"name": "Conductor",
@@ -3321,7 +5335,12 @@
 		"person_subcategory": "player",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "people",
+		"subcategory": "player",
+		"provision_default": "",
+		"connectors": [],
+		"tags": ["people", "person", "player"]
 	},
 	{
 		"name": "Dancer",
@@ -3339,7 +5358,12 @@
 		"person_subcategory": "player",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "people",
+		"subcategory": "player",
+		"provision_default": "",
+		"connectors": [],
+		"tags": ["people", "person", "player"]
 	},
 	{
 		"name": "Drummer 2",
@@ -3357,7 +5381,12 @@
 		"person_subcategory": "player",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "people",
+		"subcategory": "player",
+		"provision_default": "",
+		"connectors": [],
+		"tags": ["people", "person", "player"]
 	},
 	{
 		"name": "Drummer 1",
@@ -3375,10 +5404,15 @@
 		"person_subcategory": "player",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "people",
+		"subcategory": "player",
+		"provision_default": "",
+		"connectors": [],
+		"tags": ["people", "person", "player"]
 	},
 	{
-		"name": "Ebassist",
+		"name": "Electric Bassist",
 		"item_type": "person",
 		"variants": {
 			"LB": "ebassistLB.png",
@@ -3396,10 +5430,15 @@
 		"person_subcategory": "player",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "people",
+		"subcategory": "player",
+		"provision_default": "",
+		"connectors": [],
+		"tags": ["people", "person", "player"]
 	},
 	{
-		"name": "Eguitarist",
+		"name": "Electric Guitarist",
 		"item_type": "person",
 		"variants": {
 			"L": "eguitaristL.png",
@@ -3417,10 +5456,15 @@
 		"person_subcategory": "player",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "people",
+		"subcategory": "player",
+		"provision_default": "",
+		"connectors": [],
+		"tags": ["people", "person", "player"]
 	},
 	{
-		"name": "Femacoustic",
+		"name": "Female Acoustic Guitarist",
 		"item_type": "person",
 		"variants": {
 			"L": "femacousticL.png",
@@ -3438,10 +5482,15 @@
 		"person_subcategory": "player",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "people",
+		"subcategory": "player",
+		"provision_default": "",
+		"connectors": [],
+		"tags": ["people", "person", "player"]
 	},
 	{
-		"name": "Femguitarist",
+		"name": "Female Guitarist",
 		"item_type": "person",
 		"variants": {
 			"B": "femguitaristB.png",
@@ -3459,10 +5508,15 @@
 		"person_subcategory": "player",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "people",
+		"subcategory": "player",
+		"provision_default": "",
+		"connectors": [],
+		"tags": ["people", "person", "player"]
 	},
 	{
-		"name": "Femkeystand",
+		"name": "Female Keyboardist",
 		"item_type": "person",
 		"variants": {
 			"L": "femkeystandL.png",
@@ -3480,7 +5534,12 @@
 		"person_subcategory": "player",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "people",
+		"subcategory": "player",
+		"provision_default": "",
+		"connectors": [],
+		"tags": ["people", "person", "player"]
 	},
 	{
 		"name": "Guitarist",
@@ -3501,7 +5560,12 @@
 		"person_subcategory": "player",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "people",
+		"subcategory": "player",
+		"provision_default": "",
+		"connectors": [],
+		"tags": ["people", "person", "player"]
 	},
 	{
 		"name": "Keyboardist",
@@ -3522,10 +5586,15 @@
 		"person_subcategory": "player",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "people",
+		"subcategory": "player",
+		"provision_default": "",
+		"connectors": [],
+		"tags": ["people", "person", "player"]
 	},
 	{
-		"name": "Keytarplayer",
+		"name": "Keytar Player",
 		"item_type": "person",
 		"variants": {
 			"R": "keytarplayerR.png",
@@ -3540,10 +5609,15 @@
 		"person_subcategory": "player",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "people",
+		"subcategory": "player",
+		"provision_default": "",
+		"connectors": [],
+		"tags": ["people", "person", "player"]
 	},
 	{
-		"name": "Mandoman",
+		"name": "Mandolin Player",
 		"item_type": "person",
 		"variants": {
 			"default": "mandoman.png",
@@ -3561,7 +5635,12 @@
 		"person_subcategory": "player",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "people",
+		"subcategory": "player",
+		"provision_default": "",
+		"connectors": [],
+		"tags": ["people", "person", "player"]
 	},
 	{
 		"name": "Percussionist",
@@ -3582,10 +5661,15 @@
 		"person_subcategory": "player",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "people",
+		"subcategory": "player",
+		"provision_default": "",
+		"connectors": [],
+		"tags": ["people", "person", "player"]
 	},
 	{
-		"name": "Percussionistone",
+		"name": "Percussionist (Alt)",
 		"item_type": "person",
 		"variants": {
 			"R": "PercussionistOneR.png",
@@ -3603,7 +5687,12 @@
 		"person_subcategory": "player",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "people",
+		"subcategory": "player",
+		"provision_default": "",
+		"connectors": [],
+		"tags": ["people", "person", "player"]
 	},
 	{
 		"name": "Piano Player",
@@ -3624,7 +5713,12 @@
 		"person_subcategory": "player",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "people",
+		"subcategory": "player",
+		"provision_default": "",
+		"connectors": [],
+		"tags": ["people", "person", "player"]
 	},
 	{
 		"name": "Sax Player",
@@ -3645,7 +5739,12 @@
 		"person_subcategory": "player",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "people",
+		"subcategory": "player",
+		"provision_default": "",
+		"connectors": [],
+		"tags": ["people", "person", "player"]
 	},
 	{
 		"name": "Saxophonist",
@@ -3666,7 +5765,12 @@
 		"person_subcategory": "player",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "people",
+		"subcategory": "player",
+		"provision_default": "",
+		"connectors": [],
+		"tags": ["people", "person", "player"]
 	},
 	{
 		"name": "Singer",
@@ -3687,10 +5791,15 @@
 		"person_subcategory": "player",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "people",
+		"subcategory": "player",
+		"provision_default": "",
+		"connectors": [],
+		"tags": ["people", "person", "player"]
 	},
 	{
-		"name": "Trumpetplayer",
+		"name": "Trumpet Player",
 		"item_type": "person",
 		"variants": {
 			"L": "trumpetplayerL.png",
@@ -3708,7 +5817,12 @@
 		"person_subcategory": "player",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "people",
+		"subcategory": "player",
+		"provision_default": "",
+		"connectors": [],
+		"tags": ["people", "person", "player"]
 	},
 	{
 		"name": "Violinist",
@@ -3729,10 +5843,15 @@
 		"person_subcategory": "player",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "people",
+		"subcategory": "player",
+		"provision_default": "",
+		"connectors": [],
+		"tags": ["people", "person", "player"]
 	},
 	{
-		"name": "Zinfoniaplayer",
+		"name": "Zinfonia Player",
 		"item_type": "person",
 		"variants": {
 			"LA": "zinfoniaplayerLA.png",
@@ -3750,7 +5869,12 @@
 		"person_subcategory": "player",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "people",
+		"subcategory": "player",
+		"provision_default": "",
+		"connectors": [],
+		"tags": ["people", "person", "player", "world", "folk"]
 	},
 	{
 		"name": "Bongos",
@@ -3764,11 +5888,21 @@
 		},
 		"path": "percussion/bongo",
 		"is_backline": true,
-		"auto_number_prefix": "",
+		"auto_number_prefix": "Perc",
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "percussion",
+		"subcategory": "bongo",
+		"provision_default": "artist_provided",
+		"connectors": [],
+		"tags": ["percussion", "instrument", "bongo", "backline"],
+		"dimensions": {
+			"width": 14,
+			"depth": 8,
+			"height": 10
+		}
 	},
 	{
 		"name": "Cajon",
@@ -3780,11 +5914,21 @@
 		},
 		"path": "percussion/cajon",
 		"is_backline": true,
-		"auto_number_prefix": "",
+		"auto_number_prefix": "Perc",
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "percussion",
+		"subcategory": "cajon",
+		"provision_default": "artist_provided",
+		"connectors": [],
+		"tags": ["percussion", "instrument", "cajon", "backline"],
+		"dimensions": {
+			"width": 12,
+			"depth": 12,
+			"height": 18
+		}
 	},
 	{
 		"name": "Chimes",
@@ -3801,11 +5945,16 @@
 		},
 		"path": "percussion/chimes",
 		"is_backline": true,
-		"auto_number_prefix": "",
+		"auto_number_prefix": "Perc",
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "percussion",
+		"subcategory": "chimes",
+		"provision_default": "artist_provided",
+		"connectors": [],
+		"tags": ["percussion", "instrument", "chimes", "backline"]
 	},
 	{
 		"name": "Claves",
@@ -3815,11 +5964,16 @@
 		},
 		"path": "percussion/claves",
 		"is_backline": true,
-		"auto_number_prefix": "",
+		"auto_number_prefix": "Perc",
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "percussion",
+		"subcategory": "claves",
+		"provision_default": "artist_provided",
+		"connectors": [],
+		"tags": ["percussion", "instrument", "claves", "backline"]
 	},
 	{
 		"name": "Conga",
@@ -3829,14 +5983,24 @@
 		},
 		"path": "percussion/conga/conga",
 		"is_backline": true,
-		"auto_number_prefix": "",
+		"auto_number_prefix": "Perc",
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "percussion",
+		"subcategory": "conga",
+		"provision_default": "artist_provided",
+		"connectors": [],
+		"tags": ["percussion", "instrument", "conga", "backline"],
+		"dimensions": {
+			"width": 12,
+			"depth": 12,
+			"height": 30
+		}
 	},
 	{
-		"name": "Conga Double",
+		"name": "Double Conga",
 		"item_type": "instrument",
 		"variants": {
 			"default": "conga_double.png",
@@ -3847,11 +6011,21 @@
 		},
 		"path": "percussion/conga/conga_double",
 		"is_backline": true,
-		"auto_number_prefix": "",
+		"auto_number_prefix": "Perc",
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "percussion",
+		"subcategory": "conga",
+		"provision_default": "artist_provided",
+		"connectors": [],
+		"tags": ["percussion", "instrument", "conga", "backline"],
+		"dimensions": {
+			"width": 12,
+			"depth": 12,
+			"height": 30
+		}
 	},
 	{
 		"name": "Daf",
@@ -3861,11 +6035,29 @@
 		},
 		"path": "percussion/daf",
 		"is_backline": true,
-		"auto_number_prefix": "",
+		"auto_number_prefix": "Perc",
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "percussion",
+		"subcategory": "hand_drum",
+		"provision_default": "artist_provided",
+		"connectors": [],
+		"tags": [
+			"percussion",
+			"instrument",
+			"hand_drum",
+			"world",
+			"middle_eastern",
+			"persian",
+			"backline"
+		],
+		"dimensions": {
+			"width": 14,
+			"depth": 14,
+			"height": 8
+		}
 	},
 	{
 		"name": "Dholak",
@@ -3879,11 +6071,21 @@
 		},
 		"path": "percussion/dholak",
 		"is_backline": true,
-		"auto_number_prefix": "",
+		"auto_number_prefix": "Perc",
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "percussion",
+		"subcategory": "hand_drum",
+		"provision_default": "artist_provided",
+		"connectors": [],
+		"tags": ["percussion", "instrument", "hand_drum", "world", "indian", "backline"],
+		"dimensions": {
+			"width": 14,
+			"depth": 14,
+			"height": 8
+		}
 	},
 	{
 		"name": "Dhumbuk",
@@ -3893,11 +6095,21 @@
 		},
 		"path": "percussion/dhumbuk",
 		"is_backline": true,
-		"auto_number_prefix": "",
+		"auto_number_prefix": "Perc",
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "percussion",
+		"subcategory": "hand_drum",
+		"provision_default": "artist_provided",
+		"connectors": [],
+		"tags": ["percussion", "instrument", "hand_drum", "world", "middle_eastern", "backline"],
+		"dimensions": {
+			"width": 14,
+			"depth": 14,
+			"height": 8
+		}
 	},
 	{
 		"name": "Djembe",
@@ -3907,11 +6119,21 @@
 		},
 		"path": "percussion/djembe",
 		"is_backline": true,
-		"auto_number_prefix": "",
+		"auto_number_prefix": "Perc",
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "percussion",
+		"subcategory": "djembe",
+		"provision_default": "artist_provided",
+		"connectors": [],
+		"tags": ["percussion", "instrument", "djembe", "world", "african", "west_african", "backline"],
+		"dimensions": {
+			"width": 14,
+			"depth": 14,
+			"height": 24
+		}
 	},
 	{
 		"name": "Gong",
@@ -3928,11 +6150,21 @@
 		},
 		"path": "percussion/gong",
 		"is_backline": true,
-		"auto_number_prefix": "",
+		"auto_number_prefix": "Perc",
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "percussion",
+		"subcategory": "gong",
+		"provision_default": "artist_provided",
+		"connectors": [],
+		"tags": ["percussion", "instrument", "gong", "backline"],
+		"dimensions": {
+			"width": 36,
+			"depth": 6,
+			"height": 42
+		}
 	},
 	{
 		"name": "Marimba",
@@ -3946,11 +6178,21 @@
 		},
 		"path": "percussion/marimba",
 		"is_backline": true,
-		"auto_number_prefix": "",
+		"auto_number_prefix": "Perc",
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "percussion",
+		"subcategory": "marimba",
+		"provision_default": "artist_provided",
+		"connectors": [],
+		"tags": ["percussion", "instrument", "marimba", "backline"],
+		"dimensions": {
+			"width": 96,
+			"depth": 30,
+			"height": 36
+		}
 	},
 	{
 		"name": "Vibraphone",
@@ -3964,14 +6206,24 @@
 		},
 		"path": "percussion/vibraphone",
 		"is_backline": true,
-		"auto_number_prefix": "",
+		"auto_number_prefix": "Perc",
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "percussion",
+		"subcategory": "vibraphone",
+		"provision_default": "artist_provided",
+		"connectors": [],
+		"tags": ["percussion", "instrument", "vibraphone", "backline"],
+		"dimensions": {
+			"width": 96,
+			"depth": 30,
+			"height": 36
+		}
 	},
 	{
-		"name": "Percussionpad",
+		"name": "Percussion Pad",
 		"item_type": "instrument",
 		"variants": {
 			"RA": "percussionpadRA.png",
@@ -3982,14 +6234,19 @@
 		},
 		"path": "percussion/percussionpad",
 		"is_backline": true,
-		"auto_number_prefix": "",
+		"auto_number_prefix": "Perc",
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "percussion",
+		"subcategory": "percussion_pad",
+		"provision_default": "artist_provided",
+		"connectors": [],
+		"tags": ["percussion", "instrument", "percussion_pad", "backline"]
 	},
 	{
-		"name": "Steelpan",
+		"name": "Steel Pan",
 		"item_type": "instrument",
 		"variants": {
 			"LA": "steelpanLA.png",
@@ -4003,11 +6260,29 @@
 		},
 		"path": "percussion/steelpan",
 		"is_backline": true,
-		"auto_number_prefix": "",
+		"auto_number_prefix": "Perc",
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "percussion",
+		"subcategory": "steel_drum",
+		"provision_default": "artist_provided",
+		"connectors": [],
+		"tags": [
+			"percussion",
+			"instrument",
+			"steel_drum",
+			"world",
+			"caribbean",
+			"trinidadian",
+			"backline"
+		],
+		"dimensions": {
+			"width": 24,
+			"depth": 24,
+			"height": 36
+		}
 	},
 	{
 		"name": "Tabla",
@@ -4024,11 +6299,21 @@
 		},
 		"path": "percussion/tabla",
 		"is_backline": true,
-		"auto_number_prefix": "",
+		"auto_number_prefix": "Perc",
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "percussion",
+		"subcategory": "tabla",
+		"provision_default": "artist_provided",
+		"connectors": [],
+		"tags": ["percussion", "instrument", "tabla", "world", "indian", "hindustani", "backline"],
+		"dimensions": {
+			"width": 18,
+			"depth": 12,
+			"height": 10
+		}
 	},
 	{
 		"name": "Tambourine",
@@ -4038,14 +6323,19 @@
 		},
 		"path": "percussion/tambourine",
 		"is_backline": true,
-		"auto_number_prefix": "",
+		"auto_number_prefix": "Perc",
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "percussion",
+		"subcategory": "tambourine",
+		"provision_default": "artist_provided",
+		"connectors": [],
+		"tags": ["percussion", "instrument", "tambourine", "backline"]
 	},
 	{
-		"name": "Tenorpan",
+		"name": "Tenor Pan",
 		"item_type": "instrument",
 		"variants": {
 			"RB": "tenorpanRB.png",
@@ -4059,14 +6349,32 @@
 		},
 		"path": "percussion/tenorpan",
 		"is_backline": true,
-		"auto_number_prefix": "",
+		"auto_number_prefix": "Perc",
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "percussion",
+		"subcategory": "steel_drum",
+		"provision_default": "artist_provided",
+		"connectors": [],
+		"tags": [
+			"percussion",
+			"instrument",
+			"steel_drum",
+			"world",
+			"caribbean",
+			"trinidadian",
+			"backline"
+		],
+		"dimensions": {
+			"width": 24,
+			"depth": 24,
+			"height": 36
+		}
 	},
 	{
-		"name": "Timpani1",
+		"name": "Timpani (1)",
 		"item_type": "instrument",
 		"variants": {
 			"B": "timpani1B.png",
@@ -4080,14 +6388,24 @@
 		},
 		"path": "percussion/timpani/timpani1",
 		"is_backline": true,
-		"auto_number_prefix": "",
+		"auto_number_prefix": "Perc",
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "percussion",
+		"subcategory": "timpani",
+		"provision_default": "artist_provided",
+		"connectors": [],
+		"tags": ["percussion", "instrument", "timpani", "backline"],
+		"dimensions": {
+			"width": 32,
+			"depth": 32,
+			"height": 30
+		}
 	},
 	{
-		"name": "Timpani2",
+		"name": "Timpani (2)",
 		"item_type": "instrument",
 		"variants": {
 			"L": "timpani2L.png",
@@ -4101,14 +6419,24 @@
 		},
 		"path": "percussion/timpani/timpani2",
 		"is_backline": true,
-		"auto_number_prefix": "",
+		"auto_number_prefix": "Perc",
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "percussion",
+		"subcategory": "timpani",
+		"provision_default": "artist_provided",
+		"connectors": [],
+		"tags": ["percussion", "instrument", "timpani", "backline"],
+		"dimensions": {
+			"width": 32,
+			"depth": 32,
+			"height": 30
+		}
 	},
 	{
-		"name": "Timpani3",
+		"name": "Timpani (3)",
 		"item_type": "instrument",
 		"variants": {
 			"L": "timpani3L.png",
@@ -4122,14 +6450,24 @@
 		},
 		"path": "percussion/timpani/timpani3",
 		"is_backline": true,
-		"auto_number_prefix": "",
+		"auto_number_prefix": "Perc",
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "percussion",
+		"subcategory": "timpani",
+		"provision_default": "artist_provided",
+		"connectors": [],
+		"tags": ["percussion", "instrument", "timpani", "backline"],
+		"dimensions": {
+			"width": 32,
+			"depth": 32,
+			"height": 30
+		}
 	},
 	{
-		"name": "Timpani4",
+		"name": "Timpani (4)",
 		"item_type": "instrument",
 		"variants": {
 			"default": "timpani4.png",
@@ -4143,14 +6481,24 @@
 		},
 		"path": "percussion/timpani/timpani4",
 		"is_backline": true,
-		"auto_number_prefix": "",
+		"auto_number_prefix": "Perc",
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "percussion",
+		"subcategory": "timpani",
+		"provision_default": "artist_provided",
+		"connectors": [],
+		"tags": ["percussion", "instrument", "timpani", "backline"],
+		"dimensions": {
+			"width": 32,
+			"depth": 32,
+			"height": 30
+		}
 	},
 	{
-		"name": "Timpaniset",
+		"name": "Timpani Set",
 		"item_type": "instrument",
 		"variants": {
 			"default": "TimpaniSet.png",
@@ -4164,14 +6512,24 @@
 		},
 		"path": "percussion/timpani/timpaniset",
 		"is_backline": true,
-		"auto_number_prefix": "",
+		"auto_number_prefix": "Perc",
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "percussion",
+		"subcategory": "timpani",
+		"provision_default": "artist_provided",
+		"connectors": [],
+		"tags": ["percussion", "instrument", "timpani", "backline"],
+		"dimensions": {
+			"width": 32,
+			"depth": 32,
+			"height": 30
+		}
 	},
 	{
-		"name": "Curtainold",
+		"name": "Curtain",
 		"item_type": "stagecraft",
 		"variants": {
 			"default": "curtainold.png"
@@ -4182,10 +6540,15 @@
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "stagecraft",
+		"subcategory": "curtain",
+		"provision_default": "venue_provided",
+		"connectors": [],
+		"tags": ["stagecraft", "curtain"]
 	},
 	{
-		"name": "Choralriser2",
+		"name": "Choral Riser (2-Tier)",
 		"item_type": "stagecraft",
 		"variants": {
 			"L": "choralriser2L.png",
@@ -4200,10 +6563,20 @@
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "stagecraft",
+		"subcategory": "riser",
+		"provision_default": "venue_provided",
+		"connectors": [],
+		"tags": ["stagecraft", "riser"],
+		"dimensions": {
+			"width": 96,
+			"depth": 48,
+			"height": 12
+		}
 	},
 	{
-		"name": "Choralriser3",
+		"name": "Choral Riser (3-Tier)",
 		"item_type": "stagecraft",
 		"variants": {
 			"LA": "choralriser3LA.png",
@@ -4218,10 +6591,20 @@
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "stagecraft",
+		"subcategory": "riser",
+		"provision_default": "venue_provided",
+		"connectors": [],
+		"tags": ["stagecraft", "riser"],
+		"dimensions": {
+			"width": 96,
+			"depth": 48,
+			"height": 12
+		}
 	},
 	{
-		"name": "Choralriser6",
+		"name": "Choral Riser (6-Tier)",
 		"item_type": "stagecraft",
 		"variants": {
 			"RA": "choralriser6RA.png",
@@ -4236,10 +6619,20 @@
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "stagecraft",
+		"subcategory": "riser",
+		"provision_default": "venue_provided",
+		"connectors": [],
+		"tags": ["stagecraft", "riser"],
+		"dimensions": {
+			"width": 96,
+			"depth": 48,
+			"height": 12
+		}
 	},
 	{
-		"name": "Choralriser8",
+		"name": "Choral Riser (8-Tier)",
 		"item_type": "stagecraft",
 		"variants": {
 			"default": "choralriser8.png",
@@ -4254,10 +6647,20 @@
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "stagecraft",
+		"subcategory": "riser",
+		"provision_default": "venue_provided",
+		"connectors": [],
+		"tags": ["stagecraft", "riser"],
+		"dimensions": {
+			"width": 96,
+			"depth": 48,
+			"height": 12
+		}
 	},
 	{
-		"name": "Riserfront",
+		"name": "Riser Front",
 		"item_type": "stagecraft",
 		"variants": {
 			"RA": "riserfrontRA.png",
@@ -4270,10 +6673,20 @@
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "stagecraft",
+		"subcategory": "riser",
+		"provision_default": "venue_provided",
+		"connectors": [],
+		"tags": ["stagecraft", "riser"],
+		"dimensions": {
+			"width": 96,
+			"depth": 48,
+			"height": 12
+		}
 	},
 	{
-		"name": "Projector Stage",
+		"name": "Projector",
 		"item_type": "stagecraft",
 		"variants": {
 			"default": "projector_stage.png"
@@ -4284,10 +6697,15 @@
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "stagecraft",
+		"subcategory": "stage_element",
+		"provision_default": "venue_provided",
+		"connectors": [],
+		"tags": ["stagecraft", "stage_element"]
 	},
 	{
-		"name": "Stagedge",
+		"name": "Stage Edge",
 		"item_type": "stagecraft",
 		"variants": {
 			"L": "stagedgeL.png"
@@ -4298,10 +6716,15 @@
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "stagecraft",
+		"subcategory": "stage_element",
+		"provision_default": "venue_provided",
+		"connectors": [],
+		"tags": ["stagecraft", "stage_element"]
 	},
 	{
-		"name": "Stagedgef",
+		"name": "Stage Edge (Front)",
 		"item_type": "stagecraft",
 		"variants": {
 			"default": "stagedgeF.png"
@@ -4312,10 +6735,15 @@
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "stagecraft",
+		"subcategory": "stage_element",
+		"provision_default": "venue_provided",
+		"connectors": [],
+		"tags": ["stagecraft", "stage_element"]
 	},
 	{
-		"name": "Stagefront",
+		"name": "Stage Front",
 		"item_type": "stagecraft",
 		"variants": {
 			"default": "stagefront.png"
@@ -4326,7 +6754,12 @@
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "stagecraft",
+		"subcategory": "stage_element",
+		"provision_default": "venue_provided",
+		"connectors": [],
+		"tags": ["stagecraft", "stage_element"]
 	},
 	{
 		"name": "Stairs",
@@ -4343,23 +6776,89 @@
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "stagecraft",
+		"subcategory": "stairs",
+		"provision_default": "venue_provided",
+		"connectors": [],
+		"tags": ["stagecraft", "stairs"],
+		"dimensions": {
+			"width": 48,
+			"depth": 36,
+			"height": 24
+		}
 	},
 	{
-		"name": "Truss",
+		"name": "Triangle Truss",
 		"item_type": "stagecraft",
 		"variants": {
-			"default": "truss.png",
-			"quad": "trussq.png",
-			"projector": "projector_truss.png"
+			"default": "truss.png"
 		},
-		"path": "stagecraft/truss",
+		"path": "stagecraft/truss/triangle_truss",
 		"is_backline": false,
 		"auto_number_prefix": "",
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "stagecraft",
+		"subcategory": "truss",
+		"provision_default": "venue_provided",
+		"connectors": [],
+		"tags": ["stagecraft", "truss"],
+		"dimensions": {
+			"width": 120,
+			"depth": 12,
+			"height": 12
+		}
+	},
+	{
+		"name": "Box Truss",
+		"item_type": "stagecraft",
+		"variants": {
+			"default": "trussq.png"
+		},
+		"path": "stagecraft/truss/box_truss",
+		"is_backline": false,
+		"auto_number_prefix": "",
+		"person_subcategory": "",
+		"brand": "",
+		"model": "",
+		"common_models": [],
+		"category": "stagecraft",
+		"subcategory": "truss",
+		"provision_default": "venue_provided",
+		"connectors": [],
+		"tags": ["stagecraft", "truss"],
+		"dimensions": {
+			"width": 120,
+			"depth": 12,
+			"height": 12
+		}
+	},
+	{
+		"name": "Projector Truss",
+		"item_type": "stagecraft",
+		"variants": {
+			"default": "projector_truss.png"
+		},
+		"path": "stagecraft/truss/projector_truss",
+		"is_backline": false,
+		"auto_number_prefix": "",
+		"person_subcategory": "",
+		"brand": "",
+		"model": "",
+		"common_models": [],
+		"category": "stagecraft",
+		"subcategory": "truss",
+		"provision_default": "venue_provided",
+		"connectors": [],
+		"tags": ["stagecraft", "truss"],
+		"dimensions": {
+			"width": 120,
+			"depth": 12,
+			"height": 12
+		}
 	},
 	{
 		"name": "Cello",
@@ -4373,7 +6872,17 @@
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "strings",
+		"subcategory": "orchestral_string",
+		"provision_default": "artist_provided",
+		"connectors": [],
+		"tags": ["strings", "instrument", "orchestral_string", "backline"],
+		"dimensions": {
+			"width": 24,
+			"depth": 12,
+			"height": 48
+		}
 	},
 	{
 		"name": "Double Bass",
@@ -4382,12 +6891,30 @@
 			"default": "stringbass.png"
 		},
 		"path": "strings/double_bass",
+		"brands": [],
+		"model": "",
+		"common_models": [],
+		"slug": "strings-double-bass",
+		"category": "strings",
+		"subcategory": "orchestral_string",
+		"tags": ["strings", "instrument", "orchestral_string", "backline"],
+		"default_inputs": [],
+		"default_outputs": [],
+		"dimensions": {
+			"width": 24,
+			"depth": 12,
+			"height": 48
+		},
+		"provision_default": "artist_provided",
 		"is_backline": true,
+		"connectors": [],
+		"power_requirements": "",
+		"notes": "",
+		"instrument_signal": "acoustic",
 		"auto_number_prefix": "Str",
 		"person_subcategory": "",
-		"brand": "",
-		"model": "",
-		"common_models": []
+		"_enriched": true,
+		"_original_name": "Double Bass"
 	},
 	{
 		"name": "Harp",
@@ -4401,11 +6928,21 @@
 		},
 		"path": "strings/harp",
 		"is_backline": true,
-		"auto_number_prefix": "Harp",
+		"auto_number_prefix": "Str",
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "strings",
+		"subcategory": "orchestral_string",
+		"provision_default": "artist_provided",
+		"connectors": [],
+		"tags": ["strings", "instrument", "orchestral_string", "backline"],
+		"dimensions": {
+			"width": 24,
+			"depth": 12,
+			"height": 48
+		}
 	},
 	{
 		"name": "Viola",
@@ -4419,7 +6956,17 @@
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "strings",
+		"subcategory": "orchestral_string",
+		"provision_default": "artist_provided",
+		"connectors": [],
+		"tags": ["strings", "instrument", "orchestral_string", "backline"],
+		"dimensions": {
+			"width": 24,
+			"depth": 12,
+			"height": 48
+		}
 	},
 	{
 		"name": "Violin",
@@ -4433,10 +6980,20 @@
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "strings",
+		"subcategory": "orchestral_string",
+		"provision_default": "artist_provided",
+		"connectors": [],
+		"tags": ["strings", "instrument", "orchestral_string", "backline"],
+		"dimensions": {
+			"width": 24,
+			"depth": 12,
+			"height": 48
+		}
 	},
 	{
-		"name": "Alto Sax",
+		"name": "Alto Saxophone",
 		"item_type": "instrument",
 		"variants": {
 			"R": "altosaxR.png",
@@ -4451,7 +7008,12 @@
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "winds",
+		"subcategory": "saxophone",
+		"provision_default": "artist_provided",
+		"connectors": [],
+		"tags": ["winds", "instrument", "saxophone", "backline"]
 	},
 	{
 		"name": "Bagpipes",
@@ -4461,14 +7023,19 @@
 		},
 		"path": "winds/bagpipes",
 		"is_backline": true,
-		"auto_number_prefix": "",
+		"auto_number_prefix": "Wind",
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "winds",
+		"subcategory": "folk_wind",
+		"provision_default": "artist_provided",
+		"connectors": [],
+		"tags": ["winds", "instrument", "folk_wind", "world", "celtic", "scottish", "backline"]
 	},
 	{
-		"name": "Baritone Sax",
+		"name": "Baritone Saxophone",
 		"item_type": "instrument",
 		"variants": {
 			"L": "baritonesaxL.png",
@@ -4483,10 +7050,15 @@
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "winds",
+		"subcategory": "saxophone",
+		"provision_default": "artist_provided",
+		"connectors": [],
+		"tags": ["winds", "instrument", "saxophone", "backline"]
 	},
 	{
-		"name": "Bassclarinet",
+		"name": "Bass Clarinet",
 		"item_type": "instrument",
 		"variants": {
 			"default": "bassclarinet.png",
@@ -4497,11 +7069,16 @@
 		},
 		"path": "winds/bassclarinet",
 		"is_backline": true,
-		"auto_number_prefix": "Bass",
+		"auto_number_prefix": "Cl",
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "winds",
+		"subcategory": "clarinet",
+		"provision_default": "artist_provided",
+		"connectors": [],
+		"tags": ["winds", "instrument", "clarinet", "backline"]
 	},
 	{
 		"name": "Bassoon",
@@ -4515,11 +7092,16 @@
 		},
 		"path": "winds/bassoon",
 		"is_backline": true,
-		"auto_number_prefix": "Bass",
+		"auto_number_prefix": "Bsn",
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "winds",
+		"subcategory": "bassoon",
+		"provision_default": "artist_provided",
+		"connectors": [],
+		"tags": ["winds", "instrument", "bassoon", "backline"]
 	},
 	{
 		"name": "Clarinet",
@@ -4533,14 +7115,19 @@
 		},
 		"path": "winds/clarinet/clarinet",
 		"is_backline": true,
-		"auto_number_prefix": "",
+		"auto_number_prefix": "Cl",
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "winds",
+		"subcategory": "clarinet",
+		"provision_default": "artist_provided",
+		"connectors": [],
+		"tags": ["winds", "instrument", "clarinet", "backline"]
 	},
 	{
-		"name": "Contraclarinet",
+		"name": "Contra Clarinet",
 		"item_type": "instrument",
 		"variants": {
 			"RA": "contraclarinetRA.png",
@@ -4551,11 +7138,16 @@
 		},
 		"path": "winds/clarinet/contraclarinet",
 		"is_backline": true,
-		"auto_number_prefix": "",
+		"auto_number_prefix": "Cl",
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "winds",
+		"subcategory": "clarinet",
+		"provision_default": "artist_provided",
+		"connectors": [],
+		"tags": ["winds", "instrument", "clarinet", "backline"]
 	},
 	{
 		"name": "Contrabassoon",
@@ -4569,11 +7161,16 @@
 		},
 		"path": "winds/contrabassoon",
 		"is_backline": true,
-		"auto_number_prefix": "Bass",
+		"auto_number_prefix": "Bsn",
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "winds",
+		"subcategory": "bassoon",
+		"provision_default": "artist_provided",
+		"connectors": [],
+		"tags": ["winds", "instrument", "bassoon", "backline"]
 	},
 	{
 		"name": "Cornet",
@@ -4587,11 +7184,16 @@
 		},
 		"path": "winds/cornet",
 		"is_backline": true,
-		"auto_number_prefix": "",
+		"auto_number_prefix": "Horn",
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "winds",
+		"subcategory": "brass",
+		"provision_default": "artist_provided",
+		"connectors": [],
+		"tags": ["winds", "instrument", "brass", "backline"]
 	},
 	{
 		"name": "Euphonium",
@@ -4605,11 +7207,16 @@
 		},
 		"path": "winds/euphonium",
 		"is_backline": true,
-		"auto_number_prefix": "",
+		"auto_number_prefix": "Euph",
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "winds",
+		"subcategory": "brass",
+		"provision_default": "artist_provided",
+		"connectors": [],
+		"tags": ["winds", "instrument", "brass", "backline"]
 	},
 	{
 		"name": "Gajda",
@@ -4623,11 +7230,16 @@
 		},
 		"path": "winds/gajda",
 		"is_backline": true,
-		"auto_number_prefix": "",
+		"auto_number_prefix": "Wind",
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "winds",
+		"subcategory": "folk_wind",
+		"provision_default": "artist_provided",
+		"connectors": [],
+		"tags": ["winds", "instrument", "folk_wind", "world", "balkan", "folk", "backline"]
 	},
 	{
 		"name": "Harmonica",
@@ -4644,11 +7256,16 @@
 		},
 		"path": "winds/harmonica",
 		"is_backline": true,
-		"auto_number_prefix": "",
+		"auto_number_prefix": "Harm",
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "winds",
+		"subcategory": "harmonica",
+		"provision_default": "artist_provided",
+		"connectors": [],
+		"tags": ["winds", "instrument", "harmonica", "backline"]
 	},
 	{
 		"name": "Kaval",
@@ -4662,11 +7279,16 @@
 		},
 		"path": "winds/kaval",
 		"is_backline": true,
-		"auto_number_prefix": "",
+		"auto_number_prefix": "Wind",
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "winds",
+		"subcategory": "folk_wind",
+		"provision_default": "artist_provided",
+		"connectors": [],
+		"tags": ["winds", "instrument", "folk_wind", "world", "balkan", "folk", "backline"]
 	},
 	{
 		"name": "Oboe",
@@ -4680,11 +7302,16 @@
 		},
 		"path": "winds/oboe",
 		"is_backline": true,
-		"auto_number_prefix": "",
+		"auto_number_prefix": "Ob",
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "winds",
+		"subcategory": "oboe",
+		"provision_default": "artist_provided",
+		"connectors": [],
+		"tags": ["winds", "instrument", "oboe", "backline"]
 	},
 	{
 		"name": "Ocarina",
@@ -4694,11 +7321,16 @@
 		},
 		"path": "winds/ocarina",
 		"is_backline": true,
-		"auto_number_prefix": "",
+		"auto_number_prefix": "Rec",
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "winds",
+		"subcategory": "recorder",
+		"provision_default": "artist_provided",
+		"connectors": [],
+		"tags": ["winds", "instrument", "recorder", "backline"]
 	},
 	{
 		"name": "Piccolo",
@@ -4712,11 +7344,16 @@
 		},
 		"path": "winds/piccolo",
 		"is_backline": true,
-		"auto_number_prefix": "",
+		"auto_number_prefix": "Picc",
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "winds",
+		"subcategory": "flute",
+		"provision_default": "artist_provided",
+		"connectors": [],
+		"tags": ["winds", "instrument", "flute", "backline"]
 	},
 	{
 		"name": "Recorder",
@@ -4730,11 +7367,16 @@
 		},
 		"path": "winds/recorder",
 		"is_backline": true,
-		"auto_number_prefix": "",
+		"auto_number_prefix": "Rec",
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "winds",
+		"subcategory": "recorder",
+		"provision_default": "artist_provided",
+		"connectors": [],
+		"tags": ["winds", "instrument", "recorder", "backline"]
 	},
 	{
 		"name": "Trombone",
@@ -4752,7 +7394,12 @@
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "winds",
+		"subcategory": "brass",
+		"provision_default": "artist_provided",
+		"connectors": [],
+		"tags": ["winds", "instrument", "brass", "backline"]
 	},
 	{
 		"name": "Trumpet",
@@ -4766,7 +7413,12 @@
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "winds",
+		"subcategory": "brass",
+		"provision_default": "artist_provided",
+		"connectors": [],
+		"tags": ["winds", "instrument", "brass", "backline"]
 	},
 	{
 		"name": "Tuba",
@@ -4780,10 +7432,15 @@
 		},
 		"path": "winds/tuba",
 		"is_backline": true,
-		"auto_number_prefix": "",
+		"auto_number_prefix": "Tuba",
 		"person_subcategory": "",
 		"brand": "",
 		"model": "",
-		"common_models": []
+		"common_models": [],
+		"category": "winds",
+		"subcategory": "brass",
+		"provision_default": "artist_provided",
+		"connectors": [],
+		"tags": ["winds", "instrument", "brass", "backline"]
 	}
 ]

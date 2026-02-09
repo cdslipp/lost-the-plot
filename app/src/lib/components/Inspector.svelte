@@ -2,7 +2,12 @@
 	import PersonCombobox from './PersonCombobox.svelte';
 	import { displayValue, toFeet, unitLabel } from '$lib/utils/scale';
 	import { toggleMode } from 'mode-watcher';
-	import { getCurrentImageSrc } from '$lib/utils/canvasUtils';
+	import {
+		getCurrentImageSrc,
+		getVariantKeys,
+		getItemVariants,
+		buildImagePath
+	} from '$lib/utils/canvasUtils';
 	import { getPlotState } from '$lib/state/stagePlotState.svelte';
 	import type { StagePlotItem } from '@stageplotter/shared';
 
@@ -25,6 +30,17 @@
 			})
 			.filter(Boolean) as StagePlotItem[];
 	});
+
+	// Variant picker - tracks which item id has variants open (null = closed)
+	let variantsOpenForId = $state<number | null>(null);
+	const showVariants = $derived(
+		selectedItemsData.length === 1 && variantsOpenForId === selectedItemsData[0].id
+	);
+	const hasVariants = $derived(
+		selectedItemsData.length === 1 &&
+			selectedItemsData[0].type !== 'riser' &&
+			getVariantKeys(selectedItemsData[0]).length > 1
+	);
 
 	// For bulk editing
 	let bulkPersonId = $state<number | null>(null);
@@ -138,7 +154,7 @@
 		<div class="flex flex-1 flex-col">
 			<h3 class="mb-4 font-serif font-semibold text-text-primary">Edit Item</h3>
 			<div class="flex-1 space-y-4">
-				<div class="flex justify-center">
+				<div class="flex h-36 flex-col items-center justify-center">
 					{#if selectedItemsData[0].type === 'riser'}
 						<div
 							class="flex items-center justify-center rounded border-2 border-gray-500 bg-gray-400/50 dark:border-gray-400 dark:bg-gray-600/50"
@@ -153,14 +169,61 @@
 								</div>
 							</div>
 						</div>
+					{:else if showVariants}
+						{@const item = selectedItemsData[0]}
+						{@const variants = getItemVariants(item)}
+						{@const variantKeys = getVariantKeys(item)}
+						<div class="grid w-full grid-cols-3 gap-1">
+							{#each variantKeys as key (key)}
+								{@const isActive = (item.currentVariant || 'default') === key}
+								<button
+									onclick={() => {
+										ps.setVariant(item, key);
+										variantsOpenForId = null;
+									}}
+									class="flex flex-col items-center gap-0.5 rounded border p-1 transition {isActive
+										? 'border-stone-900 bg-stone-100 dark:border-stone-100 dark:bg-stone-800'
+										: 'border-border-primary hover:border-stone-400 hover:bg-surface-hover'}"
+									title={key}
+								>
+									<img
+										src={buildImagePath(item, variants?.[key] ?? '')}
+										alt={key}
+										class="h-7 w-7 object-contain"
+									/>
+									<span
+										class="max-w-full truncate text-[8px] {isActive
+											? 'font-medium text-text-primary'
+											: 'text-text-tertiary'}"
+									>
+										{key}
+									</span>
+								</button>
+							{/each}
+						</div>
 					{:else}
 						<img
 							src={getCurrentImageSrc(selectedItemsData[0])}
-							alt={selectedItemsData[0].itemData?.name || selectedItemsData[0].name || 'Stage Item'}
+							alt={selectedItemsData[0].itemData?.name ||
+								selectedItemsData[0].name ||
+								'Stage Item'}
 							class="max-h-32 max-w-full object-contain"
 						/>
 					{/if}
 				</div>
+				{#if hasVariants}
+					<button
+						onclick={() =>
+							(variantsOpenForId = showVariants ? null : selectedItemsData[0].id)}
+						class="w-full rounded-md border border-border-primary px-2 py-1 text-xs text-text-secondary transition hover:border-stone-400 hover:text-text-primary"
+					>
+						{#if showVariants}
+							Back to preview
+						{:else}
+							View Variants ({getVariantKeys(selectedItemsData[0]).length})
+						{/if}
+					</button>
+				{/if}
 
 				<div class="space-y-3">
 					<div>

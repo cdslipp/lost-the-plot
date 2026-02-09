@@ -15,7 +15,9 @@
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
 		"test:unit": "vitest",
 		"test": "vitest run && playwright test",
-		"test:e2e": "playwright test"
+		"test:e2e": "playwright test",
+		"deploy": "bun run build && wrangler pages deploy",
+		"preview:cf": "bun run build && wrangler pages dev"
 	},
 	"devDependencies": {
 		"@playwright/test": "^1.57.0",
@@ -34,7 +36,9 @@
 		"typescript": "^5.9.3",
 		"vite": "^7.2.6",
 		"vitest": "^4.0.15",
-		"vitest-browser-svelte": "^2.0.1"
+		"vitest-browser-svelte": "^2.0.1",
+		"workbox-window": "^7.4.0",
+		"wrangler": "^4"
 	},
 	"dependencies": {
 		"@sqlite.org/sqlite-wasm": "^3.51.2-build4",
