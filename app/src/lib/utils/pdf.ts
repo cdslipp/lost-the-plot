@@ -76,79 +76,92 @@ export async function exportToPdf({
 	doc.setDrawColor(200);
 	doc.line(margin, margin + headerHeight - 6, pageWidth - margin, margin + headerHeight - 6);
 
-	// Add canvas image — fit to available width and height
+	// Determine if there's input list content to show below the plot
+	const inputItems = items.filter((i) => i.channel);
+	const hasInputContent = inputItems.length > 0 || persons.length > 0;
+
+	// Scale canvas image to fit available width, reserving space for input list
 	const imgData = canvas.toDataURL('image/png');
 	const availableWidth = pageWidth - margin * 2;
-	const availableHeight = pageHeight - margin * 2 - headerHeight + 4;
+	const totalAvailableHeight = pageHeight - margin * 2 - headerHeight;
+	const minInputListSpace = hasInputContent ? 200 : 0;
+	const maxImageHeight = totalAvailableHeight - minInputListSpace;
+
 	const widthScale = availableWidth / canvas.width;
-	const heightScale = availableHeight / canvas.height;
+	const heightScale = maxImageHeight / canvas.height;
 	const scale = Math.min(widthScale, heightScale);
 	const finalWidth = canvas.width * scale;
 	const finalHeight = canvas.height * scale;
 
+	// Top-align below header, center horizontally
 	const imgX = margin + (availableWidth - finalWidth) / 2;
-	const imgY = margin + headerHeight + (availableHeight - finalHeight) / 2;
+	const imgY = margin + headerHeight;
 
 	doc.addImage(imgData, 'PNG', imgX, imgY, finalWidth, finalHeight);
 
-	// Input list on page 2
-	const inputItems = items.filter((i) => i.channel);
-	if (inputItems.length > 0 || persons.length > 0) {
-		doc.addPage(pageFormat, 'portrait');
+	// Input list below the plot on the same page
+	if (hasInputContent) {
+		let y = imgY + finalHeight + 16;
 
-		let y = margin + 16;
+		// If almost no space remains, start a new page
+		if (y > pageHeight - margin - 60) {
+			doc.addPage(pageFormat, 'portrait');
+			y = margin + 16;
+		}
 
-		// Input List header
-		doc.setFontSize(18);
-		doc.setFont('helvetica', 'bold');
-		doc.text('Input List', margin, y);
-		y += 20;
-
-		// Table header
-		doc.setFontSize(11);
-		doc.setFont('helvetica', 'bold');
-		const colCh = margin;
-		const colName = margin + 60;
-		const colPerson = margin + Math.round(availableWidth * 0.55);
-
-		doc.text('Ch', colCh, y);
-		doc.text('Input', colName, y);
-		doc.text('Person', colPerson, y);
-		y += 6;
-		doc.setDrawColor(180);
-		doc.line(margin, y, pageWidth - margin, y);
-		y += 14;
-
-		// Table rows
-		doc.setFont('helvetica', 'normal');
-		doc.setFontSize(11);
-		const sortedItems = [...inputItems].sort(
-			(a, b) => parseInt(a.channel || '0') - parseInt(b.channel || '0')
-		);
-		for (const item of sortedItems) {
-			if (y > pageHeight - margin) {
-				doc.addPage(pageFormat, 'portrait');
-				y = margin + 16;
-			}
-			doc.text(item.channel, colCh, y);
-			doc.text(item.name || '', colName, y);
-			doc.text(item.person_name || '', colPerson, y);
+		if (inputItems.length > 0) {
+			// Input List header
+			doc.setFontSize(14);
+			doc.setFont('helvetica', 'bold');
+			doc.text('Input List', margin, y);
 			y += 16;
+
+			// Table header
+			doc.setFontSize(9);
+			doc.setFont('helvetica', 'bold');
+			const colCh = margin;
+			const colName = margin + 40;
+			const colPerson = margin + Math.round(availableWidth * 0.55);
+
+			doc.text('Ch', colCh, y);
+			doc.text('Input', colName, y);
+			doc.text('Person', colPerson, y);
+			y += 4;
+			doc.setDrawColor(180);
+			doc.line(margin, y, pageWidth - margin, y);
+			y += 10;
+
+			// Table rows
+			doc.setFont('helvetica', 'normal');
+			doc.setFontSize(9);
+			const sortedItems = [...inputItems].sort(
+				(a, b) => parseInt(a.channel || '0') - parseInt(b.channel || '0')
+			);
+			for (const item of sortedItems) {
+				if (y > pageHeight - margin) {
+					doc.addPage(pageFormat, 'portrait');
+					y = margin + 16;
+				}
+				doc.text(item.channel, colCh, y);
+				doc.text(item.name || '', colName, y);
+				doc.text(item.person_name || '', colPerson, y);
+				y += 13;
+			}
 		}
 
 		// People section
 		if (persons.length > 0) {
-			y += 8;
+			y += 6;
 			if (y > pageHeight - margin - 30) {
 				doc.addPage(pageFormat, 'portrait');
 				y = margin + 16;
 			}
-			doc.setFontSize(16);
+			doc.setFontSize(12);
 			doc.setFont('helvetica', 'bold');
 			doc.text('People', margin, y);
-			y += 18;
+			y += 14;
 
-			doc.setFontSize(11);
+			doc.setFontSize(9);
 			doc.setFont('helvetica', 'normal');
 			for (const p of persons) {
 				if (y > pageHeight - margin) {
@@ -156,7 +169,7 @@ export async function exportToPdf({
 					y = margin + 16;
 				}
 				doc.text(`${p.name}${p.role ? ' — ' + p.role : ''}`, margin, y);
-				y += 16;
+				y += 13;
 			}
 		}
 	}
