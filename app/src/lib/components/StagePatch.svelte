@@ -326,7 +326,7 @@
 	});
 </script>
 
-<div class="h-full overflow-hidden rounded-xl border border-border-primary bg-surface shadow-sm">
+<div data-patch-list class="h-full overflow-hidden rounded-xl border border-border-primary bg-surface shadow-sm">
 	<Tabs.Root value="inputs" class="w-full">
 		<!-- Tab Headers -->
 		<div class="border-b border-border-primary bg-muted/30 px-4 pt-4">
@@ -417,7 +417,7 @@
 													<div
 														class="flex h-full w-full items-center justify-center text-xs font-semibold transition-colors {linked
 															? 'ring-1 ring-yellow-400/50 ring-inset'
-															: ''} {!readonlyMode && canvasItemByChannel[channelNum]
+															: ''} {!readonlyMode
 															? 'cursor-pointer'
 															: ''} {!channelColors[channelNum] &&
 														selectedInputItemsByChannel[channelNum]

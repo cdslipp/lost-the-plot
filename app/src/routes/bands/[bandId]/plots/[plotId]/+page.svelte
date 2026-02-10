@@ -241,7 +241,8 @@
 				const target = event.target as HTMLElement;
 				const isInInspector = target.closest('.inspector-panel');
 				const isInCommandPalette = target.closest('[data-command-palette]');
-				if (!isInInspector && !isInCommandPalette) {
+				const isInPatch = target.closest('[data-patch-list]');
+				if (!isInInspector && !isInCommandPalette && !isInPatch) {
 					clearSelections();
 				}
 			}
