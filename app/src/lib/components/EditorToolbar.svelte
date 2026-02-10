@@ -16,15 +16,16 @@
 	const isMac = browser && /Mac|iPhone|iPad|iPod/.test(navigator.platform);
 	const modKey = isMac ? '⌘' : 'Ctrl+';
 
-	function autoFocusAction(node: HTMLInputElement, shouldFocus: boolean) {
-		if (shouldFocus) {
-			// Tick delay so the DOM is settled
-			requestAnimationFrame(() => {
-				node.focus();
-				node.select();
-			});
+	let nameInput = $state<HTMLInputElement | null>(null);
+
+	$effect(() => {
+		if (autoFocusName && nameInput) {
+			setTimeout(() => {
+				nameInput?.focus();
+				nameInput?.select();
+			}, 100);
 		}
-	}
+	});
 
 	let exporting = $state(false);
 	let sharing = $state(false);
@@ -159,7 +160,7 @@
 					onkeydown={(e) => {
 						if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
 					}}
-					use:autoFocusAction={autoFocusName}
+					bind:this={nameInput}
 					class="w-full min-w-0 border-b-2 border-dashed border-border-secondary bg-transparent px-2 py-1 font-serif text-3xl font-bold text-text-primary transition-all placeholder:font-normal placeholder:text-text-tertiary hover:border-border-primary focus:border-solid focus:border-stone-500 focus:outline-none"
 					placeholder="Plot Name"
 				/>

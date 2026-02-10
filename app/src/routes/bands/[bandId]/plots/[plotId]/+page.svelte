@@ -39,6 +39,8 @@
 
 	// --- Canvas DOM refs ---
 	let canvasEl = $state<HTMLElement | null>(null);
+	let canvasWrapperEl = $state<HTMLElement | undefined>();
+	let canvasScale = $state(1);
 	let canvasResizeObserver: ResizeObserver | null = null;
 	let stagePlotContainer = $state<HTMLElement | null>(null);
 
@@ -74,18 +76,24 @@
 		startRotation: number;
 	} | null>(null);
 
+	function toCanvasCoords(clientX: number, clientY: number) {
+		const rect = canvasEl!.getBoundingClientRect();
+		return {
+			x: (clientX - rect.left) / canvasScale,
+			y: (clientY - rect.top) / canvasScale
+		};
+	}
+
 	function handleRotationStart(event: PointerEvent, item: any) {
 		event.stopPropagation();
 		event.preventDefault();
 		const el = event.currentTarget as HTMLElement;
 		el.setPointerCapture(event.pointerId);
 
-		const canvasRect = canvasEl!.getBoundingClientRect();
 		const centerX = item.position.x + item.position.width / 2;
 		const centerY = item.position.y + item.position.height / 2;
-		const mouseX = event.clientX - canvasRect.left;
-		const mouseY = event.clientY - canvasRect.top;
-		const startAngle = Math.atan2(mouseY - centerY, mouseX - centerX) * (180 / Math.PI);
+		const mouse = toCanvasCoords(event.clientX, event.clientY);
+		const startAngle = Math.atan2(mouse.y - centerY, mouse.x - centerX) * (180 / Math.PI);
 
 		rotating = {
 			item,
@@ -96,12 +104,10 @@
 
 	function handleRotationMove(event: PointerEvent) {
 		if (!rotating || !canvasEl) return;
-		const canvasRect = canvasEl.getBoundingClientRect();
 		const centerX = rotating.item.position.x + rotating.item.position.width / 2;
 		const centerY = rotating.item.position.y + rotating.item.position.height / 2;
-		const mouseX = event.clientX - canvasRect.left;
-		const mouseY = event.clientY - canvasRect.top;
-		const currentAngle = Math.atan2(mouseY - centerY, mouseX - centerX) * (180 / Math.PI);
+		const mouse = toCanvasCoords(event.clientX, event.clientY);
+		const currentAngle = Math.atan2(mouse.y - centerY, mouse.x - centerX) * (180 / Math.PI);
 		let delta = currentAngle - rotating.startAngle;
 		let newRotation = rotating.startRotation + delta;
 
@@ -260,26 +266,22 @@
 		};
 	});
 
-	// --- Canvas resize observer ---
+	// --- Canvas resize observer (computes scale from wrapper size) ---
 	$effect(() => {
-		if (!browser || !canvasEl) return;
+		if (!browser || !canvasWrapperEl) return;
 		canvasResizeObserver?.disconnect();
 		canvasResizeObserver = new ResizeObserver((entries) => {
 			for (const entry of entries) {
-				const { width, height } = entry.contentRect;
-				if (!width || !height) return;
-				if (width === ps.canvasWidth && height === ps.canvasHeight) return;
-				ps.canvasWidth = width;
-				ps.canvasHeight = height;
+				const wrapperWidth = entry.contentRect.width;
+				if (!wrapperWidth) return;
+				canvasScale = Math.min(1, wrapperWidth / ps.canvasWidth);
 			}
 		});
-		canvasResizeObserver.observe(canvasEl);
-		const rect = canvasEl.getBoundingClientRect();
-		const initialWidth = rect.width || 1100;
-		const initialHeight = rect.height || 850;
-		if (initialWidth !== ps.canvasWidth || initialHeight !== ps.canvasHeight) {
-			ps.canvasWidth = initialWidth;
-			ps.canvasHeight = initialHeight;
+		canvasResizeObserver.observe(canvasWrapperEl);
+		// Set initial scale
+		const wrapperWidth = canvasWrapperEl.getBoundingClientRect().width;
+		if (wrapperWidth) {
+			canvasScale = Math.min(1, wrapperWidth / ps.canvasWidth);
 		}
 
 		return () => {
@@ -386,9 +388,9 @@
 	// --- Canvas mouse/click handlers ---
 	function handleCanvasMouseMove(event: MouseEvent) {
 		if (placingItem && canvasEl) {
-			const rect = canvasEl.getBoundingClientRect();
-			let x = event.clientX - rect.left - placingItem.width / 2;
-			let y = event.clientY - rect.top - placingItem.height / 2;
+			const coords = toCanvasCoords(event.clientX, event.clientY);
+			let x = coords.x - placingItem.width / 2;
+			let y = coords.y - placingItem.height / 2;
 			const snapped = ps.snapToGrid(x, y, placingItem.width, placingItem.height);
 			placingItem.x = snapped.x;
 			placingItem.y = snapped.y;
@@ -401,9 +403,9 @@
 			return;
 		}
 		if (placingItem && canvasEl) {
-			const rect = canvasEl.getBoundingClientRect();
-			const rawX = event.clientX - rect.left - placingItem.width / 2;
-			const rawY = event.clientY - rect.top - placingItem.height / 2;
+			const coords = toCanvasCoords(event.clientX, event.clientY);
+			const rawX = coords.x - placingItem.width / 2;
+			const rawY = coords.y - placingItem.height / 2;
 			const snapped = ps.snapToGrid(rawX, rawY, placingItem.width, placingItem.height);
 
 			const newItem: any = {
@@ -504,7 +506,7 @@
 		const el = event.currentTarget as HTMLElement;
 		el.setPointerCapture(event.pointerId);
 
-		const canvasRect = canvasEl!.getBoundingClientRect();
+		const coords = toCanvasCoords(event.clientX, event.clientY);
 
 		const isInSelection = selectedIds.has(String(item.id));
 		let group: Array<{ item: any; startX: number; startY: number }>;
@@ -524,8 +526,8 @@
 
 		dragging = {
 			item,
-			offsetX: event.clientX - canvasRect.left - item.position.x,
-			offsetY: event.clientY - canvasRect.top - item.position.y,
+			offsetX: coords.x - item.position.x,
+			offsetY: coords.y - item.position.y,
 			startX: item.position.x,
 			startY: item.position.y,
 			ghostX: item.position.x,
@@ -538,9 +540,9 @@
 	function handleItemPointerMove(event: PointerEvent) {
 		if (!dragging || !canvasEl) return;
 
-		const canvasRect = canvasEl.getBoundingClientRect();
-		const rawX = event.clientX - canvasRect.left - dragging.offsetX;
-		const rawY = event.clientY - canvasRect.top - dragging.offsetY;
+		const coords = toCanvasCoords(event.clientX, event.clientY);
+		const rawX = coords.x - dragging.offsetX;
+		const rawY = coords.y - dragging.offsetY;
 
 		if (!dragging.moved) {
 			const dx = rawX - dragging.startX;
@@ -656,6 +658,9 @@
 	// --- PDF export ---
 	async function handleExportPdf() {
 		if (!canvasEl) return;
+		// Temporarily remove scale transform for full-resolution capture
+		const savedTransform = canvasEl.style.transform;
+		canvasEl.style.transform = 'none';
 		await exportToPdf({
 			plotName: ps.plotName,
 			canvasEl,
@@ -667,6 +672,7 @@
 			persons: ps.plotPersons.map((p) => ({ name: p.name, role: p.role || '' })),
 			pageFormat: ps.pdfPageFormat
 		});
+		canvasEl.style.transform = savedTransform;
 	}
 
 	function handleImportComplete() {
@@ -765,12 +771,17 @@
 
 	{#snippet canvasContent()}
 		<div class="border border-border-primary bg-surface p-3 shadow-sm">
+			<div
+				bind:this={canvasWrapperEl}
+				class="relative mx-auto w-full overflow-hidden"
+				style="aspect-ratio: {ps.stageWidth}/{ps.stageDepth}; max-width: {ps.canvasWidth}px;"
+			>
 			{#if viewOnly}
 				<!-- View-only canvas: no context menus, no interactions -->
 				<div
 					bind:this={canvasEl}
-					class="items-container relative mx-auto w-full bg-white dark:bg-gray-800"
-					style="aspect-ratio: {ps.stageWidth}/{ps.stageDepth}; max-width: 1100px;"
+					class="items-container absolute top-0 left-0 origin-top-left bg-white dark:bg-gray-800"
+					style="width: {ps.canvasWidth}px; height: {ps.canvasHeight}px; transform: scale({canvasScale});"
 				>
 					<CanvasOverlay
 						showZones={ps.showZones}
@@ -830,8 +841,8 @@
 							<div
 								{...canvasCtxProps}
 								bind:this={canvasEl}
-								class="items-container relative mx-auto w-full bg-white dark:bg-gray-800"
-								style="aspect-ratio: {ps.stageWidth}/{ps.stageDepth}; max-width: 1100px; cursor: {placingItem
+								class="items-container absolute top-0 left-0 origin-top-left bg-white dark:bg-gray-800"
+								style="width: {ps.canvasWidth}px; height: {ps.canvasHeight}px; transform: scale({canvasScale}); cursor: {placingItem
 									? 'copy'
 									: 'default'}"
 								onmousemove={handleCanvasMouseMove}
@@ -1085,6 +1096,7 @@
 					</ContextMenu.Portal>
 				</ContextMenu.Root>
 			{/if}
+			</div>
 		</div>
 
 		{#if !viewOnly}

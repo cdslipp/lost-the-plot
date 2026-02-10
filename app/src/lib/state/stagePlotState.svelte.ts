@@ -73,7 +73,7 @@ export class StagePlotState {
 	stageWidth = $state(24);
 	stageDepth = $state(16);
 	canvasWidth = $state(1100);
-	canvasHeight = $state(850);
+	canvasHeight = $derived(Math.round((this.canvasWidth * this.stageDepth) / this.stageWidth));
 
 	// Console integration (persisted)
 	consoleType = $state<string | null>(null);
@@ -232,7 +232,6 @@ export class StagePlotState {
 		this.plotName = row.name ?? 'Untitled Plot';
 		this.revisionDate = row.revision_date ?? new Date().toISOString().split('T')[0];
 		this.canvasWidth = row.canvas_width ?? 1100;
-		this.canvasHeight = row.canvas_height ?? 850;
 		this.stageWidth = row.stage_width ?? 24;
 		this.stageDepth = row.stage_depth ?? 16;
 		this.consoleType = row.console_type ?? null;
