@@ -274,13 +274,16 @@
 					<!-- Position fields -->
 					<div class="grid grid-cols-2 gap-3">
 						<div>
-							<label class="mb-1 block text-xs text-text-secondary">Position X</label>
+							<label class="mb-1 block text-xs text-text-secondary"
+								>Position X ({unitLabel(ps.unit)})</label
+							>
 							<input
 								type="number"
-								value={ps.getItemPosition(selectedItemsData[0]).x}
+								step="0.25"
+								value={displayValue(ps.getItemPosition(selectedItemsData[0]).x, ps.unit)}
 								onchange={(e) => {
 									const target = e.target as HTMLInputElement;
-									const newPosition = parseInt(target.value);
+									const newPosition = toFeet(parseFloat(target.value), ps.unit);
 									ps.updateItemPosition(
 										selectedItemsData[0].id,
 										newPosition,
@@ -291,13 +294,16 @@
 							/>
 						</div>
 						<div>
-							<label class="mb-1 block text-xs text-text-secondary">Position Y</label>
+							<label class="mb-1 block text-xs text-text-secondary"
+								>Position Y ({unitLabel(ps.unit)})</label
+							>
 							<input
 								type="number"
-								value={ps.getItemPosition(selectedItemsData[0]).y}
+								step="0.25"
+								value={displayValue(ps.getItemPosition(selectedItemsData[0]).y, ps.unit)}
 								onchange={(e) => {
 									const target = e.target as HTMLInputElement;
-									const newPosition = parseInt(target.value);
+									const newPosition = toFeet(parseFloat(target.value), ps.unit);
 									ps.updateItemPosition(
 										selectedItemsData[0].id,
 										ps.getItemPosition(selectedItemsData[0]).x,

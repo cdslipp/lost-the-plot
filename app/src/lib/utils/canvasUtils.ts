@@ -1,4 +1,5 @@
-// Pure utility functions for stage plot canvas calculations
+// Pure utility functions for stage plot canvas calculations.
+// All coordinate parameters (cw, ch, x, y, w, h) are in feet — the stage's physical coordinate system.
 
 export function getZones(cw: number, ch: number) {
 	const colWidth = cw / 3;
@@ -51,11 +52,12 @@ export function getItemZone(item: any, cw: number, ch: number) {
 	return chosen;
 }
 
+/** Returns center-relative position in feet: X is from center (neg=stage-right, pos=stage-left), Y is distance from downstage edge. */
 export function getItemPosition(item: any, cw: number, ch: number) {
 	if (!cw || !ch) return { x: 0, y: 0 };
 	const relativeX = item.position.x + item.position.width / 2 - cw / 2;
 	const relativeY = ch - (item.position.y + item.position.height / 2);
-	return { x: Math.round(relativeX), y: Math.round(relativeY) };
+	return { x: +relativeX.toFixed(2), y: +relativeY.toFixed(2) };
 }
 
 export function snapToGrid(
@@ -68,7 +70,7 @@ export function snapToGrid(
 	ch: number
 ) {
 	if (!snapping) return { x, y };
-	const threshold = 15;
+	const threshold = 0.3; // ~3.6 inches — snaps when within ~4" of a grid line
 	const vLines = [0, cw / 3, (2 * cw) / 3, cw];
 	const hLines = [0, ch / 2, ch];
 	let sx = x,

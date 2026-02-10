@@ -155,10 +155,6 @@
 				if (jsonData.revision_date)
 					ps.revisionDate = new Date(jsonData.revision_date).toISOString().split('T')[0];
 
-				const standardConfig = getStandardConfig();
-				ps.canvasWidth = standardConfig.canvas.width;
-				ps.canvasHeight = standardConfig.canvas.height;
-
 				if (jsonData.items && Array.isArray(jsonData.items)) {
 					ps.items = jsonData.items.map((exportedItem: any) => ({
 						id: exportedItem.id,

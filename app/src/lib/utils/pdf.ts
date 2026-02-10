@@ -23,7 +23,7 @@ export async function exportToPdf({
 	try {
 		// Capture canvas as image
 		canvas = await html2canvas(canvasEl, {
-			scale: 2,
+			scale: 4,
 			useCORS: true,
 			backgroundColor: '#ffffff',
 			logging: false,

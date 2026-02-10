@@ -178,7 +178,7 @@ export async function encodePayload(
 	input.musicians.forEach((m, i) => musicianLookup.set(m.name, i));
 
 	const payload: SharePayload = {
-		v: 1,
+		v: 2,
 		sw: input.stageWidth,
 		sd: input.stageDepth,
 		p: (input.persons ?? []).map((person) => [
@@ -203,13 +203,14 @@ export async function encodePayload(
 			);
 			const musicianIdx = item.musician ? (musicianLookup.get(item.musician) ?? -1) : -1;
 
+			// Positions encoded as centifeet (×100) for integer precision
 			const tuple: number[] = [
 				catalogIdx,
 				variantIdx,
-				Math.round(item.position.x),
-				Math.round(item.position.y),
-				Math.round(item.position.width),
-				Math.round(item.position.height),
+				Math.round(item.position.x * 100),
+				Math.round(item.position.y * 100),
+				Math.round(item.position.width * 100),
+				Math.round(item.position.height * 100),
 				item.channel ? parseInt(item.channel, 10) || 0 : 0,
 				musicianIdx,
 				typeIdx
@@ -305,9 +306,11 @@ export async function decodePayload(
 	const json = await decompress(payloadStr);
 	const payload: SharePayload = JSON.parse(json);
 
-	if (payload.v !== 1) {
+	if (payload.v !== 1 && payload.v !== 2) {
 		throw new Error(`Unsupported share format version: ${payload.v}`);
 	}
+
+	const isV2 = payload.v >= 2;
 
 	// Rebuild musicians with IDs
 	const musicians = payload.m.map(([name, instrument], i) => ({
@@ -327,14 +330,35 @@ export async function decodePayload(
 		status: MEMBER_STATUS_MAP[status] ?? 'permanent'
 	}));
 
+	// For v1→feet migration: compute pixel-to-feet conversion factors
+	// V1 used a 1100px-wide canvas
+	const v1CanvasW = 1100;
+	const v1CanvasH = Math.round((v1CanvasW * payload.sd) / payload.sw);
+	const v1PxPerFtX = v1CanvasW / payload.sw;
+	const v1PxPerFtY = v1CanvasH / payload.sd;
+
 	// Rebuild items
 	const items = payload.i.map((tuple, idx) => {
-		const [catalogIdx, variantIdx, x, y, w, h, channel, musicianIdx, typeIdx] = tuple;
+		const [catalogIdx, variantIdx, rawX, rawY, rawW, rawH, channel, musicianIdx, typeIdx] = tuple;
 
 		const typeName = ITEM_TYPE_MAP[typeIdx] ?? 'input';
 		const variantName = VARIANT_MAP[variantIdx] ?? 'default';
 		const musicianName =
 			musicianIdx >= 0 && musicianIdx < musicians.length ? musicians[musicianIdx].name : '';
+
+		// Decode positions: v2=centifeet÷100, v1=pixels→feet
+		let x: number, y: number, w: number, h: number;
+		if (isV2) {
+			x = rawX / 100;
+			y = rawY / 100;
+			w = rawW / 100;
+			h = rawH / 100;
+		} else {
+			x = rawX / v1PxPerFtX;
+			y = rawY / v1PxPerFtY;
+			w = rawW / v1PxPerFtX;
+			h = rawH / v1PxPerFtY;
+		}
 
 		// Reconstruct itemData from catalog
 		let itemData: DecodedPlot['items'][number]['itemData'] = null;

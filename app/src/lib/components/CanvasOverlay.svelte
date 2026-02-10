@@ -7,19 +7,21 @@
 
 	let {
 		showZones,
-		canvasWidth,
-		canvasHeight,
+		stageWidth,
+		stageDepth,
+		pxPerFoot,
 		itemCount
 	}: {
 		showZones: boolean;
-		canvasWidth: number;
-		canvasHeight: number;
+		stageWidth: number;
+		stageDepth: number;
+		pxPerFoot: number;
 		itemCount: number;
 	} = $props();
 
-	function getZones(cw: number, ch: number) {
-		const colWidth = cw / 3;
-		const rowHeight = ch / 2;
+	function getZones(sw: number, sd: number) {
+		const colWidth = sw / 3;
+		const rowHeight = sd / 2;
 		return [
 			{ key: 'DSR', x: 0, y: rowHeight, w: colWidth, h: rowHeight },
 			{ key: 'DSC', x: colWidth, y: rowHeight, w: colWidth, h: rowHeight },
@@ -37,19 +39,20 @@
 
 <!-- Zone guidelines -->
 {#if showZones}
-	{#key canvasWidth + ':' + canvasHeight}
-		{#each getZones(canvasWidth, canvasHeight) as z}
+	{#key stageWidth + ':' + stageDepth + ':' + pxPerFoot}
+		{#each getZones(stageWidth, stageDepth) as z}
 			<div
 				class="pointer-events-none absolute"
-				style="left:{z.x}px; top:{z.y}px; width:{z.w}px; height:{z.h}px; border: 1px dashed rgba(0,0,0,0.08);"
+				style="left:{z.x * pxPerFoot}px; top:{z.y * pxPerFoot}px; width:{z.w *
+					pxPerFoot}px; height:{z.h * pxPerFoot}px; border: 1px dashed rgba(0,0,0,0.08);"
 			></div>
 		{/each}
-		{#each getZones(canvasWidth, canvasHeight) as z}
+		{#each getZones(stageWidth, stageDepth) as z}
 			<div
 				class="absolute text-[10px] tracking-wide text-black/25 uppercase dark:text-white/25"
-				style="left:{z.x + z.w / 2 - 12}px; top:{z.key.startsWith('DS')
-					? z.y + z.h - 18
-					: z.y + 4}px;"
+				style="left:{(z.x + z.w / 2) * pxPerFoot - 12}px; top:{z.key.startsWith('DS')
+					? (z.y + z.h) * pxPerFoot - 18
+					: z.y * pxPerFoot + 4}px;"
 			>
 				{z.key}
 			</div>

@@ -61,15 +61,18 @@ export interface StagePlotItem {
 	size?: string; // For stage decks
 }
 
+/** All coordinate values are in feet (matching the stage's physical coordinate system). */
 export interface ItemPosition {
+	/** Horizontal position in feet from stage left edge */
 	x: number;
+	/** Vertical position in feet from upstage edge */
 	y: number;
+	/** Width in feet */
 	width: number;
+	/** Height (depth) in feet */
 	height: number;
+	/** Rotation in degrees */
 	rotation?: number;
-	zone?: string;
-	relativeX?: number;
-	relativeY?: number;
 }
 
 export interface ItemData {

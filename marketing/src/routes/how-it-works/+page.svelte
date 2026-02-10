@@ -35,21 +35,23 @@
 				Local storage with SQLite
 			</h2>
 			<SketchyLineShort />
-			<div class="mt-10 space-y-6 font-sans text-base leading-relaxed text-stone-600 dark:text-stone-300">
+			<div
+				class="mt-10 space-y-6 font-sans text-base leading-relaxed text-stone-600 dark:text-stone-300"
+			>
 				<p>
 					{APP_NAME} stores everything in a SQLite database in your browser using
-					<strong class="text-stone-800 dark:text-stone-100">OPFS</strong> (Origin Private File
-					System) — a private storage area that only this app can access.
+					<strong class="text-stone-800 dark:text-stone-100">OPFS</strong> (Origin Private File System)
+					— a private storage area that only this app can access.
 				</p>
 				<p>
 					Your bands, plots, musicians, contacts, and input lists all live in this local database.
 					Nothing is uploaded to a server. No account needed, no cloud sync.
 				</p>
-				<p>
-					The app also works offline once loaded.
-				</p>
+				<p>The app also works offline once loaded.</p>
 			</div>
-			<div class="mt-10 rounded-xl border border-stone-200 bg-stone-50 p-6 dark:border-stone-800 dark:bg-stone-900">
+			<div
+				class="mt-10 rounded-xl border border-stone-200 bg-stone-50 p-6 dark:border-stone-800 dark:bg-stone-900"
+			>
 				<h3 class="font-bold text-stone-800 dark:text-stone-100">What OPFS means for you</h3>
 				<ul class="mt-4 space-y-3">
 					{#each ['Data stays on your device — never uploaded', 'No account, no login, no password', 'Works offline after first load', 'Fast — database queries happen locally, not over a network', 'Private by default — your contacts and channel lists are yours'] as item (item)}
@@ -72,7 +74,9 @@
 				Sharing without a server
 			</h2>
 			<SketchyLineShort />
-			<div class="mt-10 space-y-6 font-sans text-base leading-relaxed text-stone-600 dark:text-stone-300">
+			<div
+				class="mt-10 space-y-6 font-sans text-base leading-relaxed text-stone-600 dark:text-stone-300"
+			>
 				<p>
 					When you hit <strong class="text-stone-800 dark:text-stone-100">Share</strong>, your
 					entire stage plot gets compressed and encoded into the URL itself. The link contains
@@ -139,8 +143,8 @@
 						<p class="mt-1 font-sans text-base text-stone-500 dark:text-stone-400">
 							The compressed bytes are base64url-encoded and placed in the URL's
 							<strong class="text-stone-700 dark:text-stone-200">hash fragment</strong>
-							— the part after the <code
-								class="rounded bg-stone-100 px-1.5 py-0.5 font-mono text-sm dark:bg-stone-800"
+							— the part after the
+							<code class="rounded bg-stone-100 px-1.5 py-0.5 font-mono text-sm dark:bg-stone-800"
 								>#</code
 							>. Hash fragments are never sent to the server in HTTP requests, so your data stays
 							entirely client-side even when using the link.
@@ -156,9 +160,13 @@
 	<!-- URL anatomy -->
 	<section class="px-6 py-20">
 		<div class="mx-auto max-w-3xl">
-			<h2 class="text-center text-2xl font-bold tracking-tight sm:text-3xl">Anatomy of a share link</h2>
+			<h2 class="text-center text-2xl font-bold tracking-tight sm:text-3xl">
+				Anatomy of a share link
+			</h2>
 			<SketchyLineShort />
-			<div class="mt-10 overflow-x-auto rounded-xl border border-stone-200 bg-stone-50 p-6 dark:border-stone-800 dark:bg-stone-900">
+			<div
+				class="mt-10 overflow-x-auto rounded-xl border border-stone-200 bg-stone-50 p-6 dark:border-stone-800 dark:bg-stone-900"
+			>
 				<div class="font-mono text-sm leading-relaxed">
 					<span class="text-stone-400 dark:text-stone-500">https://ltp.slipp.cam/s/</span><span
 						class="font-bold text-stone-800 dark:text-stone-100">my-band</span
@@ -171,7 +179,9 @@
 			</div>
 			<div class="mt-6 space-y-4">
 				<div class="flex items-start gap-4">
-					<div class="shrink-0 rounded bg-stone-200 px-2 py-1 font-mono text-xs font-bold dark:bg-stone-800">
+					<div
+						class="shrink-0 rounded bg-stone-200 px-2 py-1 font-mono text-xs font-bold dark:bg-stone-800"
+					>
 						/s/my-band/main-stage
 					</div>
 					<p class="font-sans text-sm text-stone-500 dark:text-stone-400">
@@ -179,7 +189,9 @@
 					</p>
 				</div>
 				<div class="flex items-start gap-4">
-					<div class="shrink-0 rounded bg-stone-200 px-2 py-1 font-mono text-xs font-bold dark:bg-stone-800">
+					<div
+						class="shrink-0 rounded bg-stone-200 px-2 py-1 font-mono text-xs font-bold dark:bg-stone-800"
+					>
 						#...
 					</div>
 					<p class="font-sans text-sm text-stone-500 dark:text-stone-400">
@@ -195,15 +207,15 @@
 	<!-- Privacy -->
 	<section class="px-6 py-20">
 		<div class="mx-auto max-w-3xl">
-			<h2 class="text-center text-2xl font-bold tracking-tight sm:text-3xl">
-				Privacy
-			</h2>
+			<h2 class="text-center text-2xl font-bold tracking-tight sm:text-3xl">Privacy</h2>
 			<SketchyLineShort />
-			<div class="mt-10 space-y-6 font-sans text-base leading-relaxed text-stone-600 dark:text-stone-300">
+			<div
+				class="mt-10 space-y-6 font-sans text-base leading-relaxed text-stone-600 dark:text-stone-300"
+			>
 				<p>
-					There's no server storing your data, so there's nothing to leak. The hash fragment
-					in the URL is processed entirely by the browser — an intercepted HTTP request would only
-					show the band and plot names, not the content.
+					There's no server storing your data, so there's nothing to leak. The hash fragment in the
+					URL is processed entirely by the browser — an intercepted HTTP request would only show the
+					band and plot names, not the content.
 				</p>
 				<p>
 					Phone numbers, emails, and other contact details you add to band members are included in
@@ -222,10 +234,12 @@
 				Receiving a shared plot
 			</h2>
 			<SketchyLineShort />
-			<div class="mt-10 space-y-6 font-sans text-base leading-relaxed text-stone-600 dark:text-stone-300">
+			<div
+				class="mt-10 space-y-6 font-sans text-base leading-relaxed text-stone-600 dark:text-stone-300"
+			>
 				<p>
-					When someone opens your share link, they see a read-only view of the stage plot with
-					the full canvas layout, input list, musicians, and contacts. No install required.
+					When someone opens your share link, they see a read-only view of the stage plot with the
+					full canvas layout, input list, musicians, and contacts. No install required.
 				</p>
 				<p>
 					If they want to edit it, they can click <strong class="text-stone-800 dark:text-stone-100"

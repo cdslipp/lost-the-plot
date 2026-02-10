@@ -43,49 +43,51 @@ export function pixelsToInches(pixels: number): number {
 }
 
 /**
- * Get formatted dimensions string
+ * Format a measurement in inches as feet'inches"
  */
-export function formatDimensions(widthPx: number, heightPx: number): string {
-	const widthInches = pixelsToInches(widthPx);
-	const heightInches = pixelsToInches(heightPx);
-
-	// Format as feet'inches" if over 12 inches, otherwise just inches
-	const formatMeasurement = (inches: number): string => {
-		if (inches >= 12) {
-			const feet = Math.floor(inches / 12);
-			const remainingInches = inches % 12;
-			if (remainingInches === 0) {
-				return `${feet}'`;
-			} else {
-				return `${feet}'${remainingInches.toFixed(1)}"`;
-			}
+function formatMeasurement(inches: number): string {
+	if (inches >= 12) {
+		const feet = Math.floor(inches / 12);
+		const remainingInches = inches % 12;
+		if (remainingInches === 0) {
+			return `${feet}'`;
 		} else {
-			return `${inches.toFixed(1)}"`;
+			return `${feet}'${remainingInches.toFixed(1)}"`;
 		}
-	};
-
-	return `${formatMeasurement(widthInches)} × ${formatMeasurement(heightInches)}`;
+	} else {
+		return `${inches.toFixed(1)}"`;
+	}
 }
 
 /**
- * Common stage dimensions in pixels
+ * Get formatted dimensions string from pixel values
+ */
+export function formatDimensions(widthPx: number, heightPx: number): string {
+	return `${formatMeasurement(pixelsToInches(widthPx))} × ${formatMeasurement(pixelsToInches(heightPx))}`;
+}
+
+/**
+ * Get formatted dimensions string from feet values
+ */
+export function formatFeetDimensions(widthFt: number, heightFt: number): string {
+	return `${formatMeasurement(widthFt * 12)} × ${formatMeasurement(heightFt * 12)}`;
+}
+
+/**
+ * Convert image pixel dimensions to feet using our established scale.
+ * E.g. a 57px-wide amp image → ≈2.04 ft real-world width.
+ */
+export function imagePxToFeet(px: number): number {
+	return (px * INCHES_PER_PIXEL) / 12;
+}
+
+/**
+ * Common stage deck dimensions in feet
  */
 export const STAGE_SIZES: Record<string, { width: number; height: number; label: string }> = {
-	'4x4': {
-		width: feetToPixels(4),
-		height: feetToPixels(4),
-		label: "4' × 4' Stage Deck"
-	},
-	'4x8': {
-		width: feetToPixels(4),
-		height: feetToPixels(8),
-		label: "4' × 8' Stage Deck"
-	},
-	'8x8': {
-		width: feetToPixels(8),
-		height: feetToPixels(8),
-		label: "8' × 8' Stage Deck"
-	}
+	'4x4': { width: 4, height: 4, label: "4' × 4' Stage Deck" },
+	'4x8': { width: 4, height: 8, label: "4' × 8' Stage Deck" },
+	'8x8': { width: 8, height: 8, label: "8' × 8' Stage Deck" }
 };
 
 // --- Unit conversion ---

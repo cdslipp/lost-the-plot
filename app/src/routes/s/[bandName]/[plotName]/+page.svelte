@@ -7,7 +7,6 @@
 	import { decodePayload, type DecodedPlot } from '@stageplotter/shared/share-codec';
 	import StageDeck from '$lib/components/StageDeck.svelte';
 	import CanvasOverlay from '$lib/components/CanvasOverlay.svelte';
-	import { feetToPixels } from '$lib/utils/scale';
 	import { db } from '$lib/db';
 	import { exportToPdf } from '$lib/utils/pdf';
 	import { getCurrentImageSrc } from '$lib/utils/canvasUtils';
@@ -30,19 +29,45 @@
 	let copied = $state(false);
 	let exportingPdf = $state(false);
 
-	// Canvas dimensions — match editor defaults
-	let canvasWidth = $state(1100);
-	let canvasHeight = $state(850);
+	// Contain-fit canvas sizing
+	let canvasWrapperEl = $state<HTMLElement | null>(null);
 	let canvasEl = $state<HTMLElement | null>(null);
+	let canvasPixelWidth = $state(800);
+	let canvasPixelHeight = $state(533);
+	let pxPerFoot = $derived(plot ? canvasPixelWidth / plot.stageWidth : 1);
 
+	// ResizeObserver for contain-fit
 	$effect(() => {
-		if (plot && canvasEl) {
-			const rect = canvasEl.getBoundingClientRect();
-			if (rect.width > 0 && rect.height > 0) {
-				canvasWidth = rect.width;
-				canvasHeight = rect.height;
+		if (!browser || !canvasWrapperEl || !plot) return;
+		const ro = new ResizeObserver((entries) => {
+			for (const entry of entries) {
+				const availW = entry.contentRect.width;
+				const availH = entry.contentRect.height;
+				if (!availW || !availH || !plot) return;
+				const stageAspect = plot.stageWidth / plot.stageDepth;
+				if (availW / availH > stageAspect) {
+					canvasPixelHeight = availH;
+					canvasPixelWidth = Math.round(availH * stageAspect);
+				} else {
+					canvasPixelWidth = availW;
+					canvasPixelHeight = Math.round(availW / stageAspect);
+				}
+			}
+		});
+		ro.observe(canvasWrapperEl);
+		// Initial size
+		const rect = canvasWrapperEl.getBoundingClientRect();
+		if (rect.width && rect.height && plot) {
+			const stageAspect = plot.stageWidth / plot.stageDepth;
+			if (rect.width / rect.height > stageAspect) {
+				canvasPixelHeight = rect.height;
+				canvasPixelWidth = Math.round(rect.height * stageAspect);
+			} else {
+				canvasPixelWidth = rect.width;
+				canvasPixelHeight = Math.round(rect.width / stageAspect);
 			}
 		}
+		return () => ro.disconnect();
 	});
 
 	onMount(async () => {
@@ -103,9 +128,10 @@
 				);
 			}
 
-			// Create the stage plot
+			// Create the stage plot (items are already in feet from decoder)
 			const plotId = crypto.randomUUID().replace(/-/g, '').slice(0, 16);
 			const metadata = JSON.stringify({
+				coordVersion: 2,
 				items: plot.items,
 				musicians: plot.musicians,
 				undoLog: [],
@@ -120,7 +146,7 @@
 					plotName,
 					new Date().toISOString().split('T')[0],
 					1100,
-					850,
+					Math.round((1100 * plot.stageDepth) / plot.stageWidth),
 					metadata,
 					bandId,
 					plot.stageWidth,
@@ -259,25 +285,33 @@
 		<!-- Main content: canvas + sidebar -->
 		<div class="flex min-h-0 flex-1 gap-5 overflow-hidden">
 			<!-- Canvas area -->
-			<div class="flex min-h-0 flex-1 flex-col overflow-hidden">
-				<div class="border border-border-primary bg-surface p-3 shadow-sm">
+			<div
+				bind:this={canvasWrapperEl}
+				class="flex min-h-0 flex-1 flex-col items-center justify-center overflow-hidden"
+			>
+				<div
+					class="border border-border-primary bg-surface p-3 shadow-sm"
+					style="width: {canvasPixelWidth + 24}px;"
+				>
 					<div
 						bind:this={canvasEl}
-						class="relative mx-auto w-full bg-white dark:bg-gray-800"
-						style="aspect-ratio: {plot.stageWidth}/{plot.stageDepth}; max-width: 1100px;"
+						class="relative overflow-hidden bg-white dark:bg-gray-800"
+						style="width: {canvasPixelWidth}px; height: {canvasPixelHeight}px;"
 					>
 						<CanvasOverlay
 							showZones={true}
-							{canvasWidth}
-							{canvasHeight}
+							stageWidth={plot.stageWidth}
+							stageDepth={plot.stageDepth}
+							{pxPerFoot}
 							itemCount={plot.items.length}
 						/>
 
 						{#each plot.items as item (item.id)}
 							<div
 								class="absolute"
-								style="left: {item.position.x}px; top: {item.position.y}px; width: {item.position
-									.width}px; height: {item.position.height}px;"
+								style="left: {item.position.x * pxPerFoot}px; top: {item.position.y *
+									pxPerFoot}px; width: {item.position.width * pxPerFoot}px; height: {item.position
+									.height * pxPerFoot}px;"
 							>
 								{#if item.type === 'stageDeck'}
 									<StageDeck
@@ -310,7 +344,7 @@
 										<img
 											{src}
 											alt={item.itemData?.name || item.name || 'Stage Item'}
-											style="width: {item.position.width}px; height: {item.position.height}px;"
+											class="h-full w-full"
 										/>
 									{/if}
 								{/if}

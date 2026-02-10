@@ -6,7 +6,7 @@
 
 import { db } from '$lib/db';
 import { PlotHistory } from '$lib/utils/plotHistory.svelte';
-import { feetToPixels, type UnitSystem } from '$lib/utils/scale';
+import { imagePxToFeet, type UnitSystem } from '$lib/utils/scale';
 import {
 	getItemZone as _getItemZone,
 	getItemPosition as _getItemPosition,
@@ -72,8 +72,6 @@ export class StagePlotState {
 	outputs = $state<PlotOutputItem[]>([]);
 	stageWidth = $state(24);
 	stageDepth = $state(16);
-	canvasWidth = $state(1100);
-	canvasHeight = $derived(Math.round((this.canvasWidth * this.stageDepth) / this.stageWidth));
 
 	// Console integration (persisted)
 	consoleType = $state<string | null>(null);
@@ -121,10 +119,6 @@ export class StagePlotState {
 	private writeTimer: ReturnType<typeof setTimeout> | null = null;
 	private writePromise: Promise<void> | null = null;
 
-	// Track previous stage dimensions for rescaling
-	private prevStageWidth = 0;
-	private prevStageDepth = 0;
-
 	constructor(plotId: string, bandId: string) {
 		this.plotId = plotId;
 		this.bandId = bandId;
@@ -138,28 +132,33 @@ export class StagePlotState {
 			}
 		}
 
-		// Rescale items proportionally when stage dimensions change
+		// Persist stage dimension changes + clamp items that fall outside new bounds
+		let prevW = this.stageWidth;
+		let prevD = this.stageDepth;
 		$effect(() => {
-			const newW = this.stageWidth;
-			const newD = this.stageDepth;
-			if (
-				this.prevStageWidth > 0 &&
-				this.prevStageDepth > 0 &&
-				(newW !== this.prevStageWidth || newD !== this.prevStageDepth)
-			) {
-				const scaleX = newW / this.prevStageWidth;
-				const scaleY = newD / this.prevStageDepth;
+			const sw = this.stageWidth;
+			const sd = this.stageDepth;
+			// Only clamp when stage actually shrinks (not on initial run)
+			if (sw < prevW || sd < prevD) {
+				let clamped = 0;
 				for (const item of this.items) {
-					item.position.x = Math.round(item.position.x * scaleX);
-					item.position.y = Math.round(item.position.y * scaleY);
-					if (item.type === 'riser') {
-						item.position.width = Math.round(item.position.width * scaleX);
-						item.position.height = Math.round(item.position.height * scaleY);
+					const maxX = Math.max(0, sw - item.position.width);
+					const maxY = Math.max(0, sd - item.position.height);
+					if (item.position.x > maxX) {
+						item.position.x = +maxX.toFixed(4);
+						clamped++;
+					}
+					if (item.position.y > maxY) {
+						item.position.y = +maxY.toFixed(4);
+						clamped++;
 					}
 				}
+				if (clamped > 0) {
+					this.commitChange();
+				}
 			}
-			this.prevStageWidth = newW;
-			this.prevStageDepth = newD;
+			prevW = sw;
+			prevD = sd;
 			this.debouncedWrite();
 		});
 
@@ -179,9 +178,10 @@ export class StagePlotState {
 			await upsertPlot(this.plotId, this.bandId, {
 				name: this.plotName,
 				revision_date: this.revisionDate,
-				canvas_width: this.canvasWidth,
-				canvas_height: this.canvasHeight,
+				canvas_width: 1100, // kept for backward compat / migration reference
+				canvas_height: Math.round((1100 * this.stageDepth) / this.stageWidth),
 				metadata: JSON.stringify({
+					coordVersion: 2,
 					items: $state.snapshot(this.items),
 					outputs: $state.snapshot(this.outputs),
 					outputStereoLinks: $state.snapshot(this.outputStereoLinks),
@@ -231,7 +231,6 @@ export class StagePlotState {
 
 		this.plotName = row.name ?? 'Untitled Plot';
 		this.revisionDate = row.revision_date ?? new Date().toISOString().split('T')[0];
-		this.canvasWidth = row.canvas_width ?? 1100;
 		this.stageWidth = row.stage_width ?? 24;
 		this.stageDepth = row.stage_depth ?? 16;
 		this.consoleType = row.console_type ?? null;
@@ -270,10 +269,30 @@ export class StagePlotState {
 		this.outputs = Array.isArray(meta.outputs) ? meta.outputs : [];
 		this.outputStereoLinks = Array.isArray(meta.outputStereoLinks) ? meta.outputStereoLinks : [];
 
-		// Restore history
-		const savedLog = Array.isArray(meta.undoLog) ? meta.undoLog : undefined;
-		const savedRedoStack = Array.isArray(meta.redoStack) ? meta.redoStack : undefined;
-		this.history.startRecording(savedLog, savedRedoStack);
+		// --- V1→V2 migration: convert pixel positions to feet ---
+		if (!meta.coordVersion || meta.coordVersion < 2) {
+			const oldCanvasW = row.canvas_width ?? 1100;
+			const oldCanvasH = Math.round((oldCanvasW * this.stageDepth) / this.stageWidth);
+			const pxPerFtX = oldCanvasW / this.stageWidth;
+			const pxPerFtY = oldCanvasH / this.stageDepth;
+
+			for (const item of this.items) {
+				item.position.x = +(item.position.x / pxPerFtX).toFixed(4);
+				item.position.y = +(item.position.y / pxPerFtY).toFixed(4);
+				item.position.width = +(item.position.width / pxPerFtX).toFixed(4);
+				item.position.height = +(item.position.height / pxPerFtY).toFixed(4);
+			}
+
+			// Pixel-based undo history is meaningless after migration — clear it
+			this.history.startRecording(undefined, undefined);
+			// Write back immediately with coordVersion: 2
+			this.debouncedWrite(0);
+		} else {
+			// Restore history
+			const savedLog = Array.isArray(meta.undoLog) ? meta.undoLog : undefined;
+			const savedRedoStack = Array.isArray(meta.redoStack) ? meta.redoStack : undefined;
+			this.history.startRecording(savedLog, savedRedoStack);
+		}
 
 		// Load people
 		const personIds = await getPlotPersonIds(this.plotId);
@@ -285,10 +304,6 @@ export class StagePlotState {
 		// Band name
 		const band = await getBandById(this.bandId);
 		this.bandName = band?.name ?? '';
-
-		// Seed prev dimensions for rescale tracking
-		this.prevStageWidth = this.stageWidth;
-		this.prevStageDepth = this.stageDepth;
 
 		return true;
 	}
@@ -331,8 +346,9 @@ export class StagePlotState {
 		if (['riserWidth', 'riserDepth', 'riserHeight'].includes(property)) {
 			if (!item.itemData) item.itemData = { name: '' };
 			(item.itemData as any)[property] = parseFloat(value);
-			if (property === 'riserWidth') item.position.width = feetToPixels(parseFloat(value));
-			else if (property === 'riserDepth') item.position.height = feetToPixels(parseFloat(value));
+			// Store riser dimensions directly in feet
+			if (property === 'riserWidth') item.position.width = parseFloat(value);
+			else if (property === 'riserDepth') item.position.height = parseFloat(value);
 		} else if (property === 'rotation') {
 			item.position.rotation = parseFloat(value) || 0;
 		} else if (property === 'person_id') {
@@ -623,27 +639,28 @@ export class StagePlotState {
 		this.plotPersons = this.plotPersons.filter((p) => p.id !== personId);
 	}
 
-	// --- Canvas helpers (closures over current dimensions) ---
+	// --- Stage helpers (all in feet) ---
 
 	getItemZone(item: any): string {
-		return _getItemZone(item, this.canvasWidth, this.canvasHeight);
+		return _getItemZone(item, this.stageWidth, this.stageDepth);
 	}
 
 	getItemPosition(item: any): { x: number; y: number } {
-		return _getItemPosition(item, this.canvasWidth, this.canvasHeight);
+		return _getItemPosition(item, this.stageWidth, this.stageDepth);
 	}
 
 	snapToGrid(x: number, y: number, w: number, h: number): { x: number; y: number } {
-		return _snapToGrid(x, y, w, h, this.snapping, this.canvasWidth, this.canvasHeight);
+		return _snapToGrid(x, y, w, h, this.snapping, this.stageWidth, this.stageDepth);
 	}
 
+	/** Set item position from center-relative feet coordinates (used by Inspector) */
 	updateItemPosition(itemId: number, relX: number, relY: number) {
 		const item = this.items.find((i) => i.id === itemId);
 		if (!item) return;
-		const cx = relX + this.canvasWidth / 2 - item.position.width / 2;
-		const cy = this.canvasHeight - relY - item.position.height / 2;
-		item.position.x = Math.round(cx);
-		item.position.y = Math.round(cy);
+		const cx = relX + this.stageWidth / 2 - item.position.width / 2;
+		const cy = this.stageDepth - relY - item.position.height / 2;
+		item.position.x = +cx.toFixed(4);
+		item.position.y = +cy.toFixed(4);
 		this.commitChange();
 	}
 
@@ -675,8 +692,8 @@ export class StagePlotState {
 		const img = new Image();
 		img.src = buildImagePath(item, newImagePath);
 		img.onload = () => {
-			item.position.width = img.naturalWidth;
-			item.position.height = img.naturalHeight;
+			item.position.width = imagePxToFeet(img.naturalWidth);
+			item.position.height = imagePxToFeet(img.naturalHeight);
 			this.commitChange();
 		};
 		this.updateItemProperty(item.id, 'currentVariant', variantKey);
