@@ -369,6 +369,23 @@ export class StagePlotState {
 		this.commitChange();
 	}
 
+	/** Auto-number items with duplicate names (e.g. "Guitar" → "Guitar 1", "Guitar 2") */
+	autoNumberItems() {
+		// Group items by base name (strip trailing " N" suffix)
+		const groups = new Map<string, StagePlotItem[]>();
+		for (const item of this.items) {
+			const baseName = item.name.replace(/\s+\d+$/, '');
+			if (!groups.has(baseName)) groups.set(baseName, []);
+			groups.get(baseName)!.push(item);
+		}
+		for (const [baseName, group] of groups) {
+			if (group.length < 2) continue;
+			group.forEach((item, idx) => {
+				item.name = `${baseName} ${idx + 1}`;
+			});
+		}
+	}
+
 	// --- Z-order ---
 
 	moveToFront(itemId: number) {

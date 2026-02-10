@@ -11,6 +11,7 @@
 
 	let searchValue = $state('');
 	let open = $state(false);
+	let isSearching = $state(false);
 
 	// Internal string value for the Combobox (which needs string values)
 	const stringValue = $derived(value != null ? String(value) : '');
@@ -20,11 +21,12 @@
 		value != null ? (persons.find((p) => p.id === value)?.name ?? '') : ''
 	);
 
-	// Show search text when open, selected person's name when closed
-	const inputDisplayValue = $derived(open ? searchValue : selectedPersonName);
+	// Show search text only after user starts typing; otherwise show selected name
+	const inputDisplayValue = $derived(open && isSearching ? searchValue : selectedPersonName);
 
+	// Show all persons until user starts typing, then filter
 	const filteredPersons = $derived(
-		searchValue === ''
+		!isSearching || searchValue === ''
 			? persons
 			: persons.filter((p) => p.name.toLowerCase().includes(searchValue.toLowerCase()))
 	);
@@ -41,11 +43,19 @@
 		open = newOpen;
 		if (!newOpen) {
 			searchValue = '';
+			isSearching = false;
 		}
 	}
 
 	function handleInput(e: Event & { currentTarget: HTMLInputElement }) {
+		isSearching = true;
 		searchValue = e.currentTarget.value;
+	}
+
+	function handleClear() {
+		onValueChange?.(null);
+		searchValue = '';
+		isSearching = false;
 	}
 </script>
 
@@ -60,16 +70,38 @@
 	<div class="relative">
 		<Combobox.Input
 			oninput={handleInput}
-			class="w-full rounded-lg border border-border-primary bg-surface px-2 py-1.5 text-sm text-text-primary focus:border-stone-500 focus:ring-2 focus:ring-stone-500"
+			class="w-full rounded-lg border border-border-primary bg-surface px-2 py-1.5 pr-12 text-sm text-text-primary focus:border-stone-500 focus:ring-2 focus:ring-stone-500"
 			placeholder="Select person"
 		/>
-		<Combobox.Trigger
-			class="absolute top-1/2 right-2 -translate-y-1/2 text-text-secondary hover:text-text-primary"
-		>
-			<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-			</svg>
-		</Combobox.Trigger>
+		<div class="absolute top-1/2 right-2 flex -translate-y-1/2 items-center gap-1">
+			{#if value != null}
+				<button
+					type="button"
+					onclick={handleClear}
+					class="flex h-4 w-4 items-center justify-center rounded-full text-text-tertiary transition hover:bg-muted hover:text-text-primary"
+					title="Clear"
+				>
+					<svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							stroke-width="2"
+							d="M6 18L18 6M6 6l12 12"
+						/>
+					</svg>
+				</button>
+			{/if}
+			<Combobox.Trigger class="text-text-secondary hover:text-text-primary">
+				<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+					<path
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						stroke-width="2"
+						d="M19 9l-7 7-7-7"
+					/>
+				</svg>
+			</Combobox.Trigger>
+		</div>
 	</div>
 
 	<Combobox.Portal>

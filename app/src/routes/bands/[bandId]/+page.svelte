@@ -4,6 +4,7 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
 	import { db } from '$lib/db';
+	import { Dialog } from 'bits-ui';
 	import PeoplePanel from './components/PeoplePanel.svelte';
 	import SongsPanel from './components/SongsPanel.svelte';
 	import GigsSection from './components/GigsSection.svelte';
@@ -53,6 +54,7 @@
 	let loading = $state(true);
 	let editingBandName = $state(false);
 	let bandNameInput = $state('');
+	let showNewPlotDialog = $state(false);
 
 	async function load() {
 		await db.init();
@@ -140,7 +142,8 @@
 		editingBandName = false;
 	}
 
-	async function createPlot() {
+	async function createPlot(_templateName?: string) {
+		showNewPlotDialog = false;
 		const plotId = crypto.randomUUID().replace(/-/g, '');
 		await db.run(`INSERT INTO stage_plots (id, name, band_id, metadata) VALUES (?, ?, ?, ?)`, [
 			plotId,
@@ -250,7 +253,7 @@
 
 			{#if plots.length === 0}
 				<button
-					onclick={createPlot}
+					onclick={() => (showNewPlotDialog = true)}
 					class="group flex w-full items-center justify-center gap-3 rounded-xl border border-dashed border-border-primary bg-surface px-6 py-8 text-text-secondary transition hover:border-stone-400 hover:bg-surface-hover hover:text-text-primary"
 				>
 					<svg
@@ -306,7 +309,7 @@
 						</div>
 					{/each}
 					<button
-						onclick={createPlot}
+						onclick={() => (showNewPlotDialog = true)}
 						class="group flex min-h-[76px] flex-col items-start justify-center rounded-xl border border-dashed border-border-primary bg-surface px-3 py-2.5 text-left text-sm text-text-tertiary transition hover:border-stone-400 hover:text-text-secondary"
 					>
 						<span class="flex items-center gap-2 text-text-secondary">
@@ -353,4 +356,67 @@
 			}))}
 		/>
 	</div>
+
+	<Dialog.Root bind:open={showNewPlotDialog}>
+		<Dialog.Portal>
+			<Dialog.Overlay class="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm" />
+			<Dialog.Content
+				class="fixed top-1/2 left-1/2 z-50 w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-border-primary bg-surface p-6 shadow-xl"
+			>
+				<Dialog.Title class="font-serif text-xl font-semibold text-text-primary">
+					New Stage Plot
+				</Dialog.Title>
+				<Dialog.Description class="mt-1 text-sm text-text-secondary">
+					Choose a starting point for your new stage plot.
+				</Dialog.Description>
+
+				<div class="mt-5 grid gap-2">
+					<button
+						onclick={() => createPlot()}
+						class="flex items-center gap-3 rounded-xl border border-border-primary bg-surface px-4 py-3 text-left transition hover:border-stone-400 hover:bg-surface-hover"
+					>
+						<div
+							class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-stone-100 text-stone-600 dark:bg-stone-800 dark:text-stone-300"
+						>
+							<svg
+								xmlns="http://www.w3.org/2000/svg"
+								class="h-5 w-5"
+								viewBox="0 0 20 20"
+								fill="currentColor"
+							>
+								<path
+									fill-rule="evenodd"
+									d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z"
+									clip-rule="evenodd"
+								/>
+							</svg>
+						</div>
+						<div>
+							<div class="font-medium text-text-primary">Blank Plot</div>
+							<div class="text-xs text-text-secondary">Start from scratch</div>
+						</div>
+					</button>
+
+					<!-- Template options will go here -->
+				</div>
+
+				<Dialog.Close
+					class="absolute top-4 right-4 flex h-8 w-8 items-center justify-center rounded-full text-text-secondary transition hover:bg-surface-hover hover:text-text-primary"
+				>
+					<svg
+						xmlns="http://www.w3.org/2000/svg"
+						class="h-4 w-4"
+						viewBox="0 0 20 20"
+						fill="currentColor"
+					>
+						<path
+							fill-rule="evenodd"
+							d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+							clip-rule="evenodd"
+						/>
+					</svg>
+				</Dialog.Close>
+			</Dialog.Content>
+		</Dialog.Portal>
+	</Dialog.Root>
 {/if}

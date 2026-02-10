@@ -2,10 +2,8 @@
 	import { Combobox, Tabs, ContextMenu } from 'bits-ui';
 	import { loadFinalAssets, filterItems, type ProcessedItem } from '$lib/utils/finalAssetsLoader';
 	import { onMount } from 'svelte';
-	import ChannelColorPicker from './ChannelColorPicker.svelte';
 	import {
 		CONSOLES,
-		getConsoleColor,
 		type StagePlotItem,
 		type PlotOutputItem,
 		type ChannelMode
@@ -14,9 +12,10 @@
 	type Props = {
 		items: StagePlotItem[];
 		outputs?: PlotOutputItem[];
+		selectedItemIds?: number[];
+		onSelectionChange?: (ids: number[], event: MouseEvent) => void;
 		onUpdateItem?: (itemId: number, property: string, value: string) => void;
 		onReorderPatch?: (fromIndex: number, toIndex: number) => void;
-		onSelectItem?: (item: StagePlotItem, event: MouseEvent) => void;
 		onAddItem?: (item: ProcessedItem, channel: number) => void;
 		onRemoveItem?: (channel: number) => void;
 		onOutputSelect?: (item: ProcessedItem, channel: number) => void;
@@ -24,7 +23,6 @@
 		onClearPatch?: () => void;
 		consoleType?: string | null;
 		channelColors?: Record<number, string>;
-		onChannelColorChange?: (channel: number, colorId: string) => void;
 		stereoLinks?: number[];
 		onStereoLinksChange?: (links: number[]) => void;
 		outputStereoLinks?: number[];
@@ -39,9 +37,10 @@
 	let {
 		items,
 		outputs = [],
+		selectedItemIds = [],
+		onSelectionChange,
 		onUpdateItem,
 		onReorderPatch,
-		onSelectItem,
 		onAddItem,
 		onRemoveItem,
 		onOutputSelect,
@@ -49,7 +48,6 @@
 		onClearPatch,
 		consoleType = null,
 		channelColors = {},
-		onChannelColorChange,
 		stereoLinks = [],
 		onStereoLinksChange,
 		outputStereoLinks = [],
@@ -60,6 +58,9 @@
 		columnCount = 6,
 		readonly: readonlyMode = false
 	}: Props = $props();
+
+	// Derive set from prop for quick row highlight checks
+	const selectedIdSetLocal = $derived(new Set(selectedItemIds));
 
 	const NUM_COLUMNS = $derived(columnCount);
 
@@ -394,6 +395,8 @@
 									{@const linked = isLinked(channelNum)}
 									{@const linkedTop = isLinkedTop(channelNum)}
 									{@const linkedBottom = isLinkedBottom(channelNum)}
+									{@const rowItem = canvasItemByChannel[channelNum]}
+									{@const isRowSelected = rowItem ? selectedIdSetLocal.has(rowItem.id) : false}
 									<ContextMenu.Root>
 										<ContextMenu.Trigger>
 											<div
@@ -401,100 +404,79 @@
 													? 'h-10 border-b-0'
 													: linkedBottom
 														? 'h-10 border-b border-border-primary'
-														: 'h-10'}"
+														: 'h-10'} {isRowSelected
+													? 'bg-blue-50 dark:bg-blue-900/20'
+													: ''}"
 											>
-												<!-- Channel number cell with color picker -->
+												<!-- Channel number cell (click to select) -->
 												<div
 													class="flex h-full w-10 flex-shrink-0 items-center justify-center border-r border-border-primary"
 												>
-													{#if readonlyMode}
-														<div
-															class="flex h-full w-full items-center justify-center text-xs font-semibold {linked
-																? 'ring-1 ring-yellow-400/50 ring-inset'
-																: ''} {!channelColors[channelNum] &&
-															selectedInputItemsByChannel[channelNum]
-																? 'bg-blue-600 text-white'
-																: !channelColors[channelNum]
-																	? 'bg-muted/50 text-text-secondary'
-																	: ''}"
-															style={getChannelBadgeStyle(channelNum)}
-														>
+													<!-- svelte-ignore a11y_click_events_have_key_events -->
+													<!-- svelte-ignore a11y_no_static_element_interactions -->
+													<div
+														class="flex h-full w-full items-center justify-center text-xs font-semibold transition-colors {linked
+															? 'ring-1 ring-yellow-400/50 ring-inset'
+															: ''} {!readonlyMode && canvasItemByChannel[channelNum]
+															? 'cursor-pointer'
+															: ''} {!channelColors[channelNum] &&
+														selectedInputItemsByChannel[channelNum]
+															? 'bg-blue-600 text-white'
+															: !channelColors[channelNum]
+																? 'bg-muted/50 text-text-secondary'
+																: ''}"
+														style={getChannelBadgeStyle(channelNum)}
+														onclick={(e) => {
+															console.log('[patch-click]', { channelNum, readonlyMode, itm: canvasItemByChannel[channelNum], hasCb: !!onSelectionChange });
+															if (readonlyMode) return;
+															const itm = canvasItemByChannel[channelNum];
+															if (itm) {
+																onSelectionChange?.([itm.id], e);
+															} else {
+																onSelectionChange?.([], e);
+															}
+														}}
+													>
+														{#if linkedTop}
+															<span class="flex flex-col items-center leading-none">
+																<span>{channelNum}</span>
+																<svg
+																	class="-mb-0.5 h-3 w-3 opacity-60"
+																	viewBox="0 0 24 24"
+																	fill="none"
+																	stroke="currentColor"
+																	stroke-width="2"
+																>
+																	<path
+																		d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"
+																	/>
+																	<path
+																		d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"
+																	/>
+																</svg>
+															</span>
+														{:else if linkedBottom}
+															<span class="flex flex-col items-center leading-none">
+																<svg
+																	class="-mt-0.5 h-3 w-3 opacity-60"
+																	viewBox="0 0 24 24"
+																	fill="none"
+																	stroke="currentColor"
+																	stroke-width="2"
+																>
+																	<path
+																		d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"
+																	/>
+																	<path
+																		d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"
+																	/>
+																</svg>
+																<span>{channelNum}</span>
+															</span>
+														{:else}
 															{channelNum}
-														</div>
-													{:else if availableColors.length > 0}
-														<ChannelColorPicker
-															colors={availableColors}
-															currentColorId={channelColors[channelNum] ?? null}
-															{channelNum}
-															onSelectColor={(ch, colorId) => onChannelColorChange?.(ch, colorId)}
-														>
-															<div
-																class="flex h-full w-full cursor-pointer items-center justify-center text-xs font-semibold transition-colors {linked
-																	? 'ring-1 ring-yellow-400/50 ring-inset'
-																	: ''} {!channelColors[channelNum] &&
-																selectedInputItemsByChannel[channelNum]
-																	? 'bg-blue-600 text-white'
-																	: !channelColors[channelNum]
-																		? 'bg-muted/50 text-text-secondary'
-																		: ''}"
-																style={getChannelBadgeStyle(channelNum)}
-															>
-																{#if linkedTop}
-																	<span class="flex flex-col items-center leading-none">
-																		<span>{channelNum}</span>
-																		<svg
-																			class="-mb-0.5 h-3 w-3 opacity-60"
-																			viewBox="0 0 24 24"
-																			fill="none"
-																			stroke="currentColor"
-																			stroke-width="2"
-																		>
-																			<path
-																				d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"
-																			/>
-																			<path
-																				d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"
-																			/>
-																		</svg>
-																	</span>
-																{:else if linkedBottom}
-																	<span class="flex flex-col items-center leading-none">
-																		<svg
-																			class="-mt-0.5 h-3 w-3 opacity-60"
-																			viewBox="0 0 24 24"
-																			fill="none"
-																			stroke="currentColor"
-																			stroke-width="2"
-																		>
-																			<path
-																				d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"
-																			/>
-																			<path
-																				d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"
-																			/>
-																		</svg>
-																		<span>{channelNum}</span>
-																	</span>
-																{:else}
-																	{channelNum}
-																{/if}
-															</div>
-														</ChannelColorPicker>
-													{:else}
-														<div
-															class="flex h-full w-full cursor-pointer items-center justify-center text-xs font-semibold transition-colors {selectedInputItemsByChannel[
-																channelNum
-															]
-																? 'bg-blue-600 text-white'
-																: 'bg-muted/50 text-text-secondary'}"
-															onclick={() => {
-																const itm = canvasItemByChannel[channelNum];
-																itm && onSelectItem?.(itm, new MouseEvent('click'));
-															}}
-														>
-															{channelNum}
-														</div>
-													{/if}
+														{/if}
+													</div>
 												</div>
 
 												<!-- Combobox cell -->
@@ -670,7 +652,7 @@
 													class="flex cursor-pointer items-center rounded px-2 py-1.5 text-xs outline-none hover:bg-muted"
 													onSelect={() => {
 														const itm = canvasItemByChannel[channelNum];
-														itm && onSelectItem?.(itm, new MouseEvent('click'));
+														if (itm) onSelectionChange?.([itm.id], new MouseEvent('click'));
 													}}
 												>
 													Select on Canvas

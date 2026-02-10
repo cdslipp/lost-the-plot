@@ -46,11 +46,9 @@
 	let canvasResizeObserver: ResizeObserver | null = null;
 	let stagePlotContainer = $state<HTMLElement | null>(null);
 
-	// --- Selection & interaction state (DOM-coupled) ---
-	let selectedItems = $state<any[]>([]);
-	const selectedIds = $derived(
-		new Set(selectedItems.map((el: any) => el.dataset?.id).filter(Boolean))
-	);
+	// --- Selection & interaction state (ID-based) ---
+	let selectedItemIds = $state<number[]>([]);
+	const selectedIdSet = $derived(new Set(selectedItemIds));
 	let isAddingItem = $state(false);
 	let replacingItemId = $state<number | null>(null);
 	let placingItem = $state<any>(null);
@@ -133,11 +131,10 @@
 	const isAltPressed = $derived(keys.has('Alt'));
 
 	function nudgeSelected(dx: number, dy: number) {
-		if (!selectedItems.length) return;
-		selectedItems.forEach((el) => {
-			const id = parseInt(el.dataset?.id || '0');
+		if (!selectedItemIds.length) return;
+		for (const id of selectedItemIds) {
 			const item = ps.items.find((i: any) => i.id === id);
-			if (!item) return;
+			if (!item) continue;
 			const newX = Math.max(0, Math.min(ps.stageWidth - item.position.width, item.position.x + dx));
 			const newY = Math.max(
 				0,
@@ -145,13 +142,13 @@
 			);
 			item.position.x = newX;
 			item.position.y = newY;
-		});
+		}
 		ps.commitChange();
 	}
 
 	function deleteSelected() {
-		if (!selectedItems.length) return;
-		const ids = new Set(selectedItems.map((el: any) => String(el.dataset?.id || '0')));
+		if (!selectedItemIds.length) return;
+		const ids = new Set(selectedItemIds.map((id) => String(id)));
 		ps.deleteItems(ids);
 		clearSelections();
 	}
@@ -174,9 +171,36 @@
 
 	// --- Selection helpers ---
 	function clearSelections() {
-		if (selecto && selectedItems.length > 0) {
-			selectedItems = [];
-			selecto.setSelectedTargets([]);
+		if (selectedItemIds.length > 0) {
+			selectedItemIds = [];
+			selecto?.setSelectedTargets([]);
+		}
+	}
+
+	/** Set selection to the given IDs and sync Selecto's DOM state */
+	function selectItems(ids: number[]) {
+		selectedItemIds = ids;
+		if (selecto && canvasEl) {
+			const els = ids
+				.map((id) => canvasEl!.querySelector(`[data-id="${id}"]`) as HTMLElement | null)
+				.filter(Boolean) as HTMLElement[];
+			selecto.setSelectedTargets(els);
+		}
+	}
+
+	/** Toggle item selection with shift/ctrl support */
+	function toggleItemSelection(id: number, event?: MouseEvent) {
+		console.log('[toggle-select]', { id });
+		if (event && (event.shiftKey || event.ctrlKey || event.metaKey)) {
+			// Add/remove from selection
+			if (selectedIdSet.has(id)) {
+				selectItems(selectedItemIds.filter((i) => i !== id));
+			} else {
+				selectItems([...selectedItemIds, id]);
+			}
+		} else {
+			// Replace selection
+			selectItems([id]);
 		}
 	}
 
@@ -184,12 +208,9 @@
 		if (ps.items.length === 0) return;
 		const item = ps.items[index];
 		if (!item) return;
+		selectItems([item.id]);
 		const el = canvasEl?.querySelector(`[data-id="${item.id}"]`) as HTMLElement | null;
-		if (!el) return;
-		clearSelections();
-		selectedItems = [el];
-		selecto?.setSelectedTargets([el]);
-		el.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+		el?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
 	}
 
 	// --- Navigation guards ---
@@ -254,14 +275,16 @@
 		});
 
 		selecto.on('select', (e: any) => {
-			selectedItems = e.selected;
+			selectedItemIds = e.selected
+				.map((el: HTMLElement) => parseInt(el.dataset?.id || '0'))
+				.filter((id: number) => id > 0);
 			if (e.selected.length) justSelected = true;
 		});
 
 		return () => {
 			selecto?.destroy();
 			selecto = null;
-			selectedItems = [];
+			selectedItemIds = [];
 			dragging = null;
 		};
 	});
@@ -469,6 +492,7 @@
 			}
 
 			ps.addDefaultOutputs(placingItem.itemData);
+			ps.autoNumberItems();
 			placingItem = null;
 			ps.commitChange();
 		} else {
@@ -486,16 +510,13 @@
 			return;
 		}
 		event.stopPropagation();
-		const itemEl = document.querySelector(`[data-id="${item.id}"]`);
-		if (itemEl) {
-			selectedItems = [itemEl as HTMLElement];
-			selecto?.setSelectedTargets([itemEl]);
-			(itemEl as HTMLElement).scrollIntoView({
-				block: 'nearest',
-				inline: 'nearest',
-				behavior: 'smooth'
-			});
-		}
+		selectItems([item.id]);
+		const itemEl = canvasEl?.querySelector(`[data-id="${item.id}"]`) as HTMLElement | null;
+		itemEl?.scrollIntoView({
+			block: 'nearest',
+			inline: 'nearest',
+			behavior: 'smooth'
+		});
 	}
 
 	// --- People (thin wrappers that integrate with placingItem) ---
@@ -522,12 +543,11 @@
 
 		const coords = toStageCoords(event.clientX, event.clientY);
 
-		const isInSelection = selectedIds.has(String(item.id));
+		const isInSelection = selectedIdSet.has(item.id);
 		let group: Array<{ item: any; startX: number; startY: number }>;
-		if (isInSelection && selectedItems.length > 1) {
-			group = selectedItems
-				.map((el) => {
-					const id = parseInt(el.dataset?.id || '0');
+		if (isInSelection && selectedItemIds.length > 1) {
+			group = selectedItemIds
+				.map((id) => {
 					const groupItem = ps.items.find((i: any) => i.id === id);
 					return groupItem
 						? { item: groupItem, startX: groupItem.position.x, startY: groupItem.position.y }
@@ -754,11 +774,15 @@
 		<StagePatch
 			items={ps.items}
 			outputs={ps.outputs}
+			{selectedItemIds}
+			onSelectionChange={(ids, event) => {
+				if (ids.length) toggleItemSelection(ids[0], event);
+				else clearSelections();
+			}}
 			{columnCount}
 			readonly={viewOnly}
 			onUpdateItem={handlePatchItemUpdate}
 			onReorderPatch={(from, to) => ps.reorderItems(from, to)}
-			onSelectItem={openItemEditor}
 			onAddItem={handlePatchAddItem}
 			onRemoveItem={(ch) => ps.removePatchItem(ch)}
 			onClearPatch={() => ps.clearAllPatch()}
@@ -766,7 +790,6 @@
 			onOutputRemove={(ch) => ps.removeOutput(ch)}
 			consoleType={ps.consoleType}
 			channelColors={ps.channelColors}
-			onChannelColorChange={(ch, color) => ps.setChannelColor(ch, color)}
 			stereoLinks={ps.stereoLinks}
 			onStereoLinksChange={(links) => ps.setStereoLinks(links)}
 			outputStereoLinks={ps.outputStereoLinks}
@@ -872,8 +895,8 @@
 													<div
 														{...itemProps}
 														class="group selectable-item absolute cursor-move select-none"
-														class:ring-2={selectedIds.has(String(item.id))}
-														class:ring-blue-500={selectedIds.has(String(item.id))}
+														class:ring-2={selectedIdSet.has(item.id)}
+														class:ring-blue-500={selectedIdSet.has(item.id)}
 														data-id={item.id}
 														style="left: {item.position.x * pxPerFoot}px; top: {item.position.y *
 															pxPerFoot}px; width: {item.position.width *
@@ -923,7 +946,7 @@
 															{/if}
 														{/if}
 
-														{#if selectedItems.some((el) => el.dataset?.id === String(item.id))}
+														{#if selectedIdSet.has(item.id)}
 															{#if getVariantKeys(item).length > 1}
 																<div
 																	class="absolute -bottom-8 left-1/2 z-20 flex -translate-x-1/2 transform gap-1"
@@ -1146,7 +1169,7 @@
 			<div class="flex w-80 shrink-0 flex-col overflow-hidden">
 				<EditorSidePanel
 					bind:activeTab={sidePanelTab}
-					bind:selectedItems
+					bind:selectedItemIds
 					onPlaceRiser={placeRiser}
 					onAddPersonToPlot={addPersonToPlot}
 				/>
@@ -1194,7 +1217,7 @@
 			<div class="flex w-80 shrink-0 flex-col">
 				<EditorSidePanel
 					bind:activeTab={sidePanelTab}
-					bind:selectedItems
+					bind:selectedItemIds
 					onPlaceRiser={placeRiser}
 					onAddPersonToPlot={addPersonToPlot}
 				/>

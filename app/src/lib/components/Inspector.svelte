@@ -12,22 +12,19 @@
 	import type { StagePlotItem } from '@stageplotter/shared';
 
 	type Props = {
-		selectedItems?: HTMLElement[];
+		selectedItemIds?: number[];
 		onPlaceRiser?: (riserWidth: number, riserDepth: number, riserHeight: number) => void;
 	};
 
-	let { selectedItems = $bindable<HTMLElement[]>([]), onPlaceRiser }: Props = $props();
+	let { selectedItemIds = $bindable<number[]>([]), onPlaceRiser }: Props = $props();
 
 	const ps = getPlotState();
 
-	// Get the actual item objects from the selected DOM elements
+	// Get the actual item objects from the selected IDs
 	const selectedItemsData = $derived.by(() => {
-		if (!ps.items || !selectedItems) return [];
-		return selectedItems
-			.map((el) => {
-				const id = parseInt(el.dataset?.id || '0');
-				return ps.items.find((item) => item.id === id);
-			})
+		if (!ps.items || !selectedItemIds) return [];
+		return selectedItemIds
+			.map((id) => ps.items.find((item) => item.id === id))
 			.filter(Boolean) as StagePlotItem[];
 	});
 
@@ -247,6 +244,46 @@
 								placeholder="Channel"
 							/>
 						</div>
+						{#if selectedItemsData[0].channel && ps.consoleDef}
+							{@const channelNum = parseInt(selectedItemsData[0].channel)}
+							{@const currentColorId = ps.channelColors[channelNum] ?? null}
+							{@const normalColors = ps.consoleDef.colors.filter((c) => !c.inverted)}
+							{@const invertedColors = ps.consoleDef.colors.filter((c) => c.inverted)}
+							<div>
+								<label class="mb-1 block text-xs text-text-secondary">Channel Color</label>
+								<div class="grid grid-cols-8 gap-1.5">
+									{#each normalColors as color (color.id)}
+										<button
+											type="button"
+											onclick={() => ps.setChannelColor(channelNum, color.id)}
+											class="h-6 w-6 rounded-md border-2 transition-all hover:scale-110 focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 focus:outline-none {currentColorId ===
+											color.id
+												? 'border-white ring-2 ring-blue-500'
+												: 'border-transparent'}"
+											style="background-color: {color.hex};"
+											title={color.label}
+										></button>
+									{/each}
+								</div>
+								{#if invertedColors.length > 0}
+									<div class="mt-1.5 mb-1 text-[10px] text-text-secondary">Inverted</div>
+									<div class="grid grid-cols-8 gap-1.5">
+										{#each invertedColors as color (color.id)}
+											<button
+												type="button"
+												onclick={() => ps.setChannelColor(channelNum, color.id)}
+												class="h-6 w-6 rounded-md border-2 border-dashed transition-all hover:scale-110 focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 focus:outline-none {currentColorId ===
+												color.id
+													? 'border-white ring-2 ring-blue-500'
+													: 'border-transparent'}"
+												style="background-color: {color.hex};"
+												title={color.label}
+											></button>
+										{/each}
+									</div>
+								{/if}
+							</div>
+						{/if}
 						<div>
 							<label class="mb-1 block text-xs text-text-secondary">Person</label>
 							<PersonCombobox
