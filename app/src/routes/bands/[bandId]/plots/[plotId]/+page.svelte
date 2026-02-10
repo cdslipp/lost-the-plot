@@ -4,7 +4,7 @@
 	import { ItemCommandPalette, StagePatch } from '$lib';
 	import type { ProcessedItem } from '$lib/utils/finalAssetsLoader';
 	import Selecto from 'selecto';
-	import { onClickOutside, PressedKeys } from 'runed';
+	import { PressedKeys } from 'runed';
 	import StageDeck from '$lib/components/StageDeck.svelte';
 	import { ContextMenu } from 'bits-ui';
 	import { page } from '$app/stores';
@@ -190,7 +190,6 @@
 
 	/** Toggle item selection with shift/ctrl support */
 	function toggleItemSelection(id: number, event?: MouseEvent) {
-		console.log('[toggle-select]', { id });
 		if (event && (event.shiftKey || event.ctrlKey || event.metaKey)) {
 			// Add/remove from selection
 			if (selectedIdSet.has(id)) {
@@ -235,22 +234,31 @@
 
 		window.addEventListener('beforeunload', handleBeforeUnload);
 
-		onClickOutside(
-			() => canvasEl,
-			(event: any) => {
-				const target = event.target as HTMLElement;
-				const isInInspector = target.closest('.inspector-panel');
-				const isInCommandPalette = target.closest('[data-command-palette]');
-				const isInPatch = target.closest('[data-patch-list]');
-				if (!isInInspector && !isInCommandPalette && !isInPatch) {
-					clearSelections();
-				}
-			}
-		);
-
 		return () => {
 			window.removeEventListener('beforeunload', handleBeforeUnload);
 		};
+	});
+
+	// --- Click-outside canvas deselection ---
+	$effect(() => {
+		if (!browser) return;
+		const el = canvasEl;
+		if (!el) return;
+
+		function handlePointerDown(event: PointerEvent) {
+			if (el!.contains(event.target as Node)) return;
+			const target = event.target as HTMLElement;
+			if (
+				target.closest('.inspector-panel') ||
+				target.closest('[data-command-palette]') ||
+				target.closest('[data-patch-list]')
+			)
+				return;
+			clearSelections();
+		}
+
+		document.addEventListener('pointerdown', handlePointerDown, true);
+		return () => document.removeEventListener('pointerdown', handlePointerDown, true);
 	});
 
 	// --- Selecto lifecycle ---
