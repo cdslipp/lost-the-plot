@@ -16,6 +16,16 @@
 	const isMac = browser && /Mac|iPhone|iPad|iPod/.test(navigator.platform);
 	const modKey = isMac ? '⌘' : 'Ctrl+';
 
+	function autoFocusAction(node: HTMLInputElement, shouldFocus: boolean) {
+		if (shouldFocus) {
+			// Tick delay so the DOM is settled
+			requestAnimationFrame(() => {
+				node.focus();
+				node.select();
+			});
+		}
+	}
+
 	let exporting = $state(false);
 	let sharing = $state(false);
 	let shareCopied = $state(false);
@@ -26,13 +36,15 @@
 		onImportComplete,
 		onExportPdf,
 		backHref,
-		viewOnly = false
+		viewOnly = false,
+		autoFocusName = false
 	}: {
 		onAddItem: () => void;
 		onImportComplete: () => void;
 		onExportPdf?: () => Promise<void>;
 		backHref?: string;
 		viewOnly?: boolean;
+		autoFocusName?: boolean;
 	} = $props();
 
 	async function handleExportPdf() {
@@ -144,6 +156,10 @@
 				<input
 					bind:value={ps.plotName}
 					oninput={() => ps.debouncedWrite()}
+					onkeydown={(e) => {
+						if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
+					}}
+					use:autoFocusAction={autoFocusName}
 					class="w-full min-w-0 border-b-2 border-dashed border-border-secondary bg-transparent px-2 py-1 font-serif text-3xl font-bold text-text-primary transition-all placeholder:font-normal placeholder:text-text-tertiary hover:border-border-primary focus:border-solid focus:border-stone-500 focus:outline-none"
 					placeholder="Plot Name"
 				/>

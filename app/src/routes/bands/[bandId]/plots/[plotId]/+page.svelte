@@ -26,6 +26,9 @@
 	const ps = new StagePlotState($page.params.plotId!, $page.params.bandId!);
 	setPlotState(ps);
 
+	// --- New plot flag (auto-focus name) ---
+	let isNewPlot = $state($page.url.searchParams.has('new'));
+
 	// --- UI-only layout state ---
 	let layoutMode = $state<'mobile' | 'medium' | 'desktop'>('desktop');
 	let viewOnly = $derived(layoutMode === 'mobile');
@@ -63,6 +66,58 @@
 		moved: boolean;
 		group: Array<{ item: any; startX: number; startY: number }>;
 	} | null>(null);
+
+	// --- Rotation drag state ---
+	let rotating = $state<{
+		item: any;
+		startAngle: number;
+		startRotation: number;
+	} | null>(null);
+
+	function handleRotationStart(event: PointerEvent, item: any) {
+		event.stopPropagation();
+		event.preventDefault();
+		const el = event.currentTarget as HTMLElement;
+		el.setPointerCapture(event.pointerId);
+
+		const canvasRect = canvasEl!.getBoundingClientRect();
+		const centerX = item.position.x + item.position.width / 2;
+		const centerY = item.position.y + item.position.height / 2;
+		const mouseX = event.clientX - canvasRect.left;
+		const mouseY = event.clientY - canvasRect.top;
+		const startAngle = Math.atan2(mouseY - centerY, mouseX - centerX) * (180 / Math.PI);
+
+		rotating = {
+			item,
+			startAngle,
+			startRotation: item.position.rotation ?? 0
+		};
+	}
+
+	function handleRotationMove(event: PointerEvent) {
+		if (!rotating || !canvasEl) return;
+		const canvasRect = canvasEl.getBoundingClientRect();
+		const centerX = rotating.item.position.x + rotating.item.position.width / 2;
+		const centerY = rotating.item.position.y + rotating.item.position.height / 2;
+		const mouseX = event.clientX - canvasRect.left;
+		const mouseY = event.clientY - canvasRect.top;
+		const currentAngle = Math.atan2(mouseY - centerY, mouseX - centerX) * (180 / Math.PI);
+		let delta = currentAngle - rotating.startAngle;
+		let newRotation = rotating.startRotation + delta;
+
+		// Shift key: snap to 15-degree increments
+		if (event.shiftKey) {
+			newRotation = Math.round(newRotation / 15) * 15;
+		}
+
+		rotating.item.position.rotation = newRotation;
+	}
+
+	function handleRotationEnd() {
+		if (!rotating) return;
+		ps.commitChange();
+		rotating = null;
+	}
 
 	// --- Keyboard ---
 	const keys = new PressedKeys();
@@ -145,6 +200,11 @@
 		ps.load().then((found) => {
 			if (!found) goto(`/bands/${bandId}`, { replaceState: true });
 		});
+
+		// Clean up ?new query param without triggering a SvelteKit navigation
+		if (isNewPlot) {
+			history.replaceState(history.state, '', `/bands/${bandId}/plots/${plotId}`);
+		}
 
 		window.addEventListener('beforeunload', handleBeforeUnload);
 
@@ -641,6 +701,7 @@
 			clearSelections();
 		}
 		if (event.key === 'Tab') {
+			if (isAddingItem) return;
 			const active = document.activeElement as HTMLElement | null;
 			if (
 				active &&
@@ -671,6 +732,7 @@
 			onExportPdf={handleExportPdf}
 			backHref={'/bands/' + bandId}
 			{viewOnly}
+			autoFocusName={isNewPlot}
 		/>
 	</div>
 
@@ -722,24 +784,19 @@
 							class="absolute select-none"
 							data-id={item.id}
 							style="left: {item.position.x}px; top: {item.position.y}px; width: {item.position
-								.width}px; height: {item.position.height}px;"
+								.width}px; height: {item.position.height}px; transform: rotate({item.position
+								.rotation ?? 0}deg); transform-origin: center;"
 						>
 							{#if item.type === 'stageDeck'}
 								<StageDeck size={item.size} x={0} y={0} class="h-full w-full" />
 							{:else if item.type === 'riser'}
 								<div
-									class="flex h-full w-full items-center justify-center rounded border-2 border-gray-500 bg-gray-400/50 dark:border-gray-400 dark:bg-gray-600/50"
+									class="relative h-full w-full rounded border-2 border-gray-500 bg-gray-400/50 dark:border-gray-400 dark:bg-gray-600/50"
 								>
-									<div class="text-center leading-tight">
-										<div class="text-[10px] font-bold text-gray-700 dark:text-gray-200">RISER</div>
-										<div class="text-[8px] text-gray-600 dark:text-gray-300">
-											{item.itemData?.riserWidth ?? '?'}' × {item.itemData?.riserDepth ?? '?'}'
-										</div>
-										{#if item.itemData?.riserHeight}
-											<div class="text-[7px] text-gray-500 dark:text-gray-400">
-												h: {item.itemData.riserHeight}'
-											</div>
-										{/if}
+									<div
+										class="absolute right-1 bottom-0.5 text-[8px] text-gray-600 dark:text-gray-300"
+									>
+										{item.itemData?.riserWidth ?? '?'}' × {item.itemData?.riserDepth ?? '?'}'
 									</div>
 								</div>
 							{:else}
@@ -799,7 +856,10 @@
 													data-id={item.id}
 													style="left: {item.position.x}px; top: {item.position.y}px; width: {item
 														.position.width}px; height: {item.position
-														.height}px; touch-action: none;"
+														.height}px; touch-action: none; pointer-events: {placingItem
+														? 'none'
+														: 'auto'}; transform: rotate({item.position.rotation ??
+														0}deg); transform-origin: center;"
 													draggable="false"
 													ondragstart={(e) => e.preventDefault()}
 													onpointerdown={(e) => handleItemPointerDown(e, item)}
@@ -811,21 +871,13 @@
 														<StageDeck size={item.size} x={0} y={0} class="h-full w-full" />
 													{:else if item.type === 'riser'}
 														<div
-															class="flex h-full w-full items-center justify-center rounded border-2 border-gray-500 bg-gray-400/50 dark:border-gray-400 dark:bg-gray-600/50"
+															class="relative h-full w-full rounded border-2 border-gray-500 bg-gray-400/50 dark:border-gray-400 dark:bg-gray-600/50"
 														>
-															<div class="text-center leading-tight">
-																<div class="text-[10px] font-bold text-gray-700 dark:text-gray-200">
-																	RISER
-																</div>
-																<div class="text-[8px] text-gray-600 dark:text-gray-300">
-																	{item.itemData?.riserWidth ?? '?'}' × {item.itemData
-																		?.riserDepth ?? '?'}'
-																</div>
-																{#if item.itemData?.riserHeight}
-																	<div class="text-[7px] text-gray-500 dark:text-gray-400">
-																		h: {item.itemData.riserHeight}'
-																	</div>
-																{/if}
+															<div
+																class="absolute right-1 bottom-0.5 text-[8px] text-gray-600 dark:text-gray-300"
+															>
+																{item.itemData?.riserWidth ?? '?'}' × {item.itemData?.riserDepth ??
+																	'?'}'
 															</div>
 														</div>
 													{:else}
@@ -875,6 +927,35 @@
 																		/>
 																	</svg>
 																</button>
+															</div>
+														{/if}
+														{#if item.type === 'riser'}
+															<!-- Rotation handle for risers -->
+															<div
+																class="pointer-events-none absolute -bottom-10 left-1/2 z-20 flex -translate-x-1/2 flex-col items-center"
+															>
+																<div class="h-4 w-px bg-blue-400"></div>
+																<!-- svelte-ignore a11y_no_static_element_interactions -->
+																<div
+																	class="pointer-events-auto flex h-6 w-6 cursor-grab items-center justify-center rounded-full bg-blue-500 text-white shadow-md transition-colors hover:bg-blue-600"
+																	title="Drag to rotate (Shift for 15° snap)"
+																	onpointerdown={(e) => handleRotationStart(e, item)}
+																	onpointermove={handleRotationMove}
+																	onpointerup={handleRotationEnd}
+																>
+																	<svg
+																		xmlns="http://www.w3.org/2000/svg"
+																		class="h-3.5 w-3.5"
+																		viewBox="0 0 20 20"
+																		fill="currentColor"
+																	>
+																		<path
+																			fill-rule="evenodd"
+																			d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z"
+																			clip-rule="evenodd"
+																		/>
+																	</svg>
+																</div>
 															</div>
 														{/if}
 													{/if}

@@ -34,7 +34,7 @@
 		await db.init();
 		const id = generateId();
 		await createBandDb(id, 'Untitled Band');
-		goto(`/bands/${id}`);
+		goto(`/bands/${id}?new=1`);
 	}
 
 	async function handleDeleteBand(bandId: string, bandName: string) {
@@ -143,14 +143,16 @@
 			<p class="text-text-secondary">Loading...</p>
 		</div>
 	{:else if bands.length === 0}
-		<div class="flex flex-1 flex-col items-center justify-center gap-4">
-			<p class="text-lg text-text-secondary">Create your first band to get started</p>
-			<button
-				onclick={createBand}
-				class="rounded-lg bg-stone-900 px-6 py-3 text-white transition hover:bg-stone-800 dark:bg-stone-100 dark:text-stone-900 dark:hover:bg-stone-200"
-			>
-				Create Band
-			</button>
+		<div class="flex flex-1 items-center justify-center">
+			<div class="rounded-xl border border-border-primary bg-surface p-8 text-center shadow-sm">
+				<p class="text-lg text-text-secondary">Create your first band to get started</p>
+				<button
+					onclick={createBand}
+					class="mt-4 rounded-lg bg-stone-900 px-6 py-3 text-white transition hover:bg-stone-800 dark:bg-stone-100 dark:text-stone-900 dark:hover:bg-stone-200"
+				>
+					Create Band
+				</button>
+			</div>
 		</div>
 	{:else}
 		<div class="band-list-scroll flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto">

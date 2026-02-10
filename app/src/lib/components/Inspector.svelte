@@ -157,16 +157,13 @@
 				<div class="flex h-36 flex-col items-center justify-center">
 					{#if selectedItemsData[0].type === 'riser'}
 						<div
-							class="flex items-center justify-center rounded border-2 border-gray-500 bg-gray-400/50 dark:border-gray-400 dark:bg-gray-600/50"
+							class="relative rounded border-2 border-gray-500 bg-gray-400/50 dark:border-gray-400 dark:bg-gray-600/50"
 							style="width: 120px; aspect-ratio: {selectedItemsData[0].itemData?.riserWidth ??
 								4}/{selectedItemsData[0].itemData?.riserDepth ?? 4};"
 						>
-							<div class="text-center">
-								<div class="text-xs font-bold text-gray-700 dark:text-gray-200">RISER</div>
-								<div class="text-[10px] text-gray-600 dark:text-gray-300">
-									{selectedItemsData[0].itemData?.riserWidth}' × {selectedItemsData[0].itemData
-										?.riserDepth}'
-								</div>
+							<div class="absolute right-1 bottom-0.5 text-[10px] text-gray-600 dark:text-gray-300">
+								{selectedItemsData[0].itemData?.riserWidth}' × {selectedItemsData[0].itemData
+									?.riserDepth}'
 							</div>
 						</div>
 					{:else if showVariants}
@@ -317,6 +314,26 @@
 
 					<!-- Riser dimensions (when a riser is selected) -->
 					{#if selectedItemsData[0].type === 'riser'}
+						<div>
+							<label class="mb-1 block text-xs text-text-secondary">Rotation</label>
+							<div class="flex items-center gap-2">
+								<input
+									type="number"
+									value={Math.round(selectedItemsData[0].position.rotation ?? 0)}
+									onchange={(e) => {
+										const target = e.target as HTMLInputElement;
+										const val = parseFloat(target.value);
+										if (!isNaN(val)) {
+											selectedItemsData[0].position.rotation = val;
+											ps.commitChange();
+										}
+									}}
+									step="15"
+									class="w-full rounded-lg border border-border-primary bg-surface px-2 py-1.5 text-sm text-text-primary focus:border-stone-500 focus:ring-2 focus:ring-stone-500"
+								/>
+								<span class="shrink-0 text-xs text-text-tertiary">deg</span>
+							</div>
+						</div>
 						<div>
 							<label class="mb-1 block text-xs text-text-secondary"
 								>Riser Size ({unitLabel(ps.unit)})</label

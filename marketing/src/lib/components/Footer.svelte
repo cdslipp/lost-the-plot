@@ -21,15 +21,17 @@
 				>{APP_NAME}</a
 			>
 			<div class="flex gap-6 font-sans text-sm text-stone-400 dark:text-stone-500">
-				<a href={GITHUB_REPO} class="transition hover:text-stone-700 dark:hover:text-stone-300"
+				<a href={GITHUB_REPO} target="_blank" rel="noopener noreferrer" class="transition hover:text-stone-700 dark:hover:text-stone-300"
 					>GitHub</a
 				>
 				<a
 					href={GITHUB_SPONSORS_URL}
+					target="_blank" rel="noopener noreferrer"
 					class="transition hover:text-stone-700 dark:hover:text-stone-300">Sponsor</a
 				>
 				<a
 					href="{GITHUB_REPO}/blob/main/LICENSE"
+					target="_blank" rel="noopener noreferrer"
 					class="transition hover:text-stone-700 dark:hover:text-stone-300">License</a
 				>
 			</div>

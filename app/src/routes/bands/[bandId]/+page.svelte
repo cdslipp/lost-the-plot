@@ -121,6 +121,13 @@
 		);
 
 		loading = false;
+
+		// Auto-enter edit mode for newly created bands
+		if ($page.url.searchParams.has('new')) {
+			editingBandName = true;
+			// Clean up the URL
+			goto(`/bands/${bandId}`, { replaceState: true });
+		}
 	}
 
 	async function saveBandName() {
@@ -141,7 +148,7 @@
 			bandId,
 			JSON.stringify({ items: [], musicians: [] })
 		]);
-		goto(`/bands/${bandId}/plots/${plotId}`);
+		goto(`/bands/${bandId}/plots/${plotId}?new=1`);
 	}
 
 	async function deletePlot(plotId: string) {
@@ -190,6 +197,7 @@
 				>
 					<input
 						bind:value={bandNameInput}
+						onfocus={(e) => (e.target as HTMLInputElement).select()}
 						class="w-full border-b-2 border-dashed border-border-secondary bg-transparent px-2 py-1 font-serif text-3xl font-bold text-text-primary focus:border-stone-500 focus:outline-none"
 						autofocus
 					/>
@@ -241,17 +249,24 @@
 			</div>
 
 			{#if plots.length === 0}
-				<div
-					class="rounded-xl border border-dashed border-border-primary bg-surface p-6 text-center"
+				<button
+					onclick={createPlot}
+					class="group flex w-full items-center justify-center gap-3 rounded-xl border border-dashed border-border-primary bg-surface px-6 py-8 text-text-secondary transition hover:border-stone-400 hover:bg-surface-hover hover:text-text-primary"
 				>
-					<p class="text-text-secondary">No stage plots yet</p>
-					<button
-						onclick={createPlot}
-						class="mt-3 text-sm text-stone-600 hover:text-stone-800 dark:text-stone-400 dark:hover:text-stone-200"
+					<svg
+						xmlns="http://www.w3.org/2000/svg"
+						class="h-5 w-5"
+						viewBox="0 0 20 20"
+						fill="currentColor"
 					>
-						Create your first plot
-					</button>
-				</div>
+						<path
+							fill-rule="evenodd"
+							d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z"
+							clip-rule="evenodd"
+						/>
+					</svg>
+					<span class="text-sm font-medium">Create your first stage plot</span>
+				</button>
 			{:else}
 				<div class="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
 					{#each plots as plot (plot.id)}

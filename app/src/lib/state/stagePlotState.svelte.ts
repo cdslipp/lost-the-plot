@@ -334,6 +334,8 @@ export class StagePlotState {
 			(item.itemData as any)[property] = parseFloat(value);
 			if (property === 'riserWidth') item.position.width = feetToPixels(parseFloat(value));
 			else if (property === 'riserDepth') item.position.height = feetToPixels(parseFloat(value));
+		} else if (property === 'rotation') {
+			item.position.rotation = parseFloat(value) || 0;
 		} else if (property === 'person_id') {
 			item.person_id = value ? parseInt(value) : null;
 		} else {

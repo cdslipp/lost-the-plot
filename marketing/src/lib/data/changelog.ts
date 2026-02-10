@@ -10,7 +10,7 @@ export interface ChangelogEntry {
 export const changelog: ChangelogEntry[] = [
 	{
 		version: '0.1.0',
-		date: '2025-06-01',
+		date: '2026-02-07',
 		summary: 'Initial release',
 		added: [
 			'Drag-and-drop stage plot editor with zoned canvas',

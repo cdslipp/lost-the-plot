@@ -20,7 +20,7 @@
 
 	const TAB_MAP: Record<string, string[]> = {
 		Instruments: ['guitars', 'bass', 'keys', 'strings', 'winds', 'percussion', 'drums', 'amps'],
-		People: ['people'],
+		People: ['people', 'musicians'],
 		'Mics & Monitors': ['mics', 'monitors'],
 		Cables: ['power', 'connectors', 'snakes'],
 		Other: ['equipment', 'furniture', 'stagecraft'],
@@ -28,6 +28,8 @@
 	};
 
 	const TAB_NAMES = Object.keys(TAB_MAP);
+	const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.userAgent);
+	const modKey = isMac ? '⌘' : 'Ctrl+';
 
 	// Load items when the component is initialized
 	$effect(() => {
@@ -113,9 +115,22 @@
 	}
 
 	function handleKeydown(e: KeyboardEvent) {
+		if (!open) return;
 		if (e.key === 'Escape') {
 			open = false;
 			onclose?.();
+			return;
+		}
+		if (e.key === 'Tab') {
+			e.preventDefault();
+			const dir = e.shiftKey ? -1 : 1;
+			const idx = TAB_NAMES.indexOf(activeTab);
+			activeTab = TAB_NAMES[(idx + dir + TAB_NAMES.length) % TAB_NAMES.length];
+			return;
+		}
+		if ((e.ctrlKey || e.metaKey) && e.key >= '1' && e.key <= String(TAB_NAMES.length)) {
+			e.preventDefault();
+			activeTab = TAB_NAMES[parseInt(e.key) - 1];
 		}
 	}
 
@@ -144,21 +159,22 @@
 				columns={6}
 			>
 				<div class="border-b border-border-primary">
-					<div class="flex gap-1 overflow-x-auto px-4 pt-3 pb-2">
-						{#each TAB_NAMES as tab (tab)}
+					<div class="flex overflow-x-auto">
+						{#each TAB_NAMES as tab, i (tab)}
 							<button
 								type="button"
-								class="flex-shrink-0 rounded-full px-3 py-1 text-xs font-medium transition-colors {activeTab ===
+								class="flex-shrink-0 border-b-2 px-3 py-1.5 text-xs font-medium transition-colors {activeTab ===
 								tab
-									? 'bg-stone-900 text-stone-100 dark:bg-stone-100 dark:text-stone-900'
-									: 'bg-stone-100 text-stone-600 hover:bg-stone-200 dark:bg-stone-800 dark:text-stone-400 dark:hover:bg-stone-700'}"
+									? 'border-stone-900 bg-stone-100 text-stone-900 dark:border-stone-100 dark:bg-stone-800 dark:text-stone-100'
+									: 'border-transparent text-stone-500 hover:bg-stone-50 hover:text-stone-700 dark:text-stone-400 dark:hover:bg-stone-800/50 dark:hover:text-stone-300'}"
 								onclick={() => (activeTab = tab)}
 							>
-								{tab} ({tabCounts[tab] ?? 0})
+								{tab}
+								<span class="ml-1 text-[10px] opacity-50">[{modKey}{i + 1}]</span>
 							</button>
 						{/each}
 					</div>
-					<div class="px-4 pb-3">
+					<div class="mt-2 px-4 pb-3">
 						<Command.Input
 							bind:value={searchValue}
 							class="w-full bg-transparent text-lg outline-none placeholder:text-text-secondary"
@@ -245,6 +261,7 @@
 						<div class="flex items-center gap-4">
 							<span>↑↓ Navigate</span>
 							<span>↵ Select</span>
+							<span>Tab Switch tab</span>
 							<span>ESC Close</span>
 						</div>
 						<div>{filteredItems.length} items available</div>

@@ -66,6 +66,7 @@ export interface ItemPosition {
 	y: number;
 	width: number;
 	height: number;
+	rotation?: number;
 	zone?: string;
 	relativeX?: number;
 	relativeY?: number;

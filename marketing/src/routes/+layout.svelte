@@ -18,11 +18,11 @@
 	}
 
 	const navLinks = [
-		{ href: '/download', label: 'Download' },
+		{ href: '/how-it-works', label: 'How It Works' },
 		{ href: '/changelog', label: 'Changelog' },
 		{ href: '/gear-library', label: 'Gear Library' },
-		{ href: GITHUB_REPO, label: 'GitHub' },
-		{ href: GITHUB_SPONSORS_URL, label: 'Support' }
+		{ href: GITHUB_REPO, label: 'GitHub', external: true },
+		{ href: GITHUB_SPONSORS_URL, label: 'Support', external: true }
 	];
 </script>
 
@@ -47,6 +47,8 @@
 				{#each navLinks as link (link.href)}
 					<a
 						href={link.href}
+						target={link.external ? '_blank' : undefined}
+						rel={link.external ? 'noopener noreferrer' : undefined}
 						class="font-sans text-sm text-stone-500 transition hover:text-stone-800 dark:text-stone-400 dark:hover:text-stone-200"
 					>
 						{link.label}
@@ -153,6 +155,8 @@
 					{#each navLinks as link (link.href)}
 						<a
 							href={link.href}
+							target={link.external ? '_blank' : undefined}
+							rel={link.external ? 'noopener noreferrer' : undefined}
 							onclick={() => (mobileMenuOpen = false)}
 							class="font-sans text-sm text-stone-500 transition hover:text-stone-800 dark:text-stone-400 dark:hover:text-stone-200"
 						>
