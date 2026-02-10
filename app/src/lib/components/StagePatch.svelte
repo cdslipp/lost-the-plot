@@ -75,6 +75,12 @@
 	// Derive console definition from selected type
 	const consoleDef = $derived(consoleType ? (CONSOLES[consoleType] ?? null) : null);
 	const availableColors = $derived(consoleDef?.colors ?? []);
+	// O(1) color lookup by id instead of .find() per channel render
+	const colorById = $derived.by(() => {
+		const map = new Map<string, (typeof availableColors)[number]>();
+		for (const c of availableColors) map.set(c.id, c);
+		return map;
+	});
 
 	// State for loaded items
 	let allAvailableItems: ProcessedItem[] = $state([]);
@@ -254,16 +260,24 @@
 		}
 	});
 
-	// Filter items for a specific combobox based on search
+	// Simple memoization: cache filtered results so repeated calls with the
+	// same search string (e.g. from multiple channel comboboxes that are all
+	// empty) don't re-scan the entire catalog each time.
+	let _filterCache: { key: string; result: ProcessedItem[] } = { key: '\0', result: [] };
+
 	function getFilteredItems(searchValue: string) {
 		if (!searchValue) return allAvailableItems;
 
+		if (_filterCache.key === searchValue) return _filterCache.result;
+
 		const searchLower = searchValue.toLowerCase();
-		return allAvailableItems.filter(
+		const result = allAvailableItems.filter(
 			(item) =>
 				item.name.toLowerCase().includes(searchLower) ||
-				item.keywords.some((kw) => kw.toLowerCase().includes(searchLower))
+				item.keywords.some((kw) => kw.includes(searchLower))
 		);
+		_filterCache = { key: searchValue, result };
+		return result;
 	}
 
 	// Handle input item selection
@@ -290,7 +304,7 @@
 	function getChannelBadgeStyle(channelNum: number): string {
 		const colorId = channelColors[channelNum];
 		if (colorId && consoleDef) {
-			const color = consoleDef.colors.find((c) => c.id === colorId);
+			const color = colorById.get(colorId);
 			if (color) {
 				return `background-color: ${color.hex}; color: ${getContrastColor(color.hex)};`;
 			}

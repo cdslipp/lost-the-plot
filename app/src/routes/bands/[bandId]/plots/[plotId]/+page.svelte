@@ -132,16 +132,15 @@
 
 	function nudgeSelected(dx: number, dy: number) {
 		if (!selectedItemIds.length) return;
-		for (const id of selectedItemIds) {
-			const item = ps.items.find((i: any) => i.id === id);
-			if (!item) continue;
-			const newX = Math.max(0, Math.min(ps.stageWidth - item.position.width, item.position.x + dx));
-			const newY = Math.max(
+		// Use the already-derived selectedIdSet for O(1) lookups instead of
+		// doing items.find() per selected ID (which is O(selected * items))
+		for (const item of ps.items) {
+			if (!selectedIdSet.has(item.id)) continue;
+			item.position.x = Math.max(0, Math.min(ps.stageWidth - item.position.width, item.position.x + dx));
+			item.position.y = Math.max(
 				0,
 				Math.min(ps.stageDepth - item.position.height, item.position.y + dy)
 			);
-			item.position.x = newX;
-			item.position.y = newY;
 		}
 		ps.commitChange();
 	}
@@ -547,14 +546,10 @@
 		const isInSelection = selectedIdSet.has(item.id);
 		let group: Array<{ item: any; startX: number; startY: number }>;
 		if (isInSelection && selectedItemIds.length > 1) {
-			group = selectedItemIds
-				.map((id) => {
-					const groupItem = ps.items.find((i: any) => i.id === id);
-					return groupItem
-						? { item: groupItem, startX: groupItem.position.x, startY: groupItem.position.y }
-						: null;
-				})
-				.filter(Boolean) as Array<{ item: any; startX: number; startY: number }>;
+			// Single pass through items using the derived Set for O(1) membership checks
+			group = ps.items
+				.filter((i: any) => selectedIdSet.has(i.id))
+				.map((i: any) => ({ item: i, startX: i.position.x, startY: i.position.y }));
 		} else {
 			group = [{ item, startX: item.position.x, startY: item.position.y }];
 		}

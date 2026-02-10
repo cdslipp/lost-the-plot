@@ -175,6 +175,9 @@ export class StagePlotState {
 	async write() {
 		if (!db.isReady) return;
 		try {
+			// JSON.stringify already correctly serializes Svelte 5 $state proxies
+			// (it reads via getters), so we skip the expensive $state.snapshot()
+			// deep-clones that would be immediately discarded after serialization.
 			await upsertPlot(this.plotId, this.bandId, {
 				name: this.plotName,
 				revision_date: this.revisionDate,
@@ -182,11 +185,11 @@ export class StagePlotState {
 				canvas_height: Math.round((1100 * this.stageDepth) / this.stageWidth),
 				metadata: JSON.stringify({
 					coordVersion: 2,
-					items: $state.snapshot(this.items),
-					outputs: $state.snapshot(this.outputs),
-					outputStereoLinks: $state.snapshot(this.outputStereoLinks),
-					undoLog: $state.snapshot(this.history.log),
-					redoStack: $state.snapshot(this.history.redoStack)
+					items: this.items,
+					outputs: this.outputs,
+					outputStereoLinks: this.outputStereoLinks,
+					undoLog: this.history.log,
+					redoStack: this.history.redoStack
 				}),
 				stage_width: this.stageWidth,
 				stage_depth: this.stageDepth,

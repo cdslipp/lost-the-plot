@@ -61,19 +61,27 @@
 		if (activeTab === 'All') return items;
 		const categories = TAB_MAP[activeTab];
 		if (!categories) return items;
-		return items.filter((item) => categories.includes(item.category));
+		const catSet = new Set(categories);
+		return items.filter((item) => catSet.has(item.category));
+	});
+
+	// Build reverse lookup: category → tab name (single pass instead of O(tabs * items))
+	const categoryToTab = $derived.by(() => {
+		const map: Record<string, string> = {};
+		for (const [tab, categories] of Object.entries(TAB_MAP)) {
+			for (const cat of categories) map[cat] = tab;
+		}
+		return map;
 	});
 
 	const tabCounts = $derived.by(() => {
 		const counts: Record<string, number> = {};
-		for (const tab of TAB_NAMES) {
-			if (tab === 'All') {
-				counts[tab] = items.length;
-			} else {
-				const categories = TAB_MAP[tab];
-				counts[tab] = items.filter((item) => categories.includes(item.category)).length;
-			}
+		for (const tab of TAB_NAMES) counts[tab] = 0;
+		for (const item of items) {
+			const tab = categoryToTab[item.category];
+			if (tab) counts[tab]++;
 		}
+		counts['All'] = items.length;
 		return counts;
 	});
 

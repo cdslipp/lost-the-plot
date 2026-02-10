@@ -272,6 +272,12 @@ export function buildBandProject(
 		}
 	}
 
+	// Build a name→player lookup so placed_items mapping is O(1) instead of O(players) per item
+	const playerByName = new Map<string, (typeof players)[number]>();
+	for (const p of players) {
+		playerByName.set(p.person.name, p);
+	}
+
 	const plots = bandPlots.map((plot, plotIndex) => {
 		let meta: any = {};
 		if (plot.metadata) {
@@ -288,7 +294,7 @@ export function buildBandProject(
 
 		const placed_items = items.map((item: any, index: number) => {
 			registerItem(item);
-			const player = players.find((p) => p.person.name === item.musician);
+			const player = item.musician ? playerByName.get(item.musician) : undefined;
 			return {
 				item_id: itemIdMap.get(item.id) ?? `item-${item.id}`,
 				current_variant: item.currentVariant ?? 'default',
@@ -398,10 +404,28 @@ export async function exportAllBands(): Promise<void> {
 		 FROM stage_plots ORDER BY updated_at DESC`
 	);
 
+	// Group by band_id in a single pass instead of O(bands * (persons + plots)) filtering
+	const personsByBand = new Map<string, ExportPerson[]>();
+	for (const p of allPersons) {
+		let arr = personsByBand.get(p.band_id);
+		if (!arr) {
+			arr = [];
+			personsByBand.set(p.band_id, arr);
+		}
+		arr.push(p);
+	}
+	const plotsByBand = new Map<string, ExportPlot[]>();
+	for (const plot of allPlots) {
+		let arr = plotsByBand.get(plot.band_id);
+		if (!arr) {
+			arr = [];
+			plotsByBand.set(plot.band_id, arr);
+		}
+		arr.push(plot);
+	}
+
 	const projects = allBands.map((band) => {
-		const bandPersons = allPersons.filter((p) => p.band_id === band.id);
-		const bandPlots = allPlots.filter((plot) => plot.band_id === band.id);
-		return buildBandProject(band, bandPersons, bandPlots);
+		return buildBandProject(band, personsByBand.get(band.id) ?? [], plotsByBand.get(band.id) ?? []);
 	});
 
 	const bundle = {
