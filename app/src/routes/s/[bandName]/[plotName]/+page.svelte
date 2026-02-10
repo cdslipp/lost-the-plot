@@ -427,10 +427,15 @@
 							</div>
 						</div>
 					{/if}
-				<!-- Promo links -->
+					<!-- Promo links -->
 					<div class="mt-auto border-t border-border-primary pt-4 text-center">
 						<p class="mb-2 text-xs text-text-tertiary">
-							Made with <a href={MARKETING_URL} class="font-medium text-text-secondary underline hover:text-text-primary" target="_blank" rel="noopener noreferrer">Lost the Plot</a>
+							Made with <a
+								href={MARKETING_URL}
+								class="font-medium text-text-secondary underline hover:text-text-primary"
+								target="_blank"
+								rel="noopener noreferrer">Lost the Plot</a
+							>
 						</p>
 						<a
 							href={APP_URL}

@@ -34,8 +34,8 @@ a.download = `${filename}.pdf`;
 document.body.appendChild(a);
 a.click();
 setTimeout(() => {
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+	document.body.removeChild(a);
+	URL.revokeObjectURL(url);
 }, 100);
 ```
 

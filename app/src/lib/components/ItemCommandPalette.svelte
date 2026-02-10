@@ -15,6 +15,19 @@
 	let allItems = $state<Item[]>([]);
 	let loading = $state(true);
 	let error = $state<string | null>(null);
+	let searchValue = $state('');
+	let activeTab = $state('Instruments');
+
+	const TAB_MAP: Record<string, string[]> = {
+		Instruments: ['guitars', 'bass', 'keys', 'strings', 'winds', 'percussion', 'drums', 'amps'],
+		People: ['people'],
+		'Mics & Monitors': ['mics', 'monitors'],
+		Cables: ['power', 'connectors', 'snakes'],
+		Other: ['equipment', 'furniture', 'stagecraft'],
+		All: []
+	};
+
+	const TAB_NAMES = Object.keys(TAB_MAP);
 
 	// Load items when the component is initialized
 	$effect(() => {
@@ -42,8 +55,28 @@
 		})
 	);
 
+	const filteredItems = $derived.by(() => {
+		if (activeTab === 'All') return items;
+		const categories = TAB_MAP[activeTab];
+		if (!categories) return items;
+		return items.filter((item) => categories.includes(item.category));
+	});
+
+	const tabCounts = $derived.by(() => {
+		const counts: Record<string, number> = {};
+		for (const tab of TAB_NAMES) {
+			if (tab === 'All') {
+				counts[tab] = items.length;
+			} else {
+				const categories = TAB_MAP[tab];
+				counts[tab] = items.filter((item) => categories.includes(item.category)).length;
+			}
+		}
+		return counts;
+	});
+
 	const groupedItems = $derived.by(() => {
-		const groups = items.reduce(
+		const groups = filteredItems.reduce(
 			(acc, item) => {
 				if (!acc[item.category]) {
 					acc[item.category] = [];
@@ -60,17 +93,18 @@
 		}));
 	});
 
-	function customFilter(value: string, search: string, keywords?: string[]): number {
+	function fuzzyFilter(value: string, search: string, keywords?: string[]): number {
 		if (!search.trim()) return 1;
-		const searchLower = search.toLowerCase();
-		const valueLower = value.toLowerCase();
-		if (valueLower.includes(searchLower)) return 1;
-		if (keywords) {
-			for (const keyword of keywords) {
-				if (keyword.toLowerCase().includes(searchLower)) return 1;
-			}
+		const searchLower = search.toLowerCase().replace(/\s+/g, '');
+		const target = (keywords ? `${value} ${keywords.join(' ')}` : value).toLowerCase();
+		// Subsequence match: all search chars must appear in order
+		let j = 0;
+		for (let i = 0; i < target.length && j < searchLower.length; i++) {
+			if (target[i] === searchLower[j]) j++;
 		}
-		return 0;
+		if (j < searchLower.length) return 0;
+		// Tighter matches (shorter value relative to search) score higher
+		return searchLower.length / target.length;
 	}
 
 	function handleSelect(item: Item) {
@@ -95,30 +129,47 @@
 
 {#if open}
 	<div class="fixed inset-0 z-50 flex items-center justify-center">
+		<!-- svelte-ignore a11y_no_static_element_interactions -->
 		<div
 			class="absolute inset-0 bg-black/50 backdrop-blur-sm"
-			role="button"
-			aria-label="Close dialog"
 			onclick={handleBackdropClick}
+			onkeydown={(e) => e.key === 'Enter' && handleBackdropClick()}
 		></div>
 		<div class="relative mx-4 max-h-[80vh] w-[min(800px,95vw)]">
 			<Command.Root
 				class="flex flex-col overflow-hidden rounded-xl border border-border-primary bg-surface shadow-2xl"
 				shouldFilter={true}
-				filter={customFilter}
+				filter={fuzzyFilter}
 				loop={true}
 				columns={6}
 			>
-				<div class="border-b border-border-primary px-4 py-3">
-					<Command.Input
-						class="w-full bg-transparent text-lg outline-none placeholder:text-text-secondary"
-						placeholder="Search for stage items..."
-						autofocus
-					/>
+				<div class="border-b border-border-primary">
+					<div class="flex gap-1 overflow-x-auto px-4 pt-3 pb-2">
+						{#each TAB_NAMES as tab (tab)}
+							<button
+								type="button"
+								class="flex-shrink-0 rounded-full px-3 py-1 text-xs font-medium transition-colors {activeTab ===
+								tab
+									? 'bg-stone-900 text-stone-100 dark:bg-stone-100 dark:text-stone-900'
+									: 'bg-stone-100 text-stone-600 hover:bg-stone-200 dark:bg-stone-800 dark:text-stone-400 dark:hover:bg-stone-700'}"
+								onclick={() => (activeTab = tab)}
+							>
+								{tab} ({tabCounts[tab] ?? 0})
+							</button>
+						{/each}
+					</div>
+					<div class="px-4 pb-3">
+						<Command.Input
+							bind:value={searchValue}
+							class="w-full bg-transparent text-lg outline-none placeholder:text-text-secondary"
+							placeholder="Search for stage items..."
+							autofocus
+						/>
+					</div>
 				</div>
 
 				<Command.List class="flex-1 overflow-hidden">
-					<Command.Viewport class="max-h-[60vh] overflow-y-auto p-2">
+					<Command.Viewport class="h-[60vh] overflow-y-auto p-2">
 						{#if loading}
 							<div class="py-8 text-center text-text-secondary">
 								<div class="flex flex-col items-center gap-2">
@@ -157,7 +208,7 @@
 										{#each group.items as item (item.id)}
 											<Command.Item
 												value={`${item.name} ${item.id} ${item.keywords.join(' ')}`}
-												class="flex aspect-square cursor-pointer flex-col items-center gap-2 rounded-lg px-2 py-3 transition-colors hover:bg-muted data-[selected]:bg-muted"
+												class="flex cursor-pointer flex-col items-center gap-2 rounded-lg px-2 py-3 transition-colors hover:bg-muted data-[selected]:bg-muted"
 												onSelect={() => handleSelect(item)}
 											>
 												<div
@@ -173,7 +224,7 @@
 													/>
 												</div>
 												<div class="min-w-0 flex-1 text-center">
-													<div class="truncate text-xs font-medium text-text-primary">
+													<div class="line-clamp-2 text-xs font-medium text-text-primary">
 														{item.name}
 													</div>
 													{#if item.type === 'input'}
@@ -196,7 +247,7 @@
 							<span>↵ Select</span>
 							<span>ESC Close</span>
 						</div>
-						<div>{items.length} items available</div>
+						<div>{filteredItems.length} items available</div>
 					</div>
 				</div>
 			</Command.Root>

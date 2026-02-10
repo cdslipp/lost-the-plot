@@ -204,17 +204,14 @@
 					{:else}
 						<img
 							src={getCurrentImageSrc(selectedItemsData[0])}
-							alt={selectedItemsData[0].itemData?.name ||
-								selectedItemsData[0].name ||
-								'Stage Item'}
+							alt={selectedItemsData[0].itemData?.name || selectedItemsData[0].name || 'Stage Item'}
 							class="max-h-32 max-w-full object-contain"
 						/>
 					{/if}
 				</div>
 				{#if hasVariants}
 					<button
-						onclick={() =>
-							(variantsOpenForId = showVariants ? null : selectedItemsData[0].id)}
+						onclick={() => (variantsOpenForId = showVariants ? null : selectedItemsData[0].id)}
 						class="w-full rounded-md border border-border-primary px-2 py-1 text-xs text-text-secondary transition hover:border-stone-400 hover:text-text-primary"
 					>
 						{#if showVariants}
