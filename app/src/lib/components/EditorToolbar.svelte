@@ -59,13 +59,19 @@
 	}
 
 	function handleExportScn() {
-		const channels: ScnChannelData[] = ps.items
-			.filter((item: any) => item.channel)
-			.map((item: any) => ({
-				channel: parseInt(item.channel),
-				name: item.name || '',
-				colorId: ps.channelColors?.[parseInt(item.channel)]
-			}));
+		const channels: ScnChannelData[] = [];
+		for (const ch of ps.inputChannels) {
+			if (ch.itemId != null) {
+				const item = ps.itemByChannel.get(ch.channelNum);
+				if (item) {
+					channels.push({
+						channel: ch.channelNum,
+						name: item.name || '',
+						colorId: ch.color ?? undefined
+					});
+				}
+			}
+		}
 
 		const scnContent = generateX32Scn({
 			sceneName: ps.plotName || 'Untitled',
@@ -97,7 +103,10 @@
 				{
 					stageWidth: ps.stageWidth,
 					stageDepth: ps.stageDepth,
-					items: ps.items as any[],
+					items: ps.items.map((item) => ({
+						...item,
+						channel: String(ps.channelByItemId.get(item.id) ?? '')
+					})) as any[],
 					musicians,
 					persons: ps.bandPersonsFull.map((p) => ({
 						name: p.name,

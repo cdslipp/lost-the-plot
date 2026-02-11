@@ -5,7 +5,7 @@
 // SQLite is the source of truth -- this class is a reactive cache with write-through.
 
 import { db } from '$lib/db';
-import { PlotHistory } from '$lib/utils/plotHistory.svelte';
+import { PlotHistory, type PlotSnapshot } from '$lib/utils/plotHistory.svelte';
 import { imagePxToFeet, type UnitSystem } from '$lib/utils/scale';
 import {
 	getItemZone as _getItemZone,
@@ -24,6 +24,8 @@ import {
 	type ColorCategory,
 	type StagePlotItem as SharedStagePlotItem,
 	type PlotOutputItem as SharedPlotOutputItem,
+	type InputChannel,
+	type OutputChannel,
 	type ChannelMode
 } from '@stageplotter/shared';
 import { upsertPlot } from '$lib/db/repositories/plots';
@@ -73,9 +75,12 @@ export class StagePlotState {
 	stageWidth = $state(24);
 	stageDepth = $state(16);
 
+	// Channel arrays — source of truth for channel assignments
+	inputChannels = $state<InputChannel[]>([]);
+	outputChannels = $state<OutputChannel[]>([]);
+
 	// Console integration (persisted)
 	consoleType = $state<string | null>(null);
-	channelColors = $state<Record<number, string>>({});
 	stereoLinks = $state<number[]>([]);
 	outputStereoLinks = $state<number[]>([]);
 	categoryColorDefaults = $state<Record<string, string>>({});
@@ -95,14 +100,65 @@ export class StagePlotState {
 	pdfPageFormat = $state<'letter' | 'a4'>('letter');
 	unit = $state<UnitSystem>('imperial');
 
-	// Channel mode
+	// Channel mode (derived from array lengths, with sensible defaults before load)
 	static readonly CHANNEL_OPTIONS: ChannelMode[] = [8, 16, 24, 32, 48];
-	inputChannelMode = $state<ChannelMode>(48);
-	outputChannelMode = $state<ChannelMode>(16);
+	inputChannelMode = $derived((this.inputChannels.length || 48) as ChannelMode);
+	outputChannelMode = $derived((this.outputChannels.length || 16) as ChannelMode);
 
 	// Console derived
 	consoleDef = $derived(this.consoleType ? (CONSOLES[this.consoleType] ?? null) : null);
 	consoleOptions = $derived(getConsoleIds().map((id) => ({ id, name: CONSOLES[id].name })));
+
+	// Channel-derived lookups (O(1) both directions)
+	channelColors = $derived.by(() => {
+		const colors: Record<number, string> = {};
+		for (const ch of this.inputChannels) {
+			if (ch.color) colors[ch.channelNum] = ch.color;
+		}
+		return colors;
+	});
+
+	itemByChannel = $derived.by(() => {
+		const itemMap = new Map<number, StagePlotItem>();
+		for (const item of this.items) itemMap.set(item.id, item);
+		const result = new Map<number, StagePlotItem>();
+		for (const ch of this.inputChannels) {
+			if (ch.itemId != null) {
+				const item = itemMap.get(ch.itemId);
+				if (item) result.set(ch.channelNum, item);
+			}
+		}
+		return result;
+	});
+
+	channelByItemId = $derived.by(() => {
+		const map = new Map<number, number>();
+		for (const ch of this.inputChannels) {
+			if (ch.itemId != null) map.set(ch.itemId, ch.channelNum);
+		}
+		return map;
+	});
+
+	outputByChannel = $derived.by(() => {
+		const outputMap = new Map<number, PlotOutputItem>();
+		for (const o of this.outputs) outputMap.set(o.id, o);
+		const result = new Map<number, PlotOutputItem>();
+		for (const ch of this.outputChannels) {
+			if (ch.outputId != null) {
+				const output = outputMap.get(ch.outputId);
+				if (output) result.set(ch.channelNum, output);
+			}
+		}
+		return result;
+	});
+
+	channelByOutputId = $derived.by(() => {
+		const map = new Map<number, number>();
+		for (const ch of this.outputChannels) {
+			if (ch.outputId != null) map.set(ch.outputId, ch.channelNum);
+		}
+		return map;
+	});
 
 	// Derived
 	personsById = $derived(
@@ -122,7 +178,11 @@ export class StagePlotState {
 	constructor(plotId: string, bandId: string) {
 		this.plotId = plotId;
 		this.bandId = bandId;
-		this.history = new PlotHistory(this.items, () => this.debouncedWrite());
+		this.history = new PlotHistory(
+			() => this.getSnapshot(),
+			(s) => this.applySnapshot(s),
+			() => this.debouncedWrite()
+		);
 
 		// Load unit preference from localStorage
 		if (typeof window !== 'undefined') {
@@ -170,6 +230,24 @@ export class StagePlotState {
 		});
 	}
 
+	// --- Snapshot helpers for undo/redo ---
+
+	private getSnapshot(): PlotSnapshot {
+		return $state.snapshot({
+			items: this.items,
+			inputChannels: this.inputChannels,
+			outputChannels: this.outputChannels,
+			outputs: this.outputs
+		}) as PlotSnapshot;
+	}
+
+	private applySnapshot(s: PlotSnapshot) {
+		this.items = s.items;
+		this.inputChannels = s.inputChannels;
+		this.outputChannels = s.outputChannels;
+		this.outputs = s.outputs;
+	}
+
 	// --- Persistence ---
 
 	async write() {
@@ -182,11 +260,13 @@ export class StagePlotState {
 				canvas_height: Math.round((1100 * this.stageDepth) / this.stageWidth),
 				metadata: JSON.stringify({
 					coordVersion: 2,
-					items: $state.snapshot(this.items),
-					outputs: $state.snapshot(this.outputs),
-					outputStereoLinks: $state.snapshot(this.outputStereoLinks),
-					undoLog: $state.snapshot(this.history.log),
-					redoStack: $state.snapshot(this.history.redoStack)
+					items: this.items,
+					outputs: this.outputs,
+					inputChannels: this.inputChannels,
+					outputChannels: this.outputChannels,
+					outputStereoLinks: this.outputStereoLinks,
+					undoLog: this.history.log,
+					redoStack: this.history.redoStack
 				}),
 				stage_width: this.stageWidth,
 				stage_depth: this.stageDepth,
@@ -218,7 +298,74 @@ export class StagePlotState {
 	}
 
 	commitChange() {
-		this.history.record($state.snapshot(this.items) as any[]);
+		this.history.record();
+		this.debouncedWrite();
+	}
+
+	// --- Channel helpers ---
+
+	private buildInputChannels(count: number): InputChannel[] {
+		return Array.from({ length: count }, (_, i) => ({
+			channelNum: i + 1,
+			itemId: null,
+			color: null
+		}));
+	}
+
+	private buildOutputChannels(count: number): OutputChannel[] {
+		return Array.from({ length: count }, (_, i) => ({
+			channelNum: i + 1,
+			outputId: null
+		}));
+	}
+
+	assignItemToChannel(itemId: number, channelNum: number) {
+		// Clear any previous assignment for this item
+		for (const ch of this.inputChannels) {
+			if (ch.itemId === itemId) {
+				ch.itemId = null;
+				ch.color = null;
+			}
+		}
+		// Assign to new channel
+		const idx = channelNum - 1;
+		if (idx >= 0 && idx < this.inputChannels.length) {
+			this.inputChannels[idx].itemId = itemId;
+		}
+	}
+
+	unassignChannel(channelNum: number) {
+		const idx = channelNum - 1;
+		if (idx >= 0 && idx < this.inputChannels.length) {
+			this.inputChannels[idx].itemId = null;
+			this.inputChannels[idx].color = null;
+		}
+	}
+
+	setInputChannelMode(newMode: ChannelMode) {
+		const current = this.inputChannels.length;
+		if (newMode === current) return;
+		if (newMode > current) {
+			for (let i = current + 1; i <= newMode; i++) {
+				this.inputChannels.push({ channelNum: i, itemId: null, color: null });
+			}
+		} else {
+			this.inputChannels = this.inputChannels.slice(0, newMode);
+		}
+		this.debouncedWrite();
+	}
+
+	setOutputChannelMode(newMode: ChannelMode) {
+		const current = this.outputChannels.length;
+		if (newMode === current) return;
+		if (newMode > current) {
+			for (let i = current + 1; i <= newMode; i++) {
+				this.outputChannels.push({ channelNum: i, outputId: null });
+			}
+		} else {
+			this.outputStereoLinks = this.outputStereoLinks.filter((ch) => ch < newMode);
+			this.outputChannels = this.outputChannels.slice(0, newMode);
+		}
 		this.debouncedWrite();
 	}
 
@@ -236,11 +383,6 @@ export class StagePlotState {
 		this.consoleType = row.console_type ?? null;
 
 		// Parse JSON fields
-		try {
-			this.channelColors = JSON.parse(row.channel_colors || '{}');
-		} catch {
-			this.channelColors = {};
-		}
 		try {
 			this.stereoLinks = JSON.parse(row.stereo_links || '[]');
 		} catch {
@@ -268,6 +410,52 @@ export class StagePlotState {
 		this.items = Array.isArray(meta.items) ? meta.items : [];
 		this.outputs = Array.isArray(meta.outputs) ? meta.outputs : [];
 		this.outputStereoLinks = Array.isArray(meta.outputStereoLinks) ? meta.outputStereoLinks : [];
+
+		// --- Channel migration ---
+		if (Array.isArray(meta.inputChannels)) {
+			// New format: load channel arrays directly
+			this.inputChannels = meta.inputChannels;
+			this.outputChannels = Array.isArray(meta.outputChannels)
+				? meta.outputChannels
+				: this.buildOutputChannels(16);
+		} else {
+			// Old format: build channel arrays from item.channel values
+			let oldChannelColors: Record<string, string> = {};
+			try {
+				oldChannelColors = JSON.parse(row.channel_colors || '{}');
+			} catch {
+				oldChannelColors = {};
+			}
+
+			this.inputChannels = this.buildInputChannels(48);
+			this.outputChannels = this.buildOutputChannels(16);
+
+			// Migrate items' channel assignments into inputChannels
+			for (const item of this.items) {
+				if (item.channel) {
+					const chNum = parseInt(item.channel);
+					if (chNum >= 1 && chNum <= this.inputChannels.length) {
+						this.inputChannels[chNum - 1].itemId = item.id;
+						const colorId = oldChannelColors[String(chNum)];
+						if (colorId) {
+							this.inputChannels[chNum - 1].color = colorId;
+						}
+					}
+					delete item.channel;
+				}
+			}
+
+			// Migrate outputs' channel assignments into outputChannels
+			for (const output of this.outputs) {
+				if (output.channel) {
+					const chNum = parseInt(output.channel);
+					if (chNum >= 1 && chNum <= this.outputChannels.length) {
+						this.outputChannels[chNum - 1].outputId = output.id;
+					}
+					delete output.channel;
+				}
+			}
+		}
 
 		// --- V1→V2 migration: convert pixel positions to feet ---
 		if (!meta.coordVersion || meta.coordVersion < 2) {
@@ -318,12 +506,27 @@ export class StagePlotState {
 	deleteItem(id: number) {
 		const idx = this.items.findIndex((i) => i.id === id);
 		if (idx >= 0) {
+			// Clear channel assignment for this item
+			for (const ch of this.inputChannels) {
+				if (ch.itemId === id) {
+					ch.itemId = null;
+					ch.color = null;
+				}
+			}
 			this.items.splice(idx, 1);
 			this.commitChange();
 		}
 	}
 
 	deleteItems(ids: Set<string>) {
+		const numericIds = new Set([...ids].map(Number));
+		// Clear channel assignments for deleted items
+		for (const ch of this.inputChannels) {
+			if (ch.itemId != null && numericIds.has(ch.itemId)) {
+				ch.itemId = null;
+				ch.color = null;
+			}
+		}
 		this.items = this.items.filter((i) => !ids.has(String(i.id)));
 		this.commitChange();
 	}
@@ -335,6 +538,8 @@ export class StagePlotState {
 			id: maxId + 1,
 			...overrides
 		};
+		// Duplicates are unpatched by default
+		delete clone.channel;
 		this.items.push(clone);
 		this.commitChange();
 		return clone;
@@ -353,6 +558,20 @@ export class StagePlotState {
 			item.position.rotation = parseFloat(value) || 0;
 		} else if (property === 'person_id') {
 			item.person_id = value ? parseInt(value) : null;
+		} else if (property === 'channel') {
+			// Channel assignment goes through the channel arrays
+			const newCh = value ? parseInt(value) : null;
+			// Clear any current assignment for this item
+			for (const ch of this.inputChannels) {
+				if (ch.itemId === itemId) {
+					ch.itemId = null;
+					ch.color = null;
+				}
+			}
+			// Assign to new channel
+			if (newCh != null && newCh >= 1 && newCh <= this.inputChannels.length) {
+				this.inputChannels[newCh - 1].itemId = itemId;
+			}
 		} else {
 			(item as any)[property] = value;
 		}
@@ -434,70 +653,87 @@ export class StagePlotState {
 		this.commitChange();
 	}
 
-	getNextAvailableChannel(): number {
-		const used = new Set(this.items.filter((i) => i.channel).map((i) => parseInt(i.channel)));
-		let ch = 1;
-		while (used.has(ch)) ch++;
-		return ch;
-	}
-
-	getUsedOutputChannels(): Set<number> {
-		return new Set(this.outputs.filter((o) => o.channel).map((o) => parseInt(o.channel)));
+	getNextAvailableChannel(): number | null {
+		for (const ch of this.inputChannels) {
+			if (ch.itemId == null) return ch.channelNum;
+		}
+		return null;
 	}
 
 	getNextAvailableOutputChannel(start = 1): number | null {
-		const used = this.getUsedOutputChannels();
-		for (let ch = start; ch <= this.outputChannelMode; ch++) {
-			if (!used.has(ch)) return ch;
+		for (let i = start - 1; i < this.outputChannels.length; i++) {
+			if (this.outputChannels[i].outputId == null) return this.outputChannels[i].channelNum;
 		}
 		return null;
 	}
 
 	getNextAvailableOutputStereoStart(): number | null {
-		const used = this.getUsedOutputChannels();
-		for (let ch = 1; ch < this.outputChannelMode; ch++) {
-			if (ch % 2 === 0) continue;
-			if (!used.has(ch) && !used.has(ch + 1)) return ch;
+		for (let i = 0; i < this.outputChannels.length - 1; i++) {
+			const ch = this.outputChannels[i].channelNum;
+			if (ch % 2 === 0) continue; // skip even channels — stereo pairs start on odd
+			if (this.outputChannels[i].outputId == null && this.outputChannels[i + 1].outputId == null) {
+				return ch;
+			}
 		}
 		return null;
 	}
 
 	removePatchItem(channel: number) {
-		this.items = this.items.filter((i) => i.channel !== String(channel));
+		this.unassignChannel(channel);
 		this.commitChange();
 	}
 
 	clearAllPatch() {
+		for (const ch of this.inputChannels) {
+			ch.itemId = null;
+			ch.color = null;
+		}
 		for (const item of this.items) {
-			item.channel = '';
 			item.person_id = null;
 		}
 		this.commitChange();
 	}
 
-	/** Remove items on this channel and auto-apply category color when console is set */
+	/** Clear channel assignment and auto-apply category color when console is set */
 	preparePatchChannel(channel: number, itemData: any) {
-		this.items = this.items.filter((i) => i.channel !== String(channel));
+		this.unassignChannel(channel);
 		if (this.consoleType && itemData?.category) {
 			const colorCat = CATALOG_TO_COLOR_CATEGORY[itemData.category] as ColorCategory | undefined;
 			if (colorCat && this.categoryColorDefaults[colorCat]) {
-				this.channelColors = {
-					...this.channelColors,
-					[channel]: this.categoryColorDefaults[colorCat]
-				};
-				this.debouncedWrite();
+				const idx = channel - 1;
+				if (idx >= 0 && idx < this.inputChannels.length) {
+					this.inputChannels[idx].color = this.categoryColorDefaults[colorCat];
+				}
 			}
 		}
 	}
 
 	setOutput(channel: number, item: PlotOutputItem) {
-		this.outputs = this.outputs.filter((o) => o.channel !== String(channel));
-		this.outputs.push(item);
+		// Remove any previous output on this channel
+		const idx = channel - 1;
+		if (idx >= 0 && idx < this.outputChannels.length) {
+			const prevId = this.outputChannels[idx].outputId;
+			if (prevId != null) {
+				this.outputs = this.outputs.filter((o) => o.id !== prevId);
+			}
+			this.outputChannels[idx].outputId = item.id;
+		}
+		// Add the output item if not already present
+		if (!this.outputs.some((o) => o.id === item.id)) {
+			this.outputs.push(item);
+		}
 		this.debouncedWrite();
 	}
 
 	removeOutput(channel: number) {
-		this.outputs = this.outputs.filter((o) => o.channel !== String(channel));
+		const idx = channel - 1;
+		if (idx >= 0 && idx < this.outputChannels.length) {
+			const prevId = this.outputChannels[idx].outputId;
+			if (prevId != null) {
+				this.outputs = this.outputs.filter((o) => o.id !== prevId);
+			}
+			this.outputChannels[idx].outputId = null;
+		}
 		this.debouncedWrite();
 	}
 
@@ -552,39 +788,38 @@ export class StagePlotState {
 			if (linkMode === 'stereo_pair') {
 				const start = this.getNextAvailableOutputStereoStart();
 				if (start == null) return;
-				this.outputs = this.outputs.filter(
-					(o) => o.channel !== String(start) && o.channel !== String(start + 1)
-				);
+				const leftId = Date.now() + idx * 2;
+				const rightId = Date.now() + idx * 2 + 1;
 				this.outputs.push(
 					{
-						id: Date.now() + idx * 2,
+						id: leftId,
 						name: `${baseName} L`,
-						channel: String(start),
 						itemData,
 						link_mode: 'stereo_pair'
 					},
 					{
-						id: Date.now() + idx * 2 + 1,
+						id: rightId,
 						name: `${baseName} R`,
-						channel: String(start + 1),
 						itemData,
 						link_mode: 'stereo_pair'
 					}
 				);
+				this.outputChannels[start - 1].outputId = leftId;
+				this.outputChannels[start].outputId = rightId;
 				this.outputStereoLinks = Array.from(new Set([...this.outputStereoLinks, start])).sort(
 					(a, b) => a - b
 				);
 			} else {
 				const ch = this.getNextAvailableOutputChannel();
 				if (ch == null) return;
-				this.outputs = this.outputs.filter((o) => o.channel !== String(ch));
+				const id = Date.now() + idx;
 				this.outputs.push({
-					id: Date.now() + idx,
+					id,
 					name: baseName,
-					channel: String(ch),
 					itemData,
 					link_mode: linkMode
 				});
+				this.outputChannels[ch - 1].outputId = id;
 			}
 		});
 		this.debouncedWrite();
@@ -601,19 +836,22 @@ export class StagePlotState {
 		const def = newType ? (CONSOLES[newType] ?? null) : null;
 		if (def) {
 			const maxIn = def.inputChannels as ChannelMode;
-			if (StagePlotState.CHANNEL_OPTIONS.includes(maxIn) && this.inputChannelMode > maxIn) {
-				this.inputChannelMode = maxIn;
+			if (StagePlotState.CHANNEL_OPTIONS.includes(maxIn) && this.inputChannels.length > maxIn) {
+				this.setInputChannelMode(maxIn);
 			}
 			const maxOut = def.outputBuses as ChannelMode;
-			if (StagePlotState.CHANNEL_OPTIONS.includes(maxOut) && this.outputChannelMode > maxOut) {
-				this.outputChannelMode = maxOut;
+			if (StagePlotState.CHANNEL_OPTIONS.includes(maxOut) && this.outputChannels.length > maxOut) {
+				this.setOutputChannelMode(maxOut);
 			}
 		}
 		this.debouncedWrite();
 	}
 
 	setChannelColor(ch: number, colorId: string) {
-		this.channelColors = { ...this.channelColors, [ch]: colorId };
+		const idx = ch - 1;
+		if (idx >= 0 && idx < this.inputChannels.length) {
+			this.inputChannels[idx].color = colorId;
+		}
 		this.debouncedWrite();
 	}
 

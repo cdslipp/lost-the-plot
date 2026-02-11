@@ -19,9 +19,10 @@
 		itemCount: number;
 	} = $props();
 
-	function getZones(sw: number, sd: number) {
-		const colWidth = sw / 3;
-		const rowHeight = sd / 2;
+	// Compute zones once per dimension change (not twice in the template)
+	const zones = $derived.by(() => {
+		const colWidth = stageWidth / 3;
+		const rowHeight = stageDepth / 2;
 		return [
 			{ key: 'DSR', x: 0, y: rowHeight, w: colWidth, h: rowHeight },
 			{ key: 'DSC', x: colWidth, y: rowHeight, w: colWidth, h: rowHeight },
@@ -30,7 +31,7 @@
 			{ key: 'USC', x: colWidth, y: 0, w: colWidth, h: rowHeight },
 			{ key: 'USL', x: colWidth * 2, y: 0, w: colWidth, h: rowHeight }
 		];
-	}
+	});
 </script>
 
 <div
@@ -40,14 +41,14 @@
 <!-- Zone guidelines -->
 {#if showZones}
 	{#key stageWidth + ':' + stageDepth + ':' + pxPerFoot}
-		{#each getZones(stageWidth, stageDepth) as z}
+		{#each zones as z}
 			<div
 				class="pointer-events-none absolute"
 				style="left:{z.x * pxPerFoot}px; top:{z.y * pxPerFoot}px; width:{z.w *
 					pxPerFoot}px; height:{z.h * pxPerFoot}px; border: 1px dashed rgba(0,0,0,0.08);"
 			></div>
 		{/each}
-		{#each getZones(stageWidth, stageDepth) as z}
+		{#each zones as z}
 			<div
 				class="absolute text-[10px] tracking-wide text-black/25 uppercase dark:text-white/25"
 				style="left:{(z.x + z.w / 2) * pxPerFoot - 12}px; top:{z.key.startsWith('DS')

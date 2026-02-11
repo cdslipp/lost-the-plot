@@ -1,7 +1,11 @@
 <script lang="ts">
 	import './layout.css';
-	import { APP_NAME, GITHUB_REPO, GITHUB_SPONSORS_URL } from '$lib/config';
+	import { APP_NAME, GITHUB_REPO } from '$lib/config';
 	import { onMount } from 'svelte';
+
+	const faviconEmojis = ['🎸', '🥁', '🎹', '🎷', '🎺', '🎻', '🪗', '🎤'];
+	const faviconEmoji = faviconEmojis[Math.floor(Math.random() * faviconEmojis.length)];
+	const favicon = `data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>${faviconEmoji}</text></svg>`;
 
 	let { children } = $props();
 	let isDark = $state(true);
@@ -21,12 +25,12 @@
 		{ href: '/how-it-works', label: 'How It Works' },
 		{ href: '/changelog', label: 'Changelog' },
 		{ href: '/gear-library', label: 'Gear Library' },
-		{ href: GITHUB_REPO, label: 'GitHub', external: true },
-		{ href: GITHUB_SPONSORS_URL, label: 'Support', external: true }
+		{ href: GITHUB_REPO, label: 'GitHub', external: true }
 	];
 </script>
 
 <svelte:head>
+	<link rel="icon" href={favicon} />
 	<title>{APP_NAME} - Stage Plots Done Fast</title>
 	<meta
 		name="description"

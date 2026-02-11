@@ -47,19 +47,35 @@ export interface ProcessedItem {
 
 /**
  * Load all items from the consolidated items.json file.
+ * Results are cached after the first successful fetch so multiple
+ * callers (command palette, patch list, etc.) don't re-download and
+ * re-parse the same JSON.
  */
+let _cachedAssets: ProcessedItem[] | null = null;
+let _pendingLoad: Promise<ProcessedItem[]> | null = null;
+
 export async function loadFinalAssets(): Promise<ProcessedItem[]> {
-	try {
-		const response = await fetch(`/final_assets/items.json`);
-		if (!response.ok) {
-			throw new Error(`HTTP error! status: ${response.status}`);
+	if (_cachedAssets) return _cachedAssets;
+	if (_pendingLoad) return _pendingLoad;
+
+	_pendingLoad = (async () => {
+		try {
+			const response = await fetch(`/final_assets/items.json`);
+			if (!response.ok) {
+				throw new Error(`HTTP error! status: ${response.status}`);
+			}
+			const itemsData: FinalAssetItem[] = await response.json();
+			_cachedAssets = itemsData.map(processItem).filter(Boolean) as ProcessedItem[];
+			return _cachedAssets;
+		} catch (error) {
+			console.error('Error loading final assets:', error);
+			return [];
+		} finally {
+			_pendingLoad = null;
 		}
-		const itemsData: FinalAssetItem[] = await response.json();
-		return itemsData.map(processItem).filter(Boolean) as ProcessedItem[];
-	} catch (error) {
-		console.error('Error loading final assets:', error);
-		return [];
-	}
+	})();
+
+	return _pendingLoad;
 }
 
 function processItem(itemData: FinalAssetItem): ProcessedItem | null {

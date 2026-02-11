@@ -66,7 +66,7 @@
 	}
 </script>
 
-<div class="flex h-full flex-col">
+<div class="flex h-full flex-col overflow-y-auto">
 	{#if selectedItemsData.length === 0}
 		<!-- Plot overview when nothing selected -->
 		<div class="space-y-4">
@@ -86,13 +86,13 @@
 				</div>
 				<div class="rounded-lg bg-muted/50 px-3 py-2">
 					<div class="text-lg font-semibold text-text-primary">
-						{ps.items.filter((i) => i.channel).length}
+						{ps.channelByItemId.size}
 					</div>
 					<div class="text-[10px] text-text-tertiary">Patched</div>
 				</div>
 				<div class="rounded-lg bg-muted/50 px-3 py-2">
 					<div class="text-lg font-semibold text-text-primary">
-						{ps.items.filter((i) => !i.channel).length}
+						{ps.items.length - ps.channelByItemId.size}
 					</div>
 					<div class="text-[10px] text-text-tertiary">Unpatched</div>
 				</div>
@@ -145,6 +145,169 @@
 			{/if}
 
 			<div class="text-center text-[10px] text-text-tertiary">Select items to edit properties</div>
+
+			<!-- Stage Settings (only when nothing selected) -->
+			<div class="space-y-3 border-t border-border-primary pt-4">
+				<!-- Unit toggle -->
+				<div class="flex items-center justify-between">
+					<span class="text-xs text-text-secondary">Units</span>
+					<div class="flex rounded-md border border-border-primary text-xs">
+						<button
+							onclick={() => (ps.unit = 'imperial')}
+							class="px-2 py-0.5 transition {ps.unit === 'imperial'
+								? 'bg-stone-900 text-white dark:bg-stone-100 dark:text-stone-900'
+								: 'text-text-secondary hover:bg-surface-hover'}"
+							style="border-radius: 0.3rem 0 0 0.3rem;"
+						>
+							ft
+						</button>
+						<button
+							onclick={() => (ps.unit = 'metric')}
+							class="px-2 py-0.5 transition {ps.unit === 'metric'
+								? 'bg-stone-900 text-white dark:bg-stone-100 dark:text-stone-900'
+								: 'text-text-secondary hover:bg-surface-hover'}"
+							style="border-radius: 0 0.3rem 0.3rem 0;"
+						>
+							m
+						</button>
+					</div>
+				</div>
+
+				<div>
+					<label class="mb-1 block text-xs text-text-secondary"
+						>Stage Size ({unitLabel(ps.unit)})</label
+					>
+					<div class="flex gap-2">
+						<input
+							type="number"
+							value={Math.round(displayValue(ps.stageWidth, ps.unit) * 100) / 100}
+							onchange={(e) => {
+								const target = e.target as HTMLInputElement;
+								const val = parseFloat(target.value);
+								if (!isNaN(val) && val > 0)
+									ps.stageWidth = Math.round(toFeet(val, ps.unit) * 100) / 100;
+							}}
+							min="1"
+							step={ps.unit === 'metric' ? '0.5' : '1'}
+							placeholder="Width"
+							class="w-full rounded-lg border border-border-primary bg-surface px-2 py-1.5 text-sm text-text-primary focus:border-stone-500 focus:ring-2 focus:ring-stone-500"
+						/>
+						<span class="self-center text-xs text-text-tertiary">x</span>
+						<input
+							type="number"
+							value={Math.round(displayValue(ps.stageDepth, ps.unit) * 100) / 100}
+							onchange={(e) => {
+								const target = e.target as HTMLInputElement;
+								const val = parseFloat(target.value);
+								if (!isNaN(val) && val > 0)
+									ps.stageDepth = Math.round(toFeet(val, ps.unit) * 100) / 100;
+							}}
+							min="1"
+							step={ps.unit === 'metric' ? '0.5' : '1'}
+							placeholder="Depth"
+							class="w-full rounded-lg border border-border-primary bg-surface px-2 py-1.5 text-sm text-text-primary focus:border-stone-500 focus:ring-2 focus:ring-stone-500"
+						/>
+					</div>
+				</div>
+
+				<!-- Add Riser -->
+				{#if showRiserForm}
+					<div class="space-y-2 rounded-lg border border-border-primary p-2">
+						<div class="flex items-center justify-between">
+							<span class="text-xs font-medium text-text-primary">Add Riser</span>
+							<button
+								onclick={() => (showRiserForm = false)}
+								class="text-xs text-text-tertiary hover:text-text-primary">&times;</button
+							>
+						</div>
+						<div class="mb-1 text-xs text-text-secondary">Presets:</div>
+						<div class="flex flex-wrap gap-1">
+							{#each riserPresets as preset}
+								<button
+									onclick={() => {
+										if (onPlaceRiser) onPlaceRiser(preset.w, preset.d, customRiserHeight);
+										showRiserForm = false;
+									}}
+									class="rounded bg-muted px-2 py-1 text-xs text-text-primary transition hover:bg-surface-hover"
+								>
+									{preset.label}
+								</button>
+							{/each}
+						</div>
+						<div class="mt-1 text-xs text-text-secondary">Custom ({unitLabel(ps.unit)}):</div>
+						<div class="flex items-end gap-1.5">
+							<div class="flex-1">
+								<label class="block text-[10px] text-text-tertiary">W</label>
+								<input
+									type="number"
+									bind:value={customRiserW}
+									min="1"
+									step={ps.unit === 'metric' ? '0.5' : '1'}
+									class="w-full rounded border border-border-primary bg-surface px-1.5 py-1 text-xs text-text-primary"
+								/>
+							</div>
+							<div class="flex-1">
+								<label class="block text-[10px] text-text-tertiary">D</label>
+								<input
+									type="number"
+									bind:value={customRiserD}
+									min="1"
+									step={ps.unit === 'metric' ? '0.5' : '1'}
+									class="w-full rounded border border-border-primary bg-surface px-1.5 py-1 text-xs text-text-primary"
+								/>
+							</div>
+							<div class="flex-1">
+								<label class="block text-[10px] text-text-tertiary">H</label>
+								<input
+									type="number"
+									bind:value={customRiserHeight}
+									min="0.5"
+									step="0.5"
+									class="w-full rounded border border-border-primary bg-surface px-1.5 py-1 text-xs text-text-primary"
+								/>
+							</div>
+						</div>
+						<button
+							onclick={() => {
+								const w = toFeet(customRiserW, ps.unit);
+								const d = toFeet(customRiserD, ps.unit);
+								if (onPlaceRiser && w > 0 && d > 0) onPlaceRiser(w, d, customRiserHeight);
+								showRiserForm = false;
+							}}
+							class="w-full rounded bg-stone-900 px-2 py-1.5 text-xs text-white transition hover:bg-stone-800 dark:bg-stone-100 dark:text-stone-900 dark:hover:bg-stone-200"
+						>
+							Place Custom Riser
+						</button>
+					</div>
+				{:else}
+					<button
+						onclick={() => (showRiserForm = true)}
+						class="w-full rounded-lg border border-dashed border-border-primary px-3 py-2 text-sm text-text-secondary transition hover:border-stone-400 hover:text-text-primary"
+					>
+						+ Add Riser
+					</button>
+				{/if}
+
+				<!-- Stage Zones toggle switch -->
+				<div class="flex items-center justify-between">
+					<span class="text-xs text-text-secondary">Stage Zones</span>
+					<button
+						onclick={() => (ps.showZones = !ps.showZones)}
+						class="relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full transition-colors duration-200 {ps.showZones
+							? 'bg-stone-900 dark:bg-stone-100'
+							: 'bg-gray-300 dark:bg-gray-600'}"
+						role="switch"
+						aria-checked={ps.showZones}
+					>
+						<span
+							class="pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-sm ring-0 transition-transform duration-200 dark:bg-gray-900 {ps.showZones
+								? 'translate-x-4'
+								: 'translate-x-0.5'}"
+							style="margin-top: 2px;"
+						></span>
+					</button>
+				</div>
+			</div>
 		</div>
 	{:else if selectedItemsData.length === 1}
 		<!-- Single item inspector -->
@@ -235,7 +398,7 @@
 							<label class="mb-1 block text-xs text-text-secondary">Channel</label>
 							<input
 								type="text"
-								bind:value={selectedItemsData[0].channel}
+								value={ps.channelByItemId.get(selectedItemsData[0].id) ?? ''}
 								onchange={(e) => {
 									const target = e.target as HTMLInputElement;
 									ps.updateItemProperty(selectedItemsData[0].id, 'channel', target.value);
@@ -244,8 +407,9 @@
 								placeholder="Channel"
 							/>
 						</div>
-						{#if selectedItemsData[0].channel && ps.consoleDef}
-							{@const channelNum = parseInt(selectedItemsData[0].channel)}
+						{@const _inspChNum = ps.channelByItemId.get(selectedItemsData[0].id)}
+						{#if _inspChNum && ps.consoleDef}
+							{@const channelNum = _inspChNum}
 							{@const currentColorId = ps.channelColors[channelNum] ?? null}
 							{@const normalColors = ps.consoleDef.colors.filter((c) => !c.inverted)}
 							{@const invertedColors = ps.consoleDef.colors.filter((c) => c.inverted)}
@@ -485,168 +649,6 @@
 			</div>
 		</div>
 	{/if}
-
-	<!-- Stage Settings -->
-	<div class="mt-4 space-y-3 border-t border-border-primary pt-4">
-		<!-- Unit toggle -->
-		<div class="flex items-center justify-between">
-			<span class="text-xs text-text-secondary">Units</span>
-			<div class="flex rounded-md border border-border-primary text-xs">
-				<button
-					onclick={() => (ps.unit = 'imperial')}
-					class="px-2 py-0.5 transition {ps.unit === 'imperial'
-						? 'bg-stone-900 text-white dark:bg-stone-100 dark:text-stone-900'
-						: 'text-text-secondary hover:bg-surface-hover'}"
-					style="border-radius: 0.3rem 0 0 0.3rem;"
-				>
-					ft
-				</button>
-				<button
-					onclick={() => (ps.unit = 'metric')}
-					class="px-2 py-0.5 transition {ps.unit === 'metric'
-						? 'bg-stone-900 text-white dark:bg-stone-100 dark:text-stone-900'
-						: 'text-text-secondary hover:bg-surface-hover'}"
-					style="border-radius: 0 0.3rem 0.3rem 0;"
-				>
-					m
-				</button>
-			</div>
-		</div>
-
-		<div>
-			<label class="mb-1 block text-xs text-text-secondary">Stage Size ({unitLabel(ps.unit)})</label
-			>
-			<div class="flex gap-2">
-				<input
-					type="number"
-					value={Math.round(displayValue(ps.stageWidth, ps.unit) * 100) / 100}
-					onchange={(e) => {
-						const target = e.target as HTMLInputElement;
-						const val = parseFloat(target.value);
-						if (!isNaN(val) && val > 0)
-							ps.stageWidth = Math.round(toFeet(val, ps.unit) * 100) / 100;
-					}}
-					min="1"
-					step={ps.unit === 'metric' ? '0.5' : '1'}
-					placeholder="Width"
-					class="w-full rounded-lg border border-border-primary bg-surface px-2 py-1.5 text-sm text-text-primary focus:border-stone-500 focus:ring-2 focus:ring-stone-500"
-				/>
-				<span class="self-center text-xs text-text-tertiary">x</span>
-				<input
-					type="number"
-					value={Math.round(displayValue(ps.stageDepth, ps.unit) * 100) / 100}
-					onchange={(e) => {
-						const target = e.target as HTMLInputElement;
-						const val = parseFloat(target.value);
-						if (!isNaN(val) && val > 0)
-							ps.stageDepth = Math.round(toFeet(val, ps.unit) * 100) / 100;
-					}}
-					min="1"
-					step={ps.unit === 'metric' ? '0.5' : '1'}
-					placeholder="Depth"
-					class="w-full rounded-lg border border-border-primary bg-surface px-2 py-1.5 text-sm text-text-primary focus:border-stone-500 focus:ring-2 focus:ring-stone-500"
-				/>
-			</div>
-		</div>
-
-		<!-- Add Riser -->
-		{#if showRiserForm}
-			<div class="space-y-2 rounded-lg border border-border-primary p-2">
-				<div class="flex items-center justify-between">
-					<span class="text-xs font-medium text-text-primary">Add Riser</span>
-					<button
-						onclick={() => (showRiserForm = false)}
-						class="text-xs text-text-tertiary hover:text-text-primary">&times;</button
-					>
-				</div>
-				<div class="mb-1 text-xs text-text-secondary">Presets:</div>
-				<div class="flex flex-wrap gap-1">
-					{#each riserPresets as preset}
-						<button
-							onclick={() => {
-								if (onPlaceRiser) onPlaceRiser(preset.w, preset.d, customRiserHeight);
-								showRiserForm = false;
-							}}
-							class="rounded bg-muted px-2 py-1 text-xs text-text-primary transition hover:bg-surface-hover"
-						>
-							{preset.label}
-						</button>
-					{/each}
-				</div>
-				<div class="mt-1 text-xs text-text-secondary">Custom ({unitLabel(ps.unit)}):</div>
-				<div class="flex items-end gap-1.5">
-					<div class="flex-1">
-						<label class="block text-[10px] text-text-tertiary">W</label>
-						<input
-							type="number"
-							bind:value={customRiserW}
-							min="1"
-							step={ps.unit === 'metric' ? '0.5' : '1'}
-							class="w-full rounded border border-border-primary bg-surface px-1.5 py-1 text-xs text-text-primary"
-						/>
-					</div>
-					<div class="flex-1">
-						<label class="block text-[10px] text-text-tertiary">D</label>
-						<input
-							type="number"
-							bind:value={customRiserD}
-							min="1"
-							step={ps.unit === 'metric' ? '0.5' : '1'}
-							class="w-full rounded border border-border-primary bg-surface px-1.5 py-1 text-xs text-text-primary"
-						/>
-					</div>
-					<div class="flex-1">
-						<label class="block text-[10px] text-text-tertiary">H</label>
-						<input
-							type="number"
-							bind:value={customRiserHeight}
-							min="0.5"
-							step="0.5"
-							class="w-full rounded border border-border-primary bg-surface px-1.5 py-1 text-xs text-text-primary"
-						/>
-					</div>
-				</div>
-				<button
-					onclick={() => {
-						const w = toFeet(customRiserW, ps.unit);
-						const d = toFeet(customRiserD, ps.unit);
-						if (onPlaceRiser && w > 0 && d > 0) onPlaceRiser(w, d, customRiserHeight);
-						showRiserForm = false;
-					}}
-					class="w-full rounded bg-stone-900 px-2 py-1.5 text-xs text-white transition hover:bg-stone-800 dark:bg-stone-100 dark:text-stone-900 dark:hover:bg-stone-200"
-				>
-					Place Custom Riser
-				</button>
-			</div>
-		{:else}
-			<button
-				onclick={() => (showRiserForm = true)}
-				class="w-full rounded-lg border border-dashed border-border-primary px-3 py-2 text-sm text-text-secondary transition hover:border-stone-400 hover:text-text-primary"
-			>
-				+ Add Riser
-			</button>
-		{/if}
-
-		<!-- Stage Zones toggle switch -->
-		<div class="flex items-center justify-between">
-			<span class="text-xs text-text-secondary">Stage Zones</span>
-			<button
-				onclick={() => (ps.showZones = !ps.showZones)}
-				class="relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full transition-colors duration-200 {ps.showZones
-					? 'bg-stone-900 dark:bg-stone-100'
-					: 'bg-gray-300 dark:bg-gray-600'}"
-				role="switch"
-				aria-checked={ps.showZones}
-			>
-				<span
-					class="pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-sm ring-0 transition-transform duration-200 dark:bg-gray-900 {ps.showZones
-						? 'translate-x-4'
-						: 'translate-x-0.5'}"
-					style="margin-top: 2px;"
-				></span>
-			</button>
-		</div>
-	</div>
 
 	<!-- Dark mode toggle at bottom center -->
 	<div class="mt-auto flex justify-center border-t border-border-primary pt-3 pb-1">
