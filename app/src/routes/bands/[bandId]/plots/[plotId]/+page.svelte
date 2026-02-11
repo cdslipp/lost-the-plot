@@ -660,64 +660,9 @@
 	}
 
 	// --- Patch handlers (thin wrappers) ---
-	async function handlePatchAddItem(item: any, channel: number) {
+	function handlePatchAddItem(item: any, channel: number) {
 		ps.preparePatchChannel(channel, item);
-
-		// Load image to get proper dimensions
-		const img = new Image();
-		img.src = item.image;
-		await new Promise((resolve) => {
-			img.onload = resolve;
-			img.onerror = () => resolve(undefined);
-		});
-
-		const newItem: any = {
-			id: Date.now(),
-			type: item.type ?? item.item_type ?? 'input',
-			itemData: item,
-			currentVariant: 'default',
-			position: {
-				width: imagePxToFeet(img.naturalWidth || 80),
-				height: imagePxToFeet(img.naturalHeight || 60),
-				x: -1000,
-				y: -1000
-			},
-			name: item.name || '',
-			person_id: null
-		};
-
-		ps.items.push(newItem);
-		ps.assignItemToChannel(newItem.id, channel);
-
-		const isMonitor = ps.isMonitorItem(item);
-		const defaultInputs = isMonitor ? null : item.default_inputs;
-		if (defaultInputs && Array.isArray(defaultInputs)) {
-			defaultInputs.forEach((inputDef: any, idx: number) => {
-				const defItem: any = {
-					id: Date.now() + idx + 1,
-					type: 'input',
-					itemData: {
-						...inputDef,
-						item_type: 'input',
-						name: inputDef.name,
-						category: 'Input',
-						path: ''
-					},
-					name: inputDef.name,
-					person_id: null,
-					currentVariant: 'default',
-					position: { width: 0, height: 0, x: 0, y: 0 }
-				};
-				ps.items.push(defItem);
-				if (inputDef.ch) {
-					ps.assignItemToChannel(defItem.id, inputDef.ch);
-				}
-			});
-		}
-
-		ps.addDefaultOutputs(item);
-		ps.autoNumberItems();
-		ps.commitChange();
+		preparePlacingItem(item, channel);
 	}
 
 	function handlePatchOutputSelect(item: any, channel: number) {
