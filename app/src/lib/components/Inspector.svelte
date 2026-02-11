@@ -86,13 +86,13 @@
 				</div>
 				<div class="rounded-lg bg-muted/50 px-3 py-2">
 					<div class="text-lg font-semibold text-text-primary">
-						{ps.items.filter((i) => i.channel).length}
+						{ps.channelByItemId.size}
 					</div>
 					<div class="text-[10px] text-text-tertiary">Patched</div>
 				</div>
 				<div class="rounded-lg bg-muted/50 px-3 py-2">
 					<div class="text-lg font-semibold text-text-primary">
-						{ps.items.filter((i) => !i.channel).length}
+						{ps.items.length - ps.channelByItemId.size}
 					</div>
 					<div class="text-[10px] text-text-tertiary">Unpatched</div>
 				</div>
@@ -235,7 +235,7 @@
 							<label class="mb-1 block text-xs text-text-secondary">Channel</label>
 							<input
 								type="text"
-								bind:value={selectedItemsData[0].channel}
+								value={ps.channelByItemId.get(selectedItemsData[0].id) ?? ''}
 								onchange={(e) => {
 									const target = e.target as HTMLInputElement;
 									ps.updateItemProperty(selectedItemsData[0].id, 'channel', target.value);
@@ -244,8 +244,9 @@
 								placeholder="Channel"
 							/>
 						</div>
-						{#if selectedItemsData[0].channel && ps.consoleDef}
-							{@const channelNum = parseInt(selectedItemsData[0].channel)}
+						{@const _inspChNum = ps.channelByItemId.get(selectedItemsData[0].id)}
+						{#if _inspChNum && ps.consoleDef}
+							{@const channelNum = _inspChNum}
 							{@const currentColorId = ps.channelColors[channelNum] ?? null}
 							{@const normalColors = ps.consoleDef.colors.filter((c) => !c.inverted)}
 							{@const invertedColors = ps.consoleDef.colors.filter((c) => c.inverted)}

@@ -56,7 +56,7 @@
 			<select
 				value={ps.inputChannelMode}
 				onchange={(e) =>
-					(ps.inputChannelMode = Number((e.target as HTMLSelectElement).value) as ChannelMode)}
+					ps.setInputChannelMode(Number((e.target as HTMLSelectElement).value) as ChannelMode)}
 				class="w-full rounded-lg border border-border-primary bg-surface px-3 py-2 text-sm text-text-primary focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
 			>
 				{#each channelOptions as option (option)}
@@ -69,7 +69,7 @@
 			<select
 				value={ps.outputChannelMode}
 				onchange={(e) =>
-					(ps.outputChannelMode = Number((e.target as HTMLSelectElement).value) as ChannelMode)}
+					ps.setOutputChannelMode(Number((e.target as HTMLSelectElement).value) as ChannelMode)}
 				class="w-full rounded-lg border border-border-primary bg-surface px-3 py-2 text-sm text-text-primary focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
 			>
 				{#each outputOptions as option (option)}

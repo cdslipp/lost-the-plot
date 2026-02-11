@@ -289,28 +289,6 @@
 
 		<SketchyLine />
 
-		<!-- Stage Plot Pro callout -->
-		<section class="px-6 py-20">
-			<div class="mx-auto max-w-2xl text-center">
-				<h2 class="text-2xl font-bold tracking-tight sm:text-3xl">
-					Picking up where Stage Plot Pro left off
-				</h2>
-				<SketchyLineShort />
-				<p class="mt-6 text-stone-500 dark:text-stone-400">
-					Stage Plot Pro was the go-to for years. It's gone now. {APP_NAME} is built to fill that gap
-					-- same idea, modern tools, runs in your browser, and it's free.
-				</p>
-				<!-- A fun little trio -->
-				<div class="mt-8 flex items-end justify-center gap-8 opacity-30 dark:opacity-20">
-					<img src="/images/congas.png" alt="" class="h-14 -rotate-3" />
-					<img src="/images/tabla.png" alt="" class="h-10 rotate-2" />
-					<img src="/images/banjo.png" alt="" class="h-16 -rotate-6" />
-				</div>
-			</div>
-		</section>
-
-		<SketchyLine />
-
 		<!-- Open source callout -->
 		<section class="px-6 py-20">
 			<div class="mx-auto max-w-2xl text-center">

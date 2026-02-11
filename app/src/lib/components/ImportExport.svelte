@@ -84,7 +84,7 @@
 						relativeX: relativePos.x,
 						relativeY: relativePos.y
 					},
-					channel: item.channel,
+					channel: String(ps.channelByItemId.get(item.id) ?? ''),
 					person_id: item.person_id,
 					itemData: item.itemData
 				};
@@ -160,7 +160,6 @@
 						id: exportedItem.id,
 						name: exportedItem.name,
 						type: exportedItem.type || 'input',
-						channel: exportedItem.channel || '',
 						person_id: exportedItem.person_id ?? null,
 						itemData: exportedItem.itemData,
 						currentVariant: exportedItem.currentVariant || 'default',
@@ -171,6 +170,18 @@
 							y: exportedItem.position.y
 						}
 					}));
+
+					// Rebuild channel assignments from imported data
+					for (const ch of ps.inputChannels) {
+						ch.itemId = null;
+						ch.color = null;
+					}
+					for (const exportedItem of jsonData.items) {
+						const ch = parseInt(exportedItem.channel);
+						if (!isNaN(ch) && ch >= 1 && ch <= ps.inputChannels.length) {
+							ps.assignItemToChannel(exportedItem.id, ch);
+						}
+					}
 				}
 
 				ps.revisionDate = new Date().toISOString().split('T')[0];

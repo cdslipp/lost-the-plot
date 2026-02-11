@@ -55,7 +55,7 @@ export interface StagePlotItem {
 	category?: string;
 	currentVariant?: string;
 	position: ItemPosition;
-	channel: string;
+	channel?: string;
 	person_id: number | null;
 	itemData?: ItemData;
 	size?: string; // For stage decks
@@ -111,9 +111,22 @@ export interface DefaultOutput {
 export interface PlotOutputItem {
 	id: number;
 	name: string;
-	channel: string;
+	channel?: string;
 	itemData?: ItemData;
 	link_mode?: 'mono' | 'stereo_pair';
+}
+
+/** An input channel assignment (channels own items, not the reverse). */
+export interface InputChannel {
+	channelNum: number; // 1-based
+	itemId: number | null; // → StagePlotItem.id
+	color: string | null; // console scribble-strip color ID
+}
+
+/** An output channel assignment (channels own outputs, not the reverse). */
+export interface OutputChannel {
+	channelNum: number; // 1-based
+	outputId: number | null; // → PlotOutputItem.id
 }
 
 /** Valid channel-count options for input/output patch lists. */

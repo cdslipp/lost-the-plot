@@ -1,6 +1,6 @@
 <script lang="ts">
 	import './layout.css';
-	import { APP_NAME, GITHUB_REPO, GITHUB_SPONSORS_URL } from '$lib/config';
+	import { APP_NAME, GITHUB_REPO } from '$lib/config';
 	import { onMount } from 'svelte';
 
 	let { children } = $props();
@@ -21,8 +21,7 @@
 		{ href: '/how-it-works', label: 'How It Works' },
 		{ href: '/changelog', label: 'Changelog' },
 		{ href: '/gear-library', label: 'Gear Library' },
-		{ href: GITHUB_REPO, label: 'GitHub', external: true },
-		{ href: GITHUB_SPONSORS_URL, label: 'Support', external: true }
+		{ href: GITHUB_REPO, label: 'GitHub', external: true }
 	];
 </script>
 

@@ -136,7 +136,10 @@
 		// doing items.find() per selected ID (which is O(selected * items))
 		for (const item of ps.items) {
 			if (!selectedIdSet.has(item.id)) continue;
-			item.position.x = Math.max(0, Math.min(ps.stageWidth - item.position.width, item.position.x + dx));
+			item.position.x = Math.max(
+				0,
+				Math.min(ps.stageWidth - item.position.width, item.position.x + dx)
+			);
 			item.position.y = Math.max(
 				0,
 				Math.min(ps.stageDepth - item.position.height, item.position.y + dy)
@@ -465,22 +468,25 @@
 					y: Math.max(0, Math.min(snapped.y, ps.stageDepth - placingItem.height))
 				},
 				name: placingItem.itemData?.name || '',
-				channel: '',
 				person_id: placingItem.person_id ?? null
 			};
 
+			ps.items.push(newItem);
+
+			// Assign to channel
 			let ch = placingItem.channel;
 			if (ch == null && placingItem.type === 'input') {
 				ch = ps.getNextAvailableChannel();
 			}
-			newItem.channel = ch != null ? String(ch) : '';
-			ps.items.push(newItem);
+			if (ch != null) {
+				ps.assignItemToChannel(newItem.id, ch);
+			}
 
 			const isMonitor = ps.isMonitorItem(placingItem.itemData);
 			const defaultInputs = isMonitor ? null : placingItem.itemData?.default_inputs;
 			if (defaultInputs && Array.isArray(defaultInputs)) {
 				defaultInputs.forEach((inputDef: any, idx: number) => {
-					ps.items.push({
+					const defItem: any = {
 						id: Date.now() + idx + 1,
 						type: 'input',
 						itemData: {
@@ -491,11 +497,14 @@
 							path: ''
 						},
 						name: inputDef.name,
-						channel: String(inputDef.ch || ''),
 						person_id: null,
 						currentVariant: 'default',
 						position: { width: 0, height: 0, x: 0, y: 0 }
-					});
+					};
+					ps.items.push(defItem);
+					if (inputDef.ch) {
+						ps.assignItemToChannel(defItem.id, inputDef.ch);
+					}
 				});
 			}
 
@@ -651,26 +660,21 @@
 	}
 
 	// --- Patch handlers (thin wrappers) ---
-	function handlePatchItemUpdate(itemId: number, property: string, value: string) {
-		ps.updateItemProperty(itemId, property, value);
-	}
-
 	function handlePatchAddItem(item: any, channel: number) {
 		ps.preparePatchChannel(channel, item);
 		preparePlacingItem(item, channel);
 	}
 
 	function handlePatchOutputSelect(item: any, channel: number) {
-		ps.outputs = ps.outputs.filter((o: any) => o.channel !== String(channel));
 		if (item) {
-			ps.outputs.push({
+			ps.setOutput(channel, {
 				id: Date.now(),
 				name: item.name,
-				channel: String(channel),
 				itemData: item
 			});
+		} else {
+			ps.removeOutput(channel);
 		}
-		ps.debouncedWrite();
 	}
 
 	// --- Riser placement (dimensions in feet) ---
@@ -694,14 +698,21 @@
 	// --- PDF export ---
 	async function handleExportPdf() {
 		if (!canvasEl) return;
+		// Build items list from inputChannels with assigned items
+		const pdfItems = ps.inputChannels
+			.filter((ch) => ch.itemId != null)
+			.map((ch) => {
+				const item = ps.itemByChannel.get(ch.channelNum);
+				return {
+					name: item?.name ?? '',
+					channel: String(ch.channelNum),
+					person_name: item?.person_id ? ps.personsById[item.person_id]?.name || '' : ''
+				};
+			});
 		await exportToPdf({
 			plotName: ps.plotName,
 			canvasEl,
-			items: ps.items.map((i: any) => ({
-				name: i.name,
-				channel: i.channel,
-				person_name: i.person_id ? ps.personsById[i.person_id]?.name || '' : ''
-			})),
+			items: pdfItems,
 			persons: ps.plotPersons.map((p) => ({ name: p.name, role: p.role || '' })),
 			pageFormat: ps.pdfPageFormat
 		});
@@ -776,31 +787,31 @@
 
 	{#snippet patchContent(columnCount: number)}
 		<StagePatch
-			items={ps.items}
-			outputs={ps.outputs}
+			inputChannels={ps.inputChannels}
+			outputChannels={ps.outputChannels}
+			itemByChannel={ps.itemByChannel}
+			outputByChannel={ps.outputByChannel}
 			{selectedItemIds}
 			onSelectionChange={(ids, event) => {
-				if (ids.length) toggleItemSelection(ids[0], event);
-				else clearSelections();
+				if (ids.length) {
+					toggleItemSelection(ids[0], event);
+					sidePanelTab = 'inspector';
+				} else {
+					clearSelections();
+				}
 			}}
 			{columnCount}
 			readonly={viewOnly}
-			onUpdateItem={handlePatchItemUpdate}
-			onReorderPatch={(from, to) => ps.reorderItems(from, to)}
 			onAddItem={handlePatchAddItem}
 			onRemoveItem={(ch) => ps.removePatchItem(ch)}
 			onClearPatch={() => ps.clearAllPatch()}
 			onOutputSelect={handlePatchOutputSelect}
 			onOutputRemove={(ch) => ps.removeOutput(ch)}
 			consoleType={ps.consoleType}
-			channelColors={ps.channelColors}
 			stereoLinks={ps.stereoLinks}
 			onStereoLinksChange={(links) => ps.setStereoLinks(links)}
 			outputStereoLinks={ps.outputStereoLinks}
 			onOutputStereoLinksChange={(links) => ps.setOutputStereoLinks(links)}
-			categoryColorDefaults={ps.categoryColorDefaults}
-			inputChannelMode={ps.inputChannelMode}
-			outputChannelMode={ps.outputChannelMode}
 		/>
 	{/snippet}
 

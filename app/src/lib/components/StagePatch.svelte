@@ -6,55 +6,48 @@
 		CONSOLES,
 		type StagePlotItem,
 		type PlotOutputItem,
-		type ChannelMode
+		type InputChannel,
+		type OutputChannel
 	} from '@stageplotter/shared';
 
 	type Props = {
-		items: StagePlotItem[];
-		outputs?: PlotOutputItem[];
+		inputChannels: InputChannel[];
+		outputChannels: OutputChannel[];
+		itemByChannel: Map<number, StagePlotItem>;
+		outputByChannel: Map<number, PlotOutputItem>;
 		selectedItemIds?: number[];
 		onSelectionChange?: (ids: number[], event: MouseEvent) => void;
-		onUpdateItem?: (itemId: number, property: string, value: string) => void;
-		onReorderPatch?: (fromIndex: number, toIndex: number) => void;
 		onAddItem?: (item: ProcessedItem, channel: number) => void;
 		onRemoveItem?: (channel: number) => void;
 		onOutputSelect?: (item: ProcessedItem, channel: number) => void;
 		onOutputRemove?: (channel: number) => void;
 		onClearPatch?: () => void;
 		consoleType?: string | null;
-		channelColors?: Record<number, string>;
 		stereoLinks?: number[];
 		onStereoLinksChange?: (links: number[]) => void;
 		outputStereoLinks?: number[];
 		onOutputStereoLinksChange?: (links: number[]) => void;
-		categoryColorDefaults?: Record<string, string>;
-		inputChannelMode?: ChannelMode;
-		outputChannelMode?: ChannelMode;
 		columnCount?: number;
 		readonly?: boolean;
 	};
 
 	let {
-		items,
-		outputs = [],
+		inputChannels,
+		outputChannels,
+		itemByChannel,
+		outputByChannel,
 		selectedItemIds = [],
 		onSelectionChange,
-		onUpdateItem,
-		onReorderPatch,
 		onAddItem,
 		onRemoveItem,
 		onOutputSelect,
 		onOutputRemove,
 		onClearPatch,
 		consoleType = null,
-		channelColors = {},
 		stereoLinks = [],
 		onStereoLinksChange,
 		outputStereoLinks = [],
 		onOutputStereoLinksChange,
-		categoryColorDefaults = {},
-		inputChannelMode = 48,
-		outputChannelMode = 16,
 		columnCount = 6,
 		readonly: readonlyMode = false
 	}: Props = $props();
@@ -65,12 +58,12 @@
 	const NUM_COLUMNS = $derived(columnCount);
 
 	// Dynamic calculations for inputs
-	const TOTAL_INPUT_CHANNELS = $derived(inputChannelMode);
-	const INPUT_ROWS_PER_COLUMN = $derived(Math.ceil(inputChannelMode / NUM_COLUMNS));
+	const TOTAL_INPUT_CHANNELS = $derived(inputChannels.length);
+	const INPUT_ROWS_PER_COLUMN = $derived(Math.ceil(TOTAL_INPUT_CHANNELS / NUM_COLUMNS));
 
 	// Dynamic calculations for outputs
-	const TOTAL_OUTPUT_CHANNELS = $derived(outputChannelMode);
-	const OUTPUT_ROWS_PER_COLUMN = $derived(Math.ceil(outputChannelMode / NUM_COLUMNS));
+	const TOTAL_OUTPUT_CHANNELS = $derived(outputChannels.length);
+	const OUTPUT_ROWS_PER_COLUMN = $derived(Math.ceil(TOTAL_OUTPUT_CHANNELS / NUM_COLUMNS));
 
 	// Derive console definition from selected type
 	const consoleDef = $derived(consoleType ? (CONSOLES[consoleType] ?? null) : null);
@@ -86,43 +79,29 @@
 	let allAvailableItems: ProcessedItem[] = $state([]);
 	let loading = $state(true);
 
-	// Map channel → full canvas item (stagePlot item) for quick lookup
-	const canvasItemByChannel = $derived.by(() => {
-		const map: Record<number, StagePlotItem | null> = {};
-		items.forEach((it) => {
-			if (it.channel) {
-				map[parseInt(it.channel as string)] = it;
-			}
-		});
-		return map;
-	});
-
-	// Map channel → ProcessedItem metadata (for combobox selection)
+	// Build ProcessedItem maps from channel props (for combobox display)
 	const selectedInputItemsByChannel = $derived.by(() => {
 		const map: Record<number, ProcessedItem | null> = {};
-		items.forEach((it) => {
-			if (it.channel) {
-				const ch = parseInt(it.channel as string);
-				if (it.itemData) {
-					map[ch] = { ...(it.itemData as ProcessedItem), name: it.name } as ProcessedItem;
-				} else {
-					map[ch] = {
-						id: String(it.id),
-						name: it.name,
-						category: it.category ?? 'Input',
-						image: '',
-						type: 'input',
-						keywords: []
-					} as unknown as ProcessedItem;
-				}
+		for (const [chNum, item] of itemByChannel) {
+			if (item.itemData) {
+				map[chNum] = { ...(item.itemData as ProcessedItem), name: item.name } as ProcessedItem;
+			} else {
+				map[chNum] = {
+					id: String(item.id),
+					name: item.name,
+					category: item.category ?? 'Input',
+					image: '',
+					type: 'input',
+					keywords: []
+				} as unknown as ProcessedItem;
 			}
-		});
+		}
 		return map;
 	});
 
 	// Keep combobox search boxes in sync with canvas
 	$effect(() => {
-		items.map((i) => i.name).join('|');
+		void [...itemByChannel.values()].map((i) => i.name).join('|');
 		for (const ch of inputChannelNumbers) {
 			const proc = selectedInputItemsByChannel[ch] as ProcessedItem | null;
 			inputSearchValues[ch] = proc ? proc.name : '';
@@ -131,23 +110,23 @@
 
 	const selectedOutputItemsByChannel = $derived.by(() => {
 		const map: Record<number, ProcessedItem | null> = {};
-		outputs.forEach((o) => {
-			if (o.channel) {
-				const ch = parseInt(o.channel as string);
-				if (o.itemData) {
-					map[ch] = { ...(o.itemData as ProcessedItem), name: o.name } as ProcessedItem;
-				} else {
-					map[ch] = {
-						id: String(o.id),
-						name: o.name,
-						category: 'Output',
-						image: '',
-						type: 'output',
-						keywords: []
-					} as unknown as ProcessedItem;
-				}
+		for (const [chNum, output] of outputByChannel) {
+			if (output.itemData) {
+				map[chNum] = {
+					...(output.itemData as ProcessedItem),
+					name: output.name
+				} as ProcessedItem;
+			} else {
+				map[chNum] = {
+					id: String(output.id),
+					name: output.name,
+					category: 'Output',
+					image: '',
+					type: 'output',
+					keywords: []
+				} as unknown as ProcessedItem;
 			}
-		});
+		}
 		return map;
 	});
 
@@ -157,21 +136,16 @@
 
 	// Keep output combobox search boxes in sync with outputs prop
 	$effect(() => {
-		outputs.map((o) => o.name).join('|');
+		void [...outputByChannel.values()].map((o) => o.name).join('|');
 		for (const ch of outputChannelNumbers) {
 			const proc = selectedOutputItemsByChannel[ch] as ProcessedItem | null;
 			outputSearchValues[ch] = proc ? proc.name : '';
 		}
 	});
 
-	// Create channel lists based on current modes
-	const inputChannelNumbers = $derived.by(() => {
-		return Array.from({ length: TOTAL_INPUT_CHANNELS }, (_, i) => i + 1);
-	});
-
-	const outputChannelNumbers = $derived.by(() => {
-		return Array.from({ length: TOTAL_OUTPUT_CHANNELS }, (_, i) => i + 1);
-	});
+	// Create channel lists based on current arrays
+	const inputChannelNumbers = $derived(inputChannels.map((ch) => ch.channelNum));
+	const outputChannelNumbers = $derived(outputChannels.map((ch) => ch.channelNum));
 
 	// Generic stereo link helpers
 	const stereoLinkSet = $derived(new Set(stereoLinks));
@@ -187,11 +161,7 @@
 		return isChLinkedTop(ch, linkSet) || isChLinkedBottom(ch, linkSet);
 	}
 
-	function toggleLink(
-		startChannel: number,
-		links: number[],
-		onChange?: (links: number[]) => void
-	) {
+	function toggleLink(startChannel: number, links: number[], onChange?: (links: number[]) => void) {
 		const newLinks = [...links];
 		const idx = newLinks.indexOf(startChannel);
 		if (idx >= 0) {
@@ -205,7 +175,7 @@
 
 	// Get badge style for output channel (no console colors - just blue when occupied)
 	function getOutputBadgeStyle(channelNum: number): string {
-		if (selectedOutputItemsByChannel[channelNum]) {
+		if (outputByChannel.get(channelNum)) {
 			return 'background-color: rgb(37, 99, 235); color: white;';
 		}
 		return '';
@@ -268,14 +238,14 @@
 
 	// Get the CSS background color for an input channel number badge
 	function getInputBadgeStyle(channelNum: number): string {
-		const colorId = channelColors[channelNum];
-		if (colorId && consoleDef) {
-			const color = colorById.get(colorId);
+		const ch = inputChannels[channelNum - 1];
+		if (ch?.color && consoleDef) {
+			const color = colorById.get(ch.color);
 			if (color) {
 				return `background-color: ${color.hex}; color: ${getContrastColor(color.hex)};`;
 			}
 		}
-		if (selectedInputItemsByChannel[channelNum]) {
+		if (itemByChannel.get(channelNum)) {
 			return 'background-color: rgb(37, 99, 235); color: white;';
 		}
 		return '';
@@ -332,7 +302,7 @@
 					{@const linked = isChLinked(channelNum, lnkSet)}
 					{@const chLinkedTop = isChLinkedTop(channelNum, lnkSet)}
 					{@const chLinkedBottom = isChLinkedBottom(channelNum, lnkSet)}
-					{@const rowItem = mode === 'input' ? canvasItemByChannel[channelNum] : null}
+					{@const rowItem = mode === 'input' ? itemByChannel.get(channelNum) : null}
 					{@const isRowSelected =
 						mode === 'input' && rowItem ? selectedIdSetLocal.has(rowItem.id) : false}
 					<ContextMenu.Root>
@@ -353,20 +323,16 @@
 									<div
 										class="flex h-full w-full items-center justify-center text-xs font-semibold transition-colors {linked
 											? 'ring-1 ring-yellow-400/50 ring-inset'
-											: ''} {!readonlyMode
-											? 'cursor-pointer'
-											: ''} {getBadgeStyle(channelNum)
+											: ''} {!readonlyMode ? 'cursor-pointer' : ''} {getBadgeStyle(channelNum)
 											? ''
 											: 'bg-muted/50 text-text-secondary'}"
 										style={getBadgeStyle(channelNum)}
 										onclick={(e) => {
-											if (readonlyMode || mode !== 'input') return;
+											if (readonlyMode) return;
 											e.stopPropagation();
-											const itm = canvasItemByChannel[channelNum];
+											const itm = itemByChannel.get(channelNum);
 											if (itm) {
 												onSelectionChange?.([itm.id], e);
-											} else {
-												onSelectionChange?.([], e);
 											}
 										}}
 									>
@@ -389,9 +355,7 @@
 								<!-- Combobox cell -->
 								<div class="flex-1 px-1">
 									{#if readonlyMode}
-										<div
-											class="flex h-8 items-center truncate px-2 text-xs text-text-primary"
-										>
+										<div class="flex h-8 items-center truncate px-2 text-xs text-text-primary">
 											{itemMap[channelNum]?.name ?? ''}
 										</div>
 									{:else}
@@ -401,9 +365,7 @@
 											name="{mode}-{channelNum}"
 											inputValue={itemMap[channelNum]?.name ?? ''}
 											onValueChange={(value) => {
-												const selected = allAvailableItems.find(
-													(item) => item.id === value
-												);
+												const selected = allAvailableItems.find((item) => item.id === value);
 												handleSelect(channelNum, selected || null);
 											}}
 										>
@@ -494,8 +456,7 @@
 										{#if isCurrentlyLinked}
 											<ContextMenu.Item
 												class="flex cursor-pointer items-center rounded px-2 py-1.5 text-xs outline-none hover:bg-muted"
-												onSelect={() =>
-													toggleLink(channelNum - 1, lnks, onLnkChange)}
+												onSelect={() => toggleLink(channelNum - 1, lnks, onLnkChange)}
 											>
 												{@render linkSvg('mr-2 h-3.5 w-3.5 opacity-70')}
 												Unlink Ch {channelNum - 1}-{channelNum}
@@ -503,8 +464,7 @@
 										{:else}
 											<ContextMenu.Item
 												class="flex cursor-pointer items-center rounded px-2 py-1.5 text-xs text-yellow-600 outline-none hover:bg-muted"
-												onSelect={() =>
-													toggleLink(channelNum, lnks, onLnkChange)}
+												onSelect={() => toggleLink(channelNum, lnks, onLnkChange)}
 											>
 												{@render linkSvg('mr-2 h-3.5 w-3.5 opacity-70')}
 												Link Ch {channelNum}-{channelNum + 1} (not recommended)
@@ -520,9 +480,8 @@
 									<ContextMenu.Item
 										class="flex cursor-pointer items-center rounded px-2 py-1.5 text-xs outline-none hover:bg-muted"
 										onSelect={() => {
-											const itm = canvasItemByChannel[channelNum];
-											if (itm)
-												onSelectionChange?.([itm.id], new MouseEvent('click'));
+											const itm = itemByChannel.get(channelNum);
+											if (itm) onSelectionChange?.([itm.id], new MouseEvent('click'));
 										}}
 									>
 										Select on Canvas
