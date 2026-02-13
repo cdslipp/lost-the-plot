@@ -68,6 +68,22 @@ export async function getSetlistSongsBySetlistIds(setlistIds: number[]): Promise
 	);
 }
 
+export async function getSetlistSongsWithSongInfoBySetlistIds(
+	setlistIds: number[]
+): Promise<SetlistSongRow[]> {
+	if (setlistIds.length === 0) return [];
+	const placeholders = setlistIds.map(() => '?').join(',');
+	return db.query<SetlistSongRow>(
+		`SELECT ss.id, ss.setlist_id, ss.song_id, ss.position, ss.notes,
+		        s.title, s.starting_key, s.starting_tempo
+		 FROM setlist_songs ss
+		 JOIN songs s ON s.id = ss.song_id
+		 WHERE ss.setlist_id IN (${placeholders})
+		 ORDER BY ss.setlist_id, ss.position`,
+		setlistIds
+	);
+}
+
 export async function addSongToSetlist(
 	setlistId: number,
 	songId: number,

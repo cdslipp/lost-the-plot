@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 
 import { db } from '$lib/db';
+import { insertPersonsForBand } from '$lib/db/repositories/persons';
 import { getStageArea, type CanvasConfig } from '$lib/utils/canvas';
 import { isTauri } from '$lib/platform';
 import { generateId } from '@stageplotter/shared';
@@ -118,38 +119,29 @@ export async function importBandProject(project: any, existingIds: Set<string>):
 
 	const players = Array.isArray(sourceBand.players) ? sourceBand.players : [];
 	const contacts = Array.isArray(sourceBand.contacts) ? sourceBand.contacts : [];
-	for (const player of players) {
-		const person = player.person ?? {};
-		await db.run(
-			'INSERT INTO persons (band_id, name, role, pronouns, phone, email, member_type, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-			[
-				bandId,
-				person.name ?? 'Unknown Musician',
-				null,
-				person.pronouns ?? null,
-				person.phone ?? null,
-				person.email ?? null,
-				'performer',
-				'permanent'
-			]
-		);
-	}
-
-	for (const contact of contacts) {
-		await db.run(
-			'INSERT INTO persons (band_id, name, role, pronouns, phone, email, member_type, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-			[
-				bandId,
-				contact.name ?? 'Unknown Contact',
-				contact.role ?? null,
-				contact.pronouns ?? null,
-				contact.phone ?? null,
-				contact.email ?? null,
-				'crew',
-				'permanent'
-			]
-		);
-	}
+	await insertPersonsForBand(bandId, [
+		...players.map((player: any) => {
+			const person = player.person ?? {};
+			return {
+				name: person.name ?? 'Unknown Musician',
+				role: null,
+				pronouns: person.pronouns ?? null,
+				phone: person.phone ?? null,
+				email: person.email ?? null,
+				member_type: 'performer',
+				status: 'permanent'
+			};
+		}),
+		...contacts.map((contact: any) => ({
+			name: contact.name ?? 'Unknown Contact',
+			role: contact.role ?? null,
+			pronouns: contact.pronouns ?? null,
+			phone: contact.phone ?? null,
+			email: contact.email ?? null,
+			member_type: 'crew',
+			status: 'permanent'
+		}))
+	]);
 
 	const itemCatalog = new Map<string, any>();
 	const sourceItems = Array.isArray(sourceBand.items) ? sourceBand.items : [];

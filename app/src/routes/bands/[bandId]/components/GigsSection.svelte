@@ -1,5 +1,9 @@
 <script lang="ts">
 	import { db } from '$lib/db';
+	import {
+		getSetlistsByGigId,
+		getSetlistSongsWithSongInfoBySetlistIds
+	} from '$lib/db/repositories/setlists';
 	import SetlistEditor from './SetlistEditor.svelte';
 
 	interface SongRow {
@@ -173,24 +177,17 @@
 
 		// Load setlists if not loaded yet
 		if (!gigSetlists[gigId]) {
-			const sls = await db.query<SetlistRow>(
-				'SELECT id, gig_id, name FROM setlists WHERE gig_id = ? ORDER BY id',
-				[gigId]
-			);
+			const sls = await getSetlistsByGigId(gigId);
 			gigSetlists[gigId] = sls;
 
 			const songsBySetlist: Record<number, SetlistSongRow[]> = {};
+			const setlistIds = sls.map((sl) => sl.id);
 			for (const sl of sls) {
-				const slSongs = await db.query<SetlistSongRow>(
-					`SELECT ss.id, ss.setlist_id, ss.song_id, ss.position, ss.notes,
-					        s.title, s.starting_key, s.starting_tempo
-					 FROM setlist_songs ss
-					 JOIN songs s ON s.id = ss.song_id
-					 WHERE ss.setlist_id = ?
-					 ORDER BY ss.position`,
-					[sl.id]
-				);
-				songsBySetlist[sl.id] = slSongs;
+				songsBySetlist[sl.id] = [];
+			}
+			const allSongs = await getSetlistSongsWithSongInfoBySetlistIds(setlistIds);
+			for (const row of allSongs) {
+				songsBySetlist[row.setlist_id].push(row);
 			}
 			gigSetlistSongs[gigId] = songsBySetlist;
 		}

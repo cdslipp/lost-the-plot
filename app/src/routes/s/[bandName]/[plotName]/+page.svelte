@@ -8,6 +8,8 @@
 	import StageDeck from '$lib/components/StageDeck.svelte';
 	import CanvasOverlay from '$lib/components/CanvasOverlay.svelte';
 	import { db } from '$lib/db';
+	import { runInTransaction } from '$lib/db/batch';
+	import { insertPersonsForBand } from '$lib/db/repositories/persons';
 	import { exportToPdf } from '$lib/utils/pdf';
 	import { getCurrentImageSrc } from '$lib/utils/canvasUtils';
 
@@ -35,6 +37,13 @@
 	let canvasPixelWidth = $state(800);
 	let canvasPixelHeight = $state(533);
 	let pxPerFoot = $derived(plot ? canvasPixelWidth / plot.stageWidth : 1);
+	let inputItems = $derived(
+		plot
+			? plot.items
+					.filter((i) => i.channel && parseInt(i.channel) > 0)
+					.sort((a, b) => parseInt(a.channel) - parseInt(b.channel))
+			: []
+	);
 
 	// ResizeObserver for contain-fit
 	$effect(() => {
@@ -97,62 +106,65 @@
 
 	async function handleImport() {
 		if (!plot || importing) return;
+		const currentPlot = plot;
 		importing = true;
 
 		try {
 			await db.init();
 
-			// Create a new band
+			const nowIso = new Date().toISOString();
+			const today = nowIso.split('T')[0];
+			let plotId = '';
 			const bandId = crypto.randomUUID().replace(/-/g, '').slice(0, 16);
-			await db.run('INSERT INTO bands (id, name, created_at, updated_at) VALUES (?, ?, ?, ?)', [
-				bandId,
-				bandName,
-				new Date().toISOString(),
-				new Date().toISOString()
-			]);
+			await runInTransaction(async () => {
+				// Create a new band
+				await db.run('INSERT INTO bands (id, name, created_at, updated_at) VALUES (?, ?, ?, ?)', [
+					bandId,
+					bandName,
+					nowIso,
+					nowIso
+				]);
 
-			// Import persons
-			for (const person of plot.persons) {
+				// Import persons
+				await insertPersonsForBand(
+					bandId,
+					currentPlot.persons.map((person) => ({
+						name: person.name,
+						role: person.role || null,
+						pronouns: person.pronouns || null,
+						phone: person.phone || null,
+						email: person.email || null,
+						member_type: person.member_type,
+						status: person.status
+					}))
+				);
+
+				// Create the stage plot (items are already in feet from decoder)
+				plotId = crypto.randomUUID().replace(/-/g, '').slice(0, 16);
+				const metadata = JSON.stringify({
+					coordVersion: 2,
+					items: currentPlot.items,
+					musicians: currentPlot.musicians,
+					undoLog: [],
+					redoStack: []
+				});
+
 				await db.run(
-					'INSERT INTO persons (band_id, name, role, pronouns, phone, email, member_type, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+					`INSERT INTO stage_plots (id, name, revision_date, canvas_width, canvas_height, metadata, band_id, stage_width, stage_depth)
+					 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 					[
+						plotId,
+						plotName,
+						today,
+						1100,
+						Math.round((1100 * currentPlot.stageDepth) / currentPlot.stageWidth),
+						metadata,
 						bandId,
-						person.name,
-						person.role || null,
-						person.pronouns || null,
-						person.phone || null,
-						person.email || null,
-						person.member_type,
-						person.status
+						currentPlot.stageWidth,
+						currentPlot.stageDepth
 					]
 				);
-			}
-
-			// Create the stage plot (items are already in feet from decoder)
-			const plotId = crypto.randomUUID().replace(/-/g, '').slice(0, 16);
-			const metadata = JSON.stringify({
-				coordVersion: 2,
-				items: plot.items,
-				musicians: plot.musicians,
-				undoLog: [],
-				redoStack: []
 			});
-
-			await db.run(
-				`INSERT INTO stage_plots (id, name, revision_date, canvas_width, canvas_height, metadata, band_id, stage_width, stage_depth)
-				 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-				[
-					plotId,
-					plotName,
-					new Date().toISOString().split('T')[0],
-					1100,
-					Math.round((1100 * plot.stageDepth) / plot.stageWidth),
-					metadata,
-					bandId,
-					plot.stageWidth,
-					plot.stageDepth
-				]
-			);
 
 			importSuccess = true;
 
@@ -387,10 +399,7 @@
 					</div>
 
 					<!-- Input List -->
-					{#if plot.items.filter((i) => i.channel && parseInt(i.channel) > 0).length > 0}
-						{@const inputs = plot.items
-							.filter((i) => i.channel && parseInt(i.channel) > 0)
-							.sort((a, b) => parseInt(a.channel) - parseInt(b.channel))}
+					{#if inputItems.length > 0}
 						<div>
 							<h3 class="mb-2 text-xs font-medium tracking-wider text-text-tertiary uppercase">
 								Input List
@@ -403,7 +412,7 @@
 									<span>Source</span>
 									<span>Musician</span>
 								</div>
-								{#each inputs as item}
+								{#each inputItems as item}
 									<div
 										class="grid grid-cols-[2rem_1fr_1fr] gap-1.5 rounded-md bg-muted/30 px-1.5 py-1 text-xs"
 									>

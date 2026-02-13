@@ -482,15 +482,20 @@ export class StagePlotState {
 			this.history.startRecording(savedLog, savedRedoStack);
 		}
 
-		// Load people
-		const personIds = await getPlotPersonIds(this.plotId);
+		// Load people + band in parallel
+		const [personIds, plotPersons, bandPersons, bandPersonsFull, band] = await Promise.all([
+			getPlotPersonIds(this.plotId),
+			getPersonsForPlot(this.plotId),
+			getActivePersonsByBandId(this.bandId),
+			getFullPersonsByBandId(this.bandId),
+			getBandById(this.bandId)
+		]);
 		this.plotPersonIds = new Set(personIds);
-		this.plotPersons = await getPersonsForPlot(this.plotId);
-		this.bandPersons = await getActivePersonsByBandId(this.bandId);
-		this.bandPersonsFull = await getFullPersonsByBandId(this.bandId);
+		this.plotPersons = plotPersons;
+		this.bandPersons = bandPersons;
+		this.bandPersonsFull = bandPersonsFull;
 
 		// Band name
-		const band = await getBandById(this.bandId);
 		this.bandName = band?.name ?? '';
 
 		return true;
