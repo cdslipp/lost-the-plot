@@ -120,7 +120,12 @@
 
 	// Get the CSS background color for an input channel number badge
 	function getInputBadgeStyle(channelNum: number, selected: boolean): string {
-		const ch = inputChannels[channelNum - 1];
+		let ch = inputChannels[channelNum - 1];
+		// Stereo pair: bottom channel inherits top channel's color
+		if (isChLinkedBottom(channelNum, stereoLinkSet)) {
+			const topCh = inputChannels[channelNum - 2];
+			if (topCh?.color) ch = topCh;
+		}
 		if (ch?.color && consoleDef) {
 			const color = colorById.get(ch.color);
 			if (color) {
@@ -206,11 +211,11 @@
 					<ContextMenu.Root>
 						<ContextMenu.Trigger>
 							<div
-								class="flex items-center border-b border-border-primary {chLinkedTop
-									? 'h-10 border-b-0'
-									: chLinkedBottom
-										? 'h-10 border-b border-border-primary'
-										: 'h-10'} {isRowSelected ? 'bg-blue-50 dark:bg-blue-900/20' : ''}"
+								class="flex h-10 items-center {chLinkedTop
+									? ''
+									: 'border-b border-border-primary'} {isRowSelected
+									? 'bg-blue-50 dark:bg-blue-900/20'
+									: ''}"
 							>
 								<!-- Channel number cell (click to select channel) -->
 								<div
@@ -219,9 +224,9 @@
 									<!-- svelte-ignore a11y_click_events_have_key_events -->
 									<!-- svelte-ignore a11y_no_static_element_interactions -->
 									<div
-										class="flex h-full w-full items-center justify-center text-xs font-semibold transition-colors {linked
-											? 'ring-1 ring-yellow-400/50 ring-inset'
-											: ''} {!readonlyMode ? 'cursor-pointer' : ''} {isRowSelected
+										class="flex h-full w-full items-center justify-center text-xs font-semibold transition-colors {!readonlyMode
+											? 'cursor-pointer'
+											: ''} {isRowSelected
 											? 'ring-2 ring-stone-900 ring-inset dark:ring-stone-200'
 											: ''} {badgeStyle ? '' : 'bg-muted/50 text-text-secondary'}"
 										style={badgeStyle}
@@ -238,14 +243,9 @@
 										}}
 									>
 										{#if chLinkedTop}
-											<span class="flex flex-col items-center leading-none">
+											<span class="flex flex-col items-center gap-0.5 leading-none">
 												<span>{channelNum}</span>
-												{@render linkSvg('-mb-0.5 h-3 w-3 opacity-60')}
-											</span>
-										{:else if chLinkedBottom}
-											<span class="flex flex-col items-center leading-none">
-												{@render linkSvg('-mt-0.5 h-3 w-3 opacity-60')}
-												<span>{channelNum}</span>
+												{@render linkSvg('h-2.5 w-2.5 opacity-40')}
 											</span>
 										{:else}
 											{channelNum}
@@ -254,7 +254,7 @@
 								</div>
 
 								<!-- Name cell -->
-								<div class="flex-1 px-1">
+								<div class="flex-1 px-1 {chLinkedTop ? 'border-b border-border-primary' : ''}">
 									{#if mode === 'input' && !readonlyMode}
 										<input
 											type="text"

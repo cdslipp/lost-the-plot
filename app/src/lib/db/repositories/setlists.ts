@@ -1,10 +1,14 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 import { db } from '$lib/db';
 
+export type SetlistType = 'set' | 'encore';
+
 export interface SetlistRow {
 	id: number;
 	gig_id: number;
 	name: string;
+	type: SetlistType;
+	parent_set_id: number | null;
 }
 
 export interface SetlistSongRow {
@@ -20,7 +24,7 @@ export interface SetlistSongRow {
 
 export async function getSetlistsByGigId(gigId: number): Promise<SetlistRow[]> {
 	return db.query<SetlistRow>(
-		'SELECT id, gig_id, name FROM setlists WHERE gig_id = ? ORDER BY id',
+		'SELECT id, gig_id, name, type, parent_set_id FROM setlists WHERE gig_id = ? ORDER BY id',
 		[gigId]
 	);
 }
@@ -29,13 +33,21 @@ export async function getSetlistsByGigIds(gigIds: number[]): Promise<SetlistRow[
 	if (gigIds.length === 0) return [];
 	const placeholders = gigIds.map(() => '?').join(',');
 	return db.query<SetlistRow>(
-		`SELECT id, gig_id, name FROM setlists WHERE gig_id IN (${placeholders})`,
+		`SELECT id, gig_id, name, type, parent_set_id FROM setlists WHERE gig_id IN (${placeholders})`,
 		gigIds
 	);
 }
 
-export async function createSetlist(gigId: number, name: string): Promise<number> {
-	const result = await db.run('INSERT INTO setlists (gig_id, name) VALUES (?, ?)', [gigId, name]);
+export async function createSetlist(
+	gigId: number,
+	name: string,
+	type: SetlistType = 'set',
+	parentSetId: number | null = null
+): Promise<number> {
+	const result = await db.run(
+		'INSERT INTO setlists (gig_id, name, type, parent_set_id) VALUES (?, ?, ?, ?)',
+		[gigId, name, type, parentSetId]
+	);
 	return result.lastInsertRowid;
 }
 

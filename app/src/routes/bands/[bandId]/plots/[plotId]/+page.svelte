@@ -53,6 +53,7 @@
 	let isAddingItem = $state(false);
 	let replacingItemId = $state<number | null>(null);
 	let placingItem = $state<any>(null);
+	let pendingChannelLink = $state<number | null>(null);
 	let selecto: any;
 	// Plain `let` (not $state) — used as a synchronous flag to prevent click-after-select races
 	let justSelected = false;
@@ -410,7 +411,14 @@
 			return;
 		}
 		isAddingItem = false;
-		await preparePlacingItem(item);
+		const ch = pendingChannelLink;
+		pendingChannelLink = null;
+		await preparePlacingItem(item, ch);
+	}
+
+	function placeItemForChannel(channelNum: number) {
+		pendingChannelLink = channelNum;
+		openAddMenu();
 	}
 
 	function openReplaceMenu(itemId: number) {
@@ -1171,6 +1179,7 @@
 					{selectedChannelNum}
 					onPlaceRiser={placeRiser}
 					onAddPersonToPlot={addPersonToPlot}
+					onPlaceItemForChannel={placeItemForChannel}
 				/>
 			</div>
 		</div>
@@ -1220,6 +1229,7 @@
 					{selectedChannelNum}
 					onPlaceRiser={placeRiser}
 					onAddPersonToPlot={addPersonToPlot}
+					onPlaceItemForChannel={placeItemForChannel}
 				/>
 			</div>
 		</div>
@@ -1298,6 +1308,7 @@
 			onclose={() => {
 				isAddingItem = false;
 				replacingItemId = null;
+				pendingChannelLink = null;
 			}}
 		/>
 	</div>

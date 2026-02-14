@@ -166,7 +166,7 @@
 			<input
 				type="text"
 				bind:value={deleteConfirmText}
-				placeholder="Type "lost the plot" to confirm"
+				placeholder={'Type "lost the plot" to confirm'}
 				class="mt-4 w-full rounded-lg border border-border-primary bg-surface px-3 py-2 text-sm text-text-primary placeholder:text-text-tertiary focus:border-red-500 focus:ring-1 focus:ring-red-500 focus:outline-none"
 			/>
 			<div class="mt-6 flex justify-end gap-3">

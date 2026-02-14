@@ -22,8 +22,15 @@
 		{ label: 'A4', value: '1' }
 	] as const;
 
+	const textCaseOptions = [
+		{ label: 'As typed', value: '0' },
+		{ label: 'UPPER', value: '1' },
+		{ label: 'Title', value: '2' }
+	] as const;
+
 	let fontValue = $derived(String(editor.font));
 	let pageSizeValue = $derived(String(editor.pageSize));
+	let textCaseValue = $derived(String(editor.textCase));
 
 	function handleChange(field: string, value: string | number | null) {
 		if (editor.selectedSongId == null) return;
@@ -168,6 +175,16 @@
 					</button>
 				</div>
 
+				<!-- Text Case toggle -->
+				<div class="flex items-center justify-between">
+					<span class="text-xs text-text-secondary">Text Case</span>
+					<SegmentedToggle
+						options={[...textCaseOptions]}
+						value={textCaseValue}
+						onchange={(v) => (editor.textCase = Number(v))}
+					/>
+				</div>
+
 				<!-- Show Numbers toggle -->
 				<div class="flex items-center justify-between">
 					<span class="text-xs text-text-secondary">Show Numbers</span>
@@ -187,6 +204,59 @@
 						></span>
 					</button>
 				</div>
+			</div>
+
+			<!-- Sections outline -->
+			<div class="border-t border-border-primary px-4 pt-4 pb-2">
+				<span class="mb-2 block text-xs font-semibold text-text-secondary">Sections</span>
+				<div class="space-y-0.5">
+					{#each editor.pageGroups as group}
+						<button
+							class="w-full rounded px-2 py-1 text-left text-xs transition-colors hover:bg-surface-hover {editor.activeSetlistId ===
+							group.set.id
+								? 'bg-surface-hover font-semibold text-text-primary'
+								: 'text-text-secondary'}"
+							onclick={() => (editor.activeSetlistId = group.set.id)}
+						>
+							{group.set.name}
+						</button>
+						{#each group.encores as encore}
+							<button
+								class="w-full rounded py-1 pr-2 pl-5 text-left text-xs italic transition-colors hover:bg-surface-hover {editor.activeSetlistId ===
+								encore.id
+									? 'bg-surface-hover font-semibold text-text-primary'
+									: 'text-text-tertiary'}"
+								onclick={() => (editor.activeSetlistId = encore.id)}
+							>
+								{encore.name}
+							</button>
+						{/each}
+					{/each}
+				</div>
+			</div>
+
+			<!-- Add Set / Add Encore buttons -->
+			<div class="flex gap-2 border-t border-border-primary px-4 pt-3 pb-2">
+				<button
+					class="flex-1 rounded-lg border border-dashed border-border-primary px-2 py-1.5 text-xs text-text-secondary transition-colors hover:border-text-secondary hover:text-text-primary"
+					onclick={() => editor.addSetlist()}
+				>
+					+ Add Set
+				</button>
+				<button
+					class="flex-1 rounded-lg border border-dashed border-border-primary px-2 py-1.5 text-xs text-text-secondary transition-colors hover:border-text-secondary hover:text-text-primary"
+					onclick={() => {
+						const activeSet = editor.setlists.find(
+							(s) => s.id === editor.activeSetlistId && s.type === 'set'
+						);
+						const targetSetId = activeSet
+							? activeSet.id
+							: editor.pageGroups[editor.pageGroups.length - 1]?.set.id;
+						if (targetSetId != null) editor.addEncore(targetSetId);
+					}}
+				>
+					+ Add Encore
+				</button>
 			</div>
 
 			<div class="text-center text-[10px] text-text-tertiary">

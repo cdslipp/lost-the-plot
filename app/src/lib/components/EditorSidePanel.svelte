@@ -10,6 +10,7 @@
 		selectedItemIds: number[];
 		selectedChannelNum?: number | null;
 		onPlaceRiser: (w: number, d: number, h: number) => void;
+		onPlaceItemForChannel?: (channelNum: number) => void;
 		// People panel -- needs page-level callback for placement integration
 		onAddPersonToPlot: (personId: number, silhouetteItem: ProcessedItem) => void;
 	};
@@ -19,6 +20,7 @@
 		selectedItemIds = $bindable<number[]>([]),
 		selectedChannelNum = null,
 		onPlaceRiser,
+		onPlaceItemForChannel,
 		onAddPersonToPlot
 	}: Props = $props();
 </script>
@@ -53,7 +55,7 @@
 	</div>
 	{#if activeTab === 'inspector'}
 		<div class="min-h-0 flex-1 overflow-hidden p-4">
-			<Inspector bind:selectedItemIds {selectedChannelNum} {onPlaceRiser} />
+			<Inspector bind:selectedItemIds {selectedChannelNum} {onPlaceRiser} {onPlaceItemForChannel} />
 		</div>
 	{:else if activeTab === 'people'}
 		<div class="min-h-0 flex-1 overflow-auto p-4">

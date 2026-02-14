@@ -4,7 +4,9 @@
 	import { beforeNavigate } from '$app/navigation';
 	import { SetlistEditorState, setSetlistState } from '$lib/state/setlistEditorState.svelte';
 	import SetlistEditorToolbar from '$lib/components/SetlistEditorToolbar.svelte';
-	import EditableSetlistSheet from '$lib/components/EditableSetlistSheet.svelte';
+	import EditableSetlistSheet, {
+		type SheetSection
+	} from '$lib/components/EditableSetlistSheet.svelte';
 	import SetlistSongInspector from '$lib/components/SetlistSongInspector.svelte';
 	import SongCommandPalette from '$lib/components/SongCommandPalette.svelte';
 	import { exportSetlistToPdf } from '$lib/utils/pdf';
@@ -33,7 +35,7 @@
 		editor.flushPositionWrites();
 	});
 
-	// Global Cmd+K handler
+	// Global keydown handler: Cmd+K for command palette, Tab for cycling tabs
 	function handleKeydown(e: KeyboardEvent) {
 		if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
 			e.preventDefault();
@@ -42,6 +44,15 @@
 					editor.activeSetlistId = editor.setlists[0].id;
 				}
 				commandPaletteOpen = true;
+			}
+		}
+
+		// Tab key cycles through page group tabs (only when no input/textarea focused)
+		if (e.key === 'Tab' && !commandPaletteOpen) {
+			const tag = (e.target as HTMLElement)?.tagName;
+			if (tag !== 'INPUT' && tag !== 'TEXTAREA' && tag !== 'SELECT') {
+				e.preventDefault();
+				editor.cycleTab();
 			}
 		}
 	}
@@ -102,43 +113,75 @@
 			/>
 		</div>
 
+		{#if editor.pageGroups.length > 1}
+			<div class="tab-bar">
+				{#each editor.pageGroups as group, i (group.set.id)}
+					<button
+						class="tab-btn"
+						class:active={i === editor.activeGroupIndex}
+						onclick={() => {
+							editor.activeGroupIndex = i;
+							editor.activeSetlistId = group.set.id;
+						}}
+					>
+						{group.set.name}
+					</button>
+				{/each}
+			</div>
+		{/if}
+
 		<div class="flex min-h-0 flex-1 gap-5 overflow-hidden">
 			<div class="sheets-area">
-				{#each editor.setlists as setlist (setlist.id)}
-					{@const songs = editor.setlistSongs[setlist.id] || []}
-					<div class="sheet-wrapper" onclick={() => (editor.activeSetlistId = setlist.id)}>
+				{#if editor.pageGroups[editor.activeGroupIndex]}
+					{@const group = editor.pageGroups[editor.activeGroupIndex]}
+					{@const sections: SheetSection[] = [
+						{
+							setlistId: group.set.id,
+							name: group.set.name,
+							type: 'set',
+							songs: editor.setlistSongs[group.set.id] || []
+						},
+						...group.encores.map((enc) => ({
+							setlistId: enc.id,
+							name: enc.name,
+							type: enc.type,
+							songs: editor.setlistSongs[enc.id] || []
+						}))
+					]}
+					<div class="sheet-wrapper" onclick={() => (editor.activeSetlistId = group.set.id)}>
 						<EditableSetlistSheet
-							{songs}
-							setName={setlist.name}
+							{sections}
 							font={editor.font}
 							pageSize={editor.pageSize}
 							showKeys={editor.showKeys}
 							showNumbers={editor.showNumbers}
+							textCase={editor.textCase}
 							selectedSongId={editor.selectedSongId}
-							onreorder={(from, to) => editor.reorderSongs(setlist.id, from, to)}
-							onremove={(entryId) => editor.removeSong(setlist.id, entryId)}
-							onrename={(name) => editor.renameSetlist(setlist.id, name)}
-							onaddclick={() => openPaletteForSetlist(setlist.id)}
+							onreorder={(setlistId, from, to) => editor.reorderSongs(setlistId, from, to)}
+							onremove={(setlistId, entryId) => editor.removeSong(setlistId, entryId)}
+							onrename={(setlistId, name) => editor.renameSetlist(setlistId, name)}
+							onaddclick={(setlistId) => openPaletteForSetlist(setlistId)}
 							onsongclick={(entry) => (editor.selectedSongId = entry.song_id)}
 							ondeselect={() => (editor.selectedSongId = null)}
+							onmove={(fromSetlistId, entryId, toSetlistId, toIndex) => {
+								editor.moveSongBetweenSetlists(fromSetlistId, entryId, toSetlistId, toIndex);
+							}}
 						/>
 
-						{#if editor.setlists.length > 1}
+						{#if editor.pageGroups.length > 1}
 							<button
 								class="delete-set-btn"
 								onclick={(e) => {
 									e.stopPropagation();
-									editor.deleteSetlist(setlist.id);
+									editor.deleteSetlist(group.set.id);
 								}}
-								title="Delete this set"
+								title="Delete this set and its encores"
 							>
 								Delete Set
 							</button>
 						{/if}
 					</div>
-				{/each}
-
-				<button class="add-set-btn" onclick={() => editor.addSetlist()}>+ Add Set</button>
+				{/if}
 			</div>
 
 			<div class="hidden w-80 shrink-0 flex-col overflow-hidden py-4 pr-4 md:flex print:hidden">
@@ -157,12 +200,42 @@
 {/if}
 
 <style>
+	.tab-bar {
+		display: flex;
+		gap: 4px;
+		border-bottom: 1px solid var(--color-border-primary, #e5e5e5);
+		padding: 0 16px;
+		flex-shrink: 0;
+	}
+
+	.tab-btn {
+		all: unset;
+		cursor: pointer;
+		padding: 8px 16px;
+		font-size: 13px;
+		font-weight: 500;
+		color: var(--color-text-tertiary, #a8a29e);
+		border-bottom: 2px solid transparent;
+		transition:
+			color 0.15s,
+			border-color 0.15s;
+		margin-bottom: -1px;
+	}
+
+	.tab-btn:hover {
+		color: var(--color-text-secondary, #78716c);
+	}
+
+	.tab-btn.active {
+		color: var(--color-text-primary, #1c1917);
+		border-bottom-color: var(--color-text-primary, #1c1917);
+	}
+
 	.sheets-area {
 		flex: 1;
 		display: flex;
 		flex-direction: column;
 		align-items: center;
-		gap: 32px;
 		padding: 32px 16px;
 		overflow-y: auto;
 		min-height: 0;
@@ -192,25 +265,6 @@
 		background: rgb(239 68 68 / 0.1);
 	}
 
-	.add-set-btn {
-		all: unset;
-		cursor: pointer;
-		font-size: 14px;
-		font-weight: 500;
-		color: var(--color-text-secondary, #78716c);
-		padding: 12px 24px;
-		border: 2px dashed var(--color-border-primary, #e5e5e5);
-		border-radius: 12px;
-		transition:
-			border-color 0.15s,
-			color 0.15s;
-	}
-
-	.add-set-btn:hover {
-		border-color: var(--color-text-secondary, #78716c);
-		color: var(--color-text-primary, #1c1917);
-	}
-
 	@media print {
 		.sheets-area {
 			background: white;
@@ -222,8 +276,7 @@
 			page-break-after: always;
 		}
 
-		.delete-set-btn,
-		.add-set-btn {
+		.delete-set-btn {
 			display: none !important;
 		}
 	}

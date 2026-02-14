@@ -310,7 +310,8 @@ export class StagePlotState {
 			itemId: null,
 			color: null,
 			name: null,
-			shortName: null
+			shortName: null,
+			phantom: false
 		}));
 	}
 
@@ -359,7 +360,8 @@ export class StagePlotState {
 					itemId: null,
 					color: null,
 					name: null,
-					shortName: null
+					shortName: null,
+					phantom: false
 				});
 			}
 		} else {
@@ -441,6 +443,9 @@ export class StagePlotState {
 				}
 				if (ch.shortName === undefined) {
 					ch.shortName = null;
+				}
+				if ((ch as any).phantom === undefined) {
+					ch.phantom = false;
 				}
 			}
 		} else {
@@ -886,6 +891,14 @@ export class StagePlotState {
 			if (StagePlotState.CHANNEL_OPTIONS.includes(maxOut) && this.outputChannels.length > maxOut) {
 				this.setOutputChannelMode(maxOut);
 			}
+			// Truncate short names that exceed the new console's scribble strip length
+			if (def.scribbleStripLength) {
+				for (const ch of this.inputChannels) {
+					if (ch.shortName && ch.shortName.length > def.scribbleStripLength) {
+						ch.shortName = ch.shortName.slice(0, def.scribbleStripLength);
+					}
+				}
+			}
 		}
 		this.debouncedWrite();
 	}
@@ -914,12 +927,36 @@ export class StagePlotState {
 	setChannelShortName(channelNum: number, shortName: string) {
 		const idx = channelNum - 1;
 		if (idx < 0 || idx >= this.inputChannels.length) return;
-		this.inputChannels[idx].shortName = shortName || null;
+		const maxLen = this.consoleDef?.scribbleStripLength;
+		const clamped = maxLen && shortName.length > maxLen ? shortName.slice(0, maxLen) : shortName;
+		this.inputChannels[idx].shortName = clamped || null;
 		this.debouncedWrite();
 	}
 
 	setStereoLinks(links: number[]) {
 		this.stereoLinks = links;
+		this.debouncedWrite();
+	}
+
+	setChannelPhantom(channelNum: number, on: boolean) {
+		const idx = channelNum - 1;
+		if (idx < 0 || idx >= this.inputChannels.length) return;
+		this.inputChannels[idx].phantom = on;
+		this.debouncedWrite();
+	}
+
+	toggleStereoLink(channelNum: number) {
+		// Stereo links are keyed by the odd channel of a pair
+		const startCh = channelNum % 2 === 0 ? channelNum - 1 : channelNum;
+		const newLinks = [...this.stereoLinks];
+		const idx = newLinks.indexOf(startCh);
+		if (idx >= 0) {
+			newLinks.splice(idx, 1);
+		} else {
+			newLinks.push(startCh);
+			newLinks.sort((a, b) => a - b);
+		}
+		this.stereoLinks = newLinks;
 		this.debouncedWrite();
 	}
 

@@ -123,6 +123,7 @@ export interface InputChannel {
 	color: string | null; // console scribble-strip color ID
 	name: string | null; // independent channel name
 	shortName: string | null; // abbreviated name for console scribble strips
+	phantom: boolean; // +48V phantom power
 }
 
 /** An output channel assignment (channels own outputs, not the reverse). */

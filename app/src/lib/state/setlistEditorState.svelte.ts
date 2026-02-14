@@ -14,7 +14,8 @@ import {
 	removeSetlistSong,
 	updateSetlistSongPosition,
 	type SetlistRow,
-	type SetlistSongRow
+	type SetlistSongRow,
+	type SetlistType
 } from '$lib/db/repositories/setlists';
 import {
 	getSongsByBandId,
@@ -26,6 +27,11 @@ import { getGigsByBandId, updateGigField, type GigRow } from '$lib/db/repositori
 import { getBandById } from '$lib/db/repositories/bands';
 import { encodeSetlist, buildSetlistShareUrl } from '@stageplotter/shared';
 import { getContext, setContext } from 'svelte';
+
+export interface SetlistPageGroup {
+	set: SetlistRow;
+	encores: SetlistRow[];
+}
 
 const CONTEXT_KEY = 'setlistEditorState';
 
@@ -53,9 +59,13 @@ export class SetlistEditorState {
 	pageSize = $state(0); // 0=letter, 1=A4
 	showKeys = $state(true);
 	showNumbers = $state(true);
+	textCase = $state(0); // 0=as-typed, 1=UPPER, 2=capitalize
 
 	// Active setlist for command palette targeting
 	activeSetlistId = $state<number | null>(null);
+
+	// Active tab index for page group navigation
+	activeGroupIndex = $state(0);
 
 	// Selected song for inspector panel
 	selectedSongId = $state<number | null>(null);
@@ -77,6 +87,7 @@ export class SetlistEditorState {
 					if (typeof prefs.pageSize === 'number') this.pageSize = prefs.pageSize;
 					if (typeof prefs.showKeys === 'boolean') this.showKeys = prefs.showKeys;
 					if (typeof prefs.showNumbers === 'boolean') this.showNumbers = prefs.showNumbers;
+					if (typeof prefs.textCase === 'number') this.textCase = prefs.textCase;
 				} catch {
 					// ignore
 				}
@@ -89,7 +100,8 @@ export class SetlistEditorState {
 				font: this.font,
 				pageSize: this.pageSize,
 				showKeys: this.showKeys,
-				showNumbers: this.showNumbers
+				showNumbers: this.showNumbers,
+				textCase: this.textCase
 			};
 			if (typeof window !== 'undefined') {
 				localStorage.setItem('stageplotter-setlist-prefs', JSON.stringify(prefs));
@@ -143,16 +155,52 @@ export class SetlistEditorState {
 		await updateGigField(this.gigId, 'name', name);
 	}
 
+	// --- Page groups (sets + their encores) ---
+
+	get pageGroups(): SetlistPageGroup[] {
+		const sets = this.setlists.filter((s) => s.type === 'set');
+		return sets.map((set) => ({
+			set,
+			encores: this.setlists.filter((s) => s.type === 'encore' && s.parent_set_id === set.id)
+		}));
+	}
+
 	// --- Setlist management ---
 
 	async addSetlist(): Promise<SetlistRow> {
-		const name = `Set ${this.setlists.length + 1}`;
+		const setCount = this.setlists.filter((s) => s.type === 'set').length;
+		const name = `Set ${setCount + 1}`;
 		const id = await createSetlist(this.gigId, name);
-		const newSetlist: SetlistRow = { id, gig_id: this.gigId, name };
+		const newSetlist: SetlistRow = {
+			id,
+			gig_id: this.gigId,
+			name,
+			type: 'set',
+			parent_set_id: null
+		};
 		this.setlists = [...this.setlists, newSetlist];
 		this.setlistSongs[newSetlist.id] = [];
 		this.activeSetlistId = newSetlist.id;
 		return newSetlist;
+	}
+
+	async addEncore(parentSetId: number): Promise<SetlistRow> {
+		const existingEncores = this.setlists.filter(
+			(s) => s.type === 'encore' && s.parent_set_id === parentSetId
+		);
+		const name = existingEncores.length === 0 ? 'Encore' : `Encore ${existingEncores.length + 1}`;
+		const id = await createSetlist(this.gigId, name, 'encore', parentSetId);
+		const newEncore: SetlistRow = {
+			id,
+			gig_id: this.gigId,
+			name,
+			type: 'encore',
+			parent_set_id: parentSetId
+		};
+		this.setlists = [...this.setlists, newEncore];
+		this.setlistSongs[newEncore.id] = [];
+		this.activeSetlistId = newEncore.id;
+		return newEncore;
 	}
 
 	async renameSetlist(setlistId: number, newName: string) {
@@ -164,14 +212,85 @@ export class SetlistEditorState {
 	}
 
 	async deleteSetlist(setlistId: number) {
+		// Find child encores (cascade-deleted in DB, but clean from local state)
+		const childEncoreIds = this.setlists
+			.filter((s) => s.parent_set_id === setlistId)
+			.map((s) => s.id);
+		const idsToRemove = [setlistId, ...childEncoreIds];
+
 		await deleteSetlistDb(setlistId);
-		this.setlists = this.setlists.filter((s) => s.id !== setlistId);
+		this.setlists = this.setlists.filter((s) => !idsToRemove.includes(s.id));
 		const updated = { ...this.setlistSongs };
-		delete updated[setlistId];
+		for (const id of idsToRemove) {
+			delete updated[id];
+		}
 		this.setlistSongs = updated;
-		if (this.activeSetlistId === setlistId) {
+		if (idsToRemove.includes(this.activeSetlistId!)) {
 			this.activeSetlistId = this.setlists.length > 0 ? this.setlists[0].id : null;
 		}
+		// Clamp activeGroupIndex if it's now out of bounds
+		const groupCount = this.pageGroups.length;
+		if (this.activeGroupIndex >= groupCount && groupCount > 0) {
+			this.activeGroupIndex = groupCount - 1;
+		}
+	}
+
+	// --- Tab cycling ---
+
+	cycleTab() {
+		const groups = this.pageGroups;
+		if (groups.length === 0) return;
+		this.activeGroupIndex = (this.activeGroupIndex + 1) % groups.length;
+		this.activeSetlistId = groups[this.activeGroupIndex].set.id;
+	}
+
+	// --- Cross-section song move ---
+
+	async moveSongBetweenSetlists(
+		fromSetlistId: number,
+		entryId: number,
+		toSetlistId: number,
+		toIndex: number
+	) {
+		const fromSongs = [...(this.setlistSongs[fromSetlistId] || [])];
+		const entryIdx = fromSongs.findIndex((s) => s.id === entryId);
+		if (entryIdx === -1) return;
+
+		const [entry] = fromSongs.splice(entryIdx, 1);
+
+		// Renumber from-list positions
+		for (let i = 0; i < fromSongs.length; i++) {
+			fromSongs[i].position = i;
+			this.debouncedPositionWrite(fromSongs[i].id, i);
+		}
+
+		// Remove from DB and re-insert into new setlist
+		const songId = entry.song_id;
+		await removeSetlistSong(entryId);
+		const newEntryId = await addSongToSetlistDb(toSetlistId, songId, toIndex);
+
+		// Build new entry for the to-list
+		const newEntry: SetlistSongRow = {
+			...entry,
+			id: newEntryId,
+			setlist_id: toSetlistId,
+			position: toIndex
+		};
+
+		const toSongs = [...(this.setlistSongs[toSetlistId] || [])];
+		toSongs.splice(toIndex, 0, newEntry);
+
+		// Renumber to-list positions
+		for (let i = 0; i < toSongs.length; i++) {
+			toSongs[i].position = i;
+			this.debouncedPositionWrite(toSongs[i].id, i);
+		}
+
+		this.setlistSongs = {
+			...this.setlistSongs,
+			[fromSetlistId]: fromSongs,
+			[toSetlistId]: toSongs
+		};
 	}
 
 	// --- Song management ---

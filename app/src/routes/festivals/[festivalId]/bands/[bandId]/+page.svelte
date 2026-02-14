@@ -7,6 +7,8 @@
 	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
 	import BacklineList from '$lib/components/BacklineList.svelte';
 	import FileDropzone from '$lib/components/FileDropzone.svelte';
+	import FileThumbnail from '$lib/components/FileThumbnail.svelte';
+	import FileLightbox from '$lib/components/FileLightbox.svelte';
 	import {
 		getFestivalBandById,
 		updateFestivalBand,
@@ -34,12 +36,19 @@
 	let editingName = $state(false);
 	let nameInput = $state('');
 	let showDeleteConfirm = $state(false);
+	let previewFile = $state<FestivalBandFileRow | null>(null);
 
 	const advanceStatuses: { value: AdvanceStatus; label: string }[] = [
 		{ value: 'no_contact', label: 'No Contact' },
 		{ value: 'in_progress', label: 'In Progress' },
 		{ value: 'advanced', label: 'Advanced' }
 	];
+
+	const advanceStatusColors: Record<AdvanceStatus, string> = {
+		no_contact: 'text-red-500 border-red-500/50',
+		in_progress: 'text-yellow-500 border-yellow-500/50',
+		advanced: 'text-green-500 border-green-500/50'
+	};
 
 	async function load() {
 		const row = await getFestivalBandById(bandId);
@@ -145,7 +154,9 @@
 						value={band.advance_status}
 						onchange={(e) =>
 							handleFieldBlur('advance_status', (e.target as HTMLSelectElement).value)}
-						class="w-full rounded-md border border-border-primary bg-transparent px-3 py-2 text-sm text-text-primary focus:border-stone-500 focus:outline-none"
+						class="w-full rounded-md border bg-transparent px-3 py-2 text-sm font-medium focus:outline-none {advanceStatusColors[
+							band.advance_status ?? 'no_contact'
+						]}"
 					>
 						{#each advanceStatuses as status (status.value)}
 							<option value={status.value}>{status.label}</option>
@@ -222,68 +233,20 @@
 		<!-- Files Section -->
 		<div>
 			<h2 class="mb-3 font-serif text-xl font-semibold text-text-primary">Files</h2>
-			<FileDropzone onfiles={handleFilesDropped} />
-			{#if files.length > 0}
-				<div class="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
-					{#each files as file (file.id)}
-						<div
-							class="flex items-center gap-2 rounded-lg border border-border-primary bg-surface px-3 py-2 shadow-sm"
-						>
-							<svg
-								xmlns="http://www.w3.org/2000/svg"
-								class="h-4 w-4 flex-shrink-0 text-text-tertiary"
-								viewBox="0 0 20 20"
-								fill="currentColor"
-							>
-								<path
-									fill-rule="evenodd"
-									d="M8 4a3 3 0 00-3 3v4a5 5 0 0010 0V7a1 1 0 112 0v4a7 7 0 11-14 0V7a5 5 0 0110 0v4a3 3 0 11-6 0V7a1 1 0 012 0v4a1 1 0 102 0V7a3 3 0 00-3-3z"
-									clip-rule="evenodd"
-								/>
-							</svg>
-							<span class="min-w-0 flex-1 truncate text-sm text-text-primary">
-								{file.original_filename}
-							</span>
-							<button
-								onclick={() => handleDownloadFile(file)}
-								class="flex-shrink-0 text-text-secondary hover:text-text-primary"
-								title="Download"
-							>
-								<svg
-									xmlns="http://www.w3.org/2000/svg"
-									class="h-4 w-4"
-									viewBox="0 0 20 20"
-									fill="currentColor"
-								>
-									<path
-										fill-rule="evenodd"
-										d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z"
-										clip-rule="evenodd"
-									/>
-								</svg>
-							</button>
-							<button
-								onclick={() => handleDeleteFile(file.id)}
-								class="flex-shrink-0 text-red-500 hover:text-red-700"
-								title="Delete"
-							>
-								<svg
-									xmlns="http://www.w3.org/2000/svg"
-									class="h-4 w-4"
-									viewBox="0 0 20 20"
-									fill="currentColor"
-								>
-									<path
-										fill-rule="evenodd"
-										d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
-										clip-rule="evenodd"
-									/>
-								</svg>
-							</button>
-						</div>
-					{/each}
-				</div>
-			{/if}
+			<FileDropzone onfiles={handleFilesDropped}>
+				{#if files.length > 0}
+					<div class="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
+						{#each files as file (file.id)}
+							<FileThumbnail
+								{file}
+								onclick={() => (previewFile = file)}
+								ondownload={() => handleDownloadFile(file)}
+								ondelete={() => handleDeleteFile(file.id)}
+							/>
+						{/each}
+					</div>
+				{/if}
+			</FileDropzone>
 		</div>
 
 		<hr class="border-border-primary" />
@@ -312,10 +275,18 @@
 		<ConfirmDialog
 			bind:open={showDeleteConfirm}
 			title="Delete Band"
-			description="Delete "{band.name}"? This will remove all associated files and backline items. This cannot be undone."
+			description={`Delete "${band.name}"? This will remove all associated files and backline items. This cannot be undone.`}
 			confirmLabel="Delete"
 			variant="destructive"
 			onconfirm={handleDeleteBand}
 		/>
 	{/if}
 </DetailPageLayout>
+
+<FileLightbox
+	file={previewFile}
+	{files}
+	onclose={() => (previewFile = null)}
+	onnavigate={(f) => (previewFile = f)}
+	ondownload={handleDownloadFile}
+/>
