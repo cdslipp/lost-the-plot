@@ -4,8 +4,8 @@
 	const links: { label: string; href: string; external?: boolean }[] = [
 		{ label: 'Bands', href: '/bands' },
 		{ label: 'Festivals', href: '/festivals' },
+		{ label: 'Tours', href: '/tours' },
 		{ label: 'Gear', href: '/gear' },
-		{ label: 'About', href: 'https://plot.slipp.cam', external: true },
 		{ label: 'Settings', href: '/settings' }
 	];
 </script>
