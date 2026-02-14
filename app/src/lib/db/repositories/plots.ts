@@ -125,6 +125,21 @@ export async function deletePlot(plotId: string): Promise<void> {
 	await db.run('DELETE FROM stage_plots WHERE id = ?', [plotId]);
 }
 
+export interface PlotWithBand {
+	id: string;
+	name: string;
+	band_id: string;
+	band_name: string;
+}
+
+export async function getAllPlotsWithBandName(): Promise<PlotWithBand[]> {
+	return db.query<PlotWithBand>(
+		`SELECT sp.id, sp.name, sp.band_id, b.name as band_name
+		 FROM stage_plots sp JOIN bands b ON sp.band_id = b.id
+		 ORDER BY b.updated_at DESC, sp.updated_at DESC`
+	);
+}
+
 export async function deletePlotsByBandId(bandId: string): Promise<void> {
 	await db.run('DELETE FROM stage_plots WHERE band_id = ?', [bandId]);
 }

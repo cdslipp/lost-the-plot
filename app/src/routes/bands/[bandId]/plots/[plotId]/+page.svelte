@@ -364,6 +364,8 @@
 
 	// --- Command palette / item placement ---
 	function openAddMenu() {
+		mediumMainTab = 'canvas';
+		mobileMainTab = 'canvas';
 		isAddingItem = true;
 	}
 

@@ -1,22 +1,20 @@
 <script lang="ts">
 	// SPDX-License-Identifier: AGPL-3.0-only
-	import { onMount } from 'svelte';
-	import { goto } from '$app/navigation';
-	import { db } from '$lib/db';
-
-	onMount(async () => {
-		await db.init();
-
-		// If exactly one band exists, go directly to it
-		const bands = await db.query<{ id: string }>('SELECT id FROM bands LIMIT 2');
-		if (bands.length === 1) {
-			goto(`/bands/${bands[0].id}`, { replaceState: true });
-		} else {
-			goto('/bands', { replaceState: true });
-		}
-	});
 </script>
 
-<div class="flex h-[calc(100dvh-1.25rem)] items-center justify-center">
-	<p class="text-text-secondary">Loading...</p>
+<div class="flex h-[calc(100dvh-1.25rem)] flex-col items-center justify-center gap-12">
+	<nav class="flex flex-col items-center gap-6">
+		<a
+			href="/bands"
+			class="font-serif text-[clamp(3rem,10vw,6rem)] leading-none font-bold text-text-primary no-underline transition-colors hover:text-stone-500 dark:hover:text-stone-400"
+		>
+			Bands
+		</a>
+		<a
+			href="/festivals"
+			class="font-serif text-[clamp(3rem,10vw,6rem)] leading-none font-bold text-text-primary no-underline transition-colors hover:text-stone-500 dark:hover:text-stone-400"
+		>
+			Festivals
+		</a>
+	</nav>
 </div>

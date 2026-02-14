@@ -11,8 +11,18 @@
 	import { page } from '$app/stores';
 	import { detectDevice } from '$lib/device';
 	import { onMount } from 'svelte';
+	import JumpBar from '$lib/components/JumpBar.svelte';
 
 	let { children } = $props();
+
+	let jumpBarOpen = $state(false);
+
+	function handleGlobalKeydown(e: KeyboardEvent) {
+		if ((e.ctrlKey || e.metaKey) && e.key === 'j') {
+			e.preventDefault();
+			jumpBarOpen = true;
+		}
+	}
 
 	// Redirect mobile/tablet users on initial load (not if they clicked "Continue")
 	if (browser) {
@@ -110,6 +120,8 @@
 	}
 </script>
 
+<svelte:window onkeydown={handleGlobalKeydown} />
+
 <svelte:head>
 	<link rel="icon" href={favicon} />
 </svelte:head>
@@ -189,6 +201,8 @@
 		>
 	</footer>
 </div>
+
+<JumpBar bind:open={jumpBarOpen} />
 
 {#if showRefresh || showOffline}
 	<div

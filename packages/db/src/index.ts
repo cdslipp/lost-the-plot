@@ -20,3 +20,5 @@ export * as migration007 from './migrations/007_add_stage_dimensions.js';
 export * as migration008 from './migrations/008_add_gig_times_and_starred.js';
 export * as migration009 from './migrations/009_add_console_settings.js';
 export * as migration010 from './migrations/010_plot_persons.js';
+export * as migration011 from './migrations/011_add_festivals.js';
+export * as migration012 from './migrations/012_add_festival_schedule.js';
