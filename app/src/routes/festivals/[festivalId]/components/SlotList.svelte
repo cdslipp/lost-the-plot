@@ -289,7 +289,7 @@
 			<!-- svelte-ignore a11y_click_events_have_key_events -->
 			<div
 				onclick={(e) => e.stopPropagation()}
-				class="absolute bottom-full left-1/2 z-10 mb-1 w-48 -translate-x-1/2 rounded-lg border border-border-primary bg-surface p-1 shadow-lg"
+				class="absolute top-full left-1/2 z-10 mt-1 w-48 -translate-x-1/2 rounded-lg border border-border-primary bg-surface p-1 shadow-lg"
 			>
 				{#each SLOT_TYPES as st (st.value)}
 					<button

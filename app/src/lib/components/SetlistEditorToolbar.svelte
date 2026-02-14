@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { browser } from '$app/environment';
 	import { getSetlistState } from '$lib/state/setlistEditorState.svelte';
+	import CircleBackButton from '$lib/components/CircleBackButton.svelte';
 
 	const slState = getSetlistState();
 
@@ -12,10 +13,12 @@
 
 	let {
 		backHref,
-		onAddSong
+		onAddSong,
+		onExportPdf
 	}: {
 		backHref: string;
 		onAddSong: () => void;
+		onExportPdf: () => void;
 	} = $props();
 
 	const fontLabels = ['Sans', 'Serif', 'Marker'];
@@ -37,27 +40,11 @@
 		}
 	}
 
-	function handlePrint() {
-		window.print();
-	}
 </script>
 
 <div class="toolbar print:hidden">
 	<div class="toolbar-left">
-		<a href={backHref} class="toolbar-btn" title="Back to band">
-			<svg
-				xmlns="http://www.w3.org/2000/svg"
-				viewBox="0 0 20 20"
-				fill="currentColor"
-				class="h-5 w-5"
-			>
-				<path
-					fill-rule="evenodd"
-					d="M17 10a.75.75 0 01-.75.75H5.612l4.158 3.96a.75.75 0 11-1.04 1.08l-5.5-5.25a.75.75 0 010-1.08l5.5-5.25a.75.75 0 111.04 1.08L5.612 9.25H16.25A.75.75 0 0117 10z"
-					clip-rule="evenodd"
-				/>
-			</svg>
-		</a>
+		<CircleBackButton href={backHref} ariaLabel="Back to band" />
 		<div class="toolbar-divider"></div>
 		<span class="toolbar-gig-name">{slState.gigName}</span>
 	</div>
@@ -99,6 +86,12 @@
 		<label class="toolbar-checkbox">
 			<input type="checkbox" bind:checked={slState.showKeys} />
 			<span>Keys</span>
+		</label>
+
+		<!-- Show numbers toggle -->
+		<label class="toolbar-checkbox">
+			<input type="checkbox" bind:checked={slState.showNumbers} />
+			<span>Numbers</span>
 		</label>
 	</div>
 
@@ -154,7 +147,7 @@
 			{/if}
 		</button>
 
-		<button class="toolbar-btn" onclick={handlePrint} title="Print / PDF">
+		<button class="toolbar-btn" onclick={onExportPdf} title="Export PDF">
 			<svg
 				xmlns="http://www.w3.org/2000/svg"
 				viewBox="0 0 20 20"
@@ -167,7 +160,7 @@
 					clip-rule="evenodd"
 				/>
 			</svg>
-			<span class="hidden sm:inline">Print</span>
+			<span class="hidden sm:inline">PDF</span>
 		</button>
 	</div>
 </div>
@@ -275,10 +268,6 @@
 	.toolbar-btn:disabled {
 		opacity: 0.5;
 		cursor: not-allowed;
-	}
-
-	a.toolbar-btn {
-		text-decoration: none;
 	}
 
 	.toolbar-btn-primary {

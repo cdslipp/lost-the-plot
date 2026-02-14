@@ -1,25 +1,26 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { page } from '$app/stores';
-	import { goto, beforeNavigate } from '$app/navigation';
-	import { browser } from '$app/environment';
+	import { beforeNavigate } from '$app/navigation';
 	import { SetlistEditorState, setSetlistState } from '$lib/state/setlistEditorState.svelte';
 	import SetlistEditorToolbar from '$lib/components/SetlistEditorToolbar.svelte';
 	import EditableSetlistSheet from '$lib/components/EditableSetlistSheet.svelte';
+	import SetlistSongInspector from '$lib/components/SetlistSongInspector.svelte';
 	import SongCommandPalette from '$lib/components/SongCommandPalette.svelte';
+	import { exportSetlistToPdf } from '$lib/utils/pdf';
+	import type { SetlistSongRow } from '$lib/db/repositories/setlists';
 
 	let bandId = $derived($page.params.bandId);
-	let gigId = $derived(parseInt($page.params.gigId));
 
-	const state = new SetlistEditorState($page.params.bandId!, parseInt($page.params.gigId!));
-	setSetlistState(state);
+	const editor = new SetlistEditorState($page.params.bandId!, parseInt($page.params.gigId!));
+	setSetlistState(editor);
 
 	let loaded = $state(false);
 	let notFound = $state(false);
 	let commandPaletteOpen = $state(false);
 
 	onMount(async () => {
-		const ok = await state.load();
+		const ok = await editor.load();
 		if (!ok) {
 			notFound = true;
 			return;
@@ -29,7 +30,7 @@
 
 	// Flush pending writes before navigating away
 	beforeNavigate(() => {
-		state.flushPositionWrites();
+		editor.flushPositionWrites();
 	});
 
 	// Global Cmd+K handler
@@ -37,9 +38,8 @@
 		if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
 			e.preventDefault();
 			if (!commandPaletteOpen) {
-				// Default to first setlist if none active
-				if (state.activeSetlistId === null && state.setlists.length > 0) {
-					state.activeSetlistId = state.setlists[0].id;
+				if (editor.activeSetlistId === null && editor.setlists.length > 0) {
+					editor.activeSetlistId = editor.setlists[0].id;
 				}
 				commandPaletteOpen = true;
 			}
@@ -47,24 +47,35 @@
 	}
 
 	function openPaletteForSetlist(setlistId: number) {
-		state.activeSetlistId = setlistId;
+		editor.activeSetlistId = setlistId;
 		commandPaletteOpen = true;
 	}
 
 	function handleSongSelect(song: { id: number }) {
-		if (state.activeSetlistId !== null) {
-			state.addSongToSetlist(state.activeSetlistId, song.id);
+		if (editor.activeSetlistId !== null) {
+			editor.addSongToSetlist(editor.activeSetlistId, song.id);
 		}
 	}
 
 	function handleSongCreate(title: string) {
-		if (state.activeSetlistId !== null) {
-			state.createSongAndAdd(state.activeSetlistId, title);
+		if (editor.activeSetlistId !== null) {
+			editor.createSongAndAdd(editor.activeSetlistId, title);
 		}
 	}
 
+	async function handleExportPdf() {
+		const sheets = Array.from(document.querySelectorAll('.setlist-sheet')) as HTMLElement[];
+		await exportSetlistToPdf({
+			title: editor.gigName,
+			sheets,
+			pageFormat: editor.pageSize === 1 ? 'a4' : 'letter'
+		});
+	}
+
 	let songsInActiveSet = $derived(
-		state.activeSetlistId !== null ? state.songsInSetlist(state.activeSetlistId) : new Set<number>()
+		editor.activeSetlistId !== null
+			? editor.songsInSetlist(editor.activeSetlistId)
+			: new Set<number>()
 	);
 </script>
 
@@ -82,48 +93,60 @@
 		></div>
 	</div>
 {:else}
-	<SetlistEditorToolbar
-		backHref="/bands/{bandId}"
-		onAddSong={() => openPaletteForSetlist(state.activeSetlistId ?? state.setlists[0]?.id)}
-	/>
+	<div class="flex h-[calc(100dvh-4.25rem)] flex-col overflow-hidden">
+		<SetlistEditorToolbar
+			backHref="/bands/{bandId}"
+			onAddSong={() => openPaletteForSetlist(editor.activeSetlistId ?? editor.setlists[0]?.id)}
+			onExportPdf={handleExportPdf}
+		/>
 
-	<div class="sheets-area">
-		{#each state.setlists as setlist (setlist.id)}
-			{@const songs = state.setlistSongs[setlist.id] || []}
-			<div class="sheet-wrapper" onclick={() => (state.activeSetlistId = setlist.id)}>
-				<EditableSetlistSheet
-					{songs}
-					setName={setlist.name}
-					font={state.font}
-					pageSize={state.pageSize}
-					showKeys={state.showKeys}
-					onreorder={(from, to) => state.reorderSongs(setlist.id, from, to)}
-					onremove={(entryId) => state.removeSong(setlist.id, entryId)}
-					onrename={(name) => state.renameSetlist(setlist.id, name)}
-					onaddclick={() => openPaletteForSetlist(setlist.id)}
-				/>
+		<div class="flex min-h-0 flex-1 gap-5 overflow-hidden">
+			<div class="sheets-area">
+				{#each editor.setlists as setlist (setlist.id)}
+					{@const songs = editor.setlistSongs[setlist.id] || []}
+					<div class="sheet-wrapper" onclick={() => (editor.activeSetlistId = setlist.id)}>
+						<EditableSetlistSheet
+							{songs}
+							setName={setlist.name}
+							font={editor.font}
+							pageSize={editor.pageSize}
+							showKeys={editor.showKeys}
+							showNumbers={editor.showNumbers}
+							selectedSongId={editor.selectedSongId}
+							onreorder={(from, to) => editor.reorderSongs(setlist.id, from, to)}
+							onremove={(entryId) => editor.removeSong(setlist.id, entryId)}
+							onrename={(name) => editor.renameSetlist(setlist.id, name)}
+							onaddclick={() => openPaletteForSetlist(setlist.id)}
+							onsongclick={(entry) => (editor.selectedSongId = entry.song_id)}
+						/>
 
-				{#if state.setlists.length > 1}
-					<button
-						class="delete-set-btn"
-						onclick={(e) => {
-							e.stopPropagation();
-							state.deleteSetlist(setlist.id);
-						}}
-						title="Delete this set"
-					>
-						Delete Set
-					</button>
-				{/if}
+						{#if editor.setlists.length > 1}
+							<button
+								class="delete-set-btn"
+								onclick={(e) => {
+									e.stopPropagation();
+									editor.deleteSetlist(setlist.id);
+								}}
+								title="Delete this set"
+							>
+								Delete Set
+							</button>
+						{/if}
+					</div>
+				{/each}
+
+				<button class="add-set-btn" onclick={() => editor.addSetlist()}>+ Add Set</button>
 			</div>
-		{/each}
 
-		<button class="add-set-btn" onclick={() => state.addSetlist()}>+ Add Set</button>
+			<div class="hidden w-80 shrink-0 flex-col overflow-hidden py-4 pr-4 md:flex print:hidden">
+				<SetlistSongInspector />
+			</div>
+		</div>
 	</div>
 
 	<SongCommandPalette
 		bind:open={commandPaletteOpen}
-		songs={state.songs}
+		songs={editor.songs}
 		songsInSet={songsInActiveSet}
 		onselect={handleSongSelect}
 		oncreate={handleSongCreate}
@@ -139,7 +162,7 @@
 		gap: 32px;
 		padding: 32px 16px;
 		overflow-y: auto;
-		background: var(--color-muted, #f5f5f4);
+		min-height: 0;
 	}
 
 	.sheet-wrapper {

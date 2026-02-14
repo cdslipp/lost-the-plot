@@ -3,6 +3,8 @@
 	import { page } from '$app/stores';
 	import { decodeSetlist, encodeSetlist, buildSetlistShareUrl } from '@stageplotter/shared';
 	import SetlistSheet from '$lib/components/SetlistSheet.svelte';
+	import CircleBackButton from '$lib/components/CircleBackButton.svelte';
+	import { exportSetlistToPdf } from '$lib/utils/pdf';
 	import type { SetlistShareData } from '@stageplotter/shared';
 
 	let data = $state<SetlistShareData | null>(null);
@@ -95,8 +97,13 @@
 		}
 	}
 
-	function print() {
-		window.print();
+	async function handleExportPdf() {
+		const sheets = Array.from(document.querySelectorAll('.setlist-sheet')) as HTMLElement[];
+		await exportSetlistToPdf({
+			title: gigName || 'setlist',
+			sheets,
+			pageFormat: pageSize === 1 ? 'a4' : 'letter'
+		});
 	}
 </script>
 
@@ -115,6 +122,8 @@
 		</div>
 	{:else}
 		<div class="controls no-print">
+			<CircleBackButton href="/" />
+
 			<div class="control-group">
 				<label>Font:</label>
 				<button class:active={font === 0} onclick={() => (font = 0)}>Sans</button>
@@ -139,7 +148,7 @@
 				<button onclick={copyLink} class="btn-primary">
 					{copyFeedback ? '✓ Copied!' : 'Copy Link'}
 				</button>
-				<button onclick={print} class="btn-secondary">Print</button>
+				<button onclick={handleExportPdf} class="btn-secondary">PDF</button>
 			</div>
 		</div>
 
@@ -207,9 +216,9 @@
 	}
 
 	.control-group button.active {
-		background: #2563eb;
+		background: #1c1917;
 		color: white;
-		border-color: #2563eb;
+		border-color: #1c1917;
 	}
 
 	.actions {
@@ -229,12 +238,12 @@
 	}
 
 	button.btn-primary {
-		background: #2563eb;
+		background: #1c1917;
 		color: white;
 	}
 
 	button.btn-primary:hover {
-		background: #1d4ed8;
+		background: #292524;
 	}
 
 	button.btn-secondary {

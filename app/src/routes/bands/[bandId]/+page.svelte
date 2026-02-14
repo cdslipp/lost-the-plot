@@ -284,11 +284,7 @@
 		<hr class="border-border-primary" />
 
 		<!-- Gigs Section -->
-		<GigsSection
-			{bandId}
-			bind:gigs
-			plots={plots.map((p) => ({ id: p.id, name: p.name }))}
-		/>
+		<GigsSection {bandId} bind:gigs plots={plots.map((p) => ({ id: p.id, name: p.name }))} />
 
 		<Dialog.Root bind:open={showNewPlotDialog}>
 			<Dialog.Portal>

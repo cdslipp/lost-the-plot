@@ -1,6 +1,7 @@
 <script lang="ts">
 	// SPDX-License-Identifier: AGPL-3.0-only
 	import { ImportExport } from '$lib';
+	import CircleBackButton from '$lib/components/CircleBackButton.svelte';
 	import NotificationDialog from '$lib/components/NotificationDialog.svelte';
 	import {
 		encodePayload,
@@ -140,24 +141,7 @@
 <div class="mb-2 flex items-start justify-between gap-4">
 	<div class="flex min-w-0 flex-1 items-start gap-3">
 		{#if backHref}
-			<a
-				href={backHref}
-				class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-border-primary text-text-secondary transition hover:bg-surface-hover hover:text-text-primary"
-				aria-label="Back"
-			>
-				<svg
-					xmlns="http://www.w3.org/2000/svg"
-					class="h-5 w-5"
-					viewBox="0 0 20 20"
-					fill="currentColor"
-				>
-					<path
-						fill-rule="evenodd"
-						d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z"
-						clip-rule="evenodd"
-					/>
-				</svg>
-			</a>
+			<CircleBackButton href={backHref} />
 		{/if}
 		<div class="min-w-0 flex-1">
 			{#if viewOnly}

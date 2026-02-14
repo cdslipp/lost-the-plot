@@ -16,7 +16,12 @@ import {
 	type SetlistRow,
 	type SetlistSongRow
 } from '$lib/db/repositories/setlists';
-import { getSongsByBandId, createSong, type SongRow } from '$lib/db/repositories/songs';
+import {
+	getSongsByBandId,
+	createSong,
+	updateSongField,
+	type SongRow
+} from '$lib/db/repositories/songs';
 import { getGigsByBandId, type GigRow } from '$lib/db/repositories/gigs';
 import { getBandById } from '$lib/db/repositories/bands';
 import { encodeSetlist, buildSetlistShareUrl } from '@stageplotter/shared';
@@ -47,9 +52,13 @@ export class SetlistEditorState {
 	font = $state(0); // 0=sans, 1=serif, 2=marker
 	pageSize = $state(0); // 0=letter, 1=A4
 	showKeys = $state(true);
+	showNumbers = $state(true);
 
 	// Active setlist for command palette targeting
 	activeSetlistId = $state<number | null>(null);
+
+	// Selected song for inspector panel
+	selectedSongId = $state<number | null>(null);
 
 	// Write management
 	private writeTimer: ReturnType<typeof setTimeout> | null = null;
@@ -67,6 +76,7 @@ export class SetlistEditorState {
 					if (typeof prefs.font === 'number') this.font = prefs.font;
 					if (typeof prefs.pageSize === 'number') this.pageSize = prefs.pageSize;
 					if (typeof prefs.showKeys === 'boolean') this.showKeys = prefs.showKeys;
+					if (typeof prefs.showNumbers === 'boolean') this.showNumbers = prefs.showNumbers;
 				} catch {
 					// ignore
 				}
@@ -75,7 +85,12 @@ export class SetlistEditorState {
 
 		// Persist display prefs
 		$effect(() => {
-			const prefs = { font: this.font, pageSize: this.pageSize, showKeys: this.showKeys };
+			const prefs = {
+				font: this.font,
+				pageSize: this.pageSize,
+				showKeys: this.showKeys,
+				showNumbers: this.showNumbers
+			};
 			if (typeof window !== 'undefined') {
 				localStorage.setItem('stageplotter-setlist-prefs', JSON.stringify(prefs));
 			}
@@ -273,5 +288,36 @@ export class SetlistEditorState {
 	songsInSetlist(setlistId: number): Set<number> {
 		const songs = this.setlistSongs[setlistId] || [];
 		return new Set(songs.map((s) => s.song_id));
+	}
+
+	async updateSong(songId: number, field: string, value: string | number | null) {
+		await updateSongField(songId, field, value);
+
+		// Update local songs array
+		const songIdx = this.songs.findIndex((s) => s.id === songId);
+		if (songIdx !== -1) {
+			(this.songs[songIdx] as unknown as Record<string, unknown>)[field] = value;
+			this.songs = [...this.songs];
+		}
+
+		// Update setlistSongs entries that reference this song
+		const fieldMap: Record<string, string> = {
+			title: 'title',
+			starting_key: 'starting_key',
+			starting_tempo: 'starting_tempo'
+		};
+		const setlistField = fieldMap[field];
+		if (setlistField) {
+			const updated = { ...this.setlistSongs };
+			for (const setlistId of Object.keys(updated)) {
+				const entries = updated[Number(setlistId)];
+				for (const entry of entries) {
+					if (entry.song_id === songId) {
+						(entry as unknown as Record<string, unknown>)[setlistField] = value;
+					}
+				}
+			}
+			this.setlistSongs = updated;
+		}
 	}
 }

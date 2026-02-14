@@ -174,10 +174,17 @@ export async function exportToPdf({
 		}
 	}
 
-	// Save — manual blob download so repeated exports work without a page refresh.
-	// jsPDF's built-in save() leaks blob URLs and browsers suppress repeated
-	// downloads of the same filename; creating + revoking our own URL avoids both.
-	const filename = (plotName || 'stage-plot').replace(/[^a-zA-Z0-9-_ ]/g, '').replace(/\s+/g, '-');
+	// Save via shared helper
+	downloadPdfBlob(doc, plotName || 'stage-plot');
+}
+
+/**
+ * Manual blob download so repeated exports work without a page refresh.
+ * jsPDF's built-in save() leaks blob URLs and browsers suppress repeated
+ * downloads of the same filename; creating + revoking our own URL avoids both.
+ */
+function downloadPdfBlob(doc: jsPDF, name: string) {
+	const filename = name.replace(/[^a-zA-Z0-9-_ ]/g, '').replace(/\s+/g, '-');
 	const blob = doc.output('blob');
 	const url = URL.createObjectURL(blob);
 	const a = document.createElement('a');
@@ -185,9 +192,84 @@ export async function exportToPdf({
 	a.download = `${filename}.pdf`;
 	document.body.appendChild(a);
 	a.click();
-	// Small delay before cleanup so the browser has time to start the download
 	setTimeout(() => {
 		document.body.removeChild(a);
 		URL.revokeObjectURL(url);
 	}, 100);
+}
+
+interface SetlistPdfOptions {
+	title: string;
+	sheets: HTMLElement[];
+	pageFormat?: 'letter' | 'a4';
+}
+
+export async function exportSetlistToPdf({
+	title,
+	sheets,
+	pageFormat = 'letter'
+}: SetlistPdfOptions) {
+	if (sheets.length === 0) return;
+
+	// Capture each sheet as a canvas image
+	const captures: HTMLCanvasElement[] = [];
+	for (const sheet of sheets) {
+		const canvas = await html2canvas(sheet, {
+			scale: 2,
+			useCORS: true,
+			backgroundColor: '#ffffff',
+			logging: false,
+			onclone: (clonedDoc, clonedEl) => {
+				// Hide interactive UI elements in the clone
+				const selectors = [
+					'.drag-handle',
+					'.delete-btn',
+					'.add-prompt',
+					'.setlist-header-btn',
+					'.delete-set-btn',
+					'.add-set-btn'
+				];
+				for (const sel of selectors) {
+					for (const el of clonedEl.querySelectorAll(sel)) {
+						(el as HTMLElement).style.display = 'none';
+					}
+				}
+				// Also hide anything marked print:hidden
+				for (const el of clonedDoc.querySelectorAll('.print\\:hidden, [class*="print:hidden"]')) {
+					(el as HTMLElement).style.display = 'none';
+				}
+			}
+		});
+		captures.push(canvas);
+	}
+
+	// Create PDF
+	const doc = new jsPDF({ orientation: 'portrait', unit: 'pt', format: pageFormat });
+	const pageWidth = doc.internal.pageSize.getWidth();
+	const pageHeight = doc.internal.pageSize.getHeight();
+	const margin = 28;
+
+	for (let i = 0; i < captures.length; i++) {
+		if (i > 0) doc.addPage(pageFormat, 'portrait');
+
+		const canvas = captures[i];
+		const imgData = canvas.toDataURL('image/png');
+
+		const availableWidth = pageWidth - margin * 2;
+		const availableHeight = pageHeight - margin * 2;
+
+		const widthScale = availableWidth / canvas.width;
+		const heightScale = availableHeight / canvas.height;
+		const scale = Math.min(widthScale, heightScale);
+		const finalWidth = canvas.width * scale;
+		const finalHeight = canvas.height * scale;
+
+		// Center on page
+		const imgX = margin + (availableWidth - finalWidth) / 2;
+		const imgY = margin + (availableHeight - finalHeight) / 2;
+
+		doc.addImage(imgData, 'PNG', imgX, imgY, finalWidth, finalHeight);
+	}
+
+	downloadPdfBlob(doc, title || 'setlist');
 }

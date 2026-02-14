@@ -7,10 +7,13 @@
 		font: number;
 		pageSize: number;
 		showKeys: boolean;
+		showNumbers: boolean;
+		selectedSongId?: number | null;
 		onreorder?: (fromIndex: number, toIndex: number) => void;
 		onremove?: (entryId: number) => void;
 		onrename?: (newName: string) => void;
 		onaddclick?: () => void;
+		onsongclick?: (entry: SetlistSongRow) => void;
 	};
 
 	let {
@@ -19,10 +22,13 @@
 		font,
 		pageSize,
 		showKeys,
+		showNumbers,
+		selectedSongId = null,
 		onreorder,
 		onremove,
 		onrename,
-		onaddclick
+		onaddclick,
+		onsongclick
 	}: Props = $props();
 
 	const FONTS = ["'DM Sans', sans-serif", "'Fraunces', serif", "'Permanent Marker', cursive"];
@@ -66,36 +72,35 @@
 	let dragOverIndex = $state<number | null>(null);
 	let dragY = $state(0);
 	let dragStartY = $state(0);
-	let dragRowEl = $state<HTMLElement | null>(null);
 
 	function handlePointerDown(e: PointerEvent, index: number) {
-		const el = (e.currentTarget as HTMLElement).closest('.setlist-row-wrapper') as HTMLElement;
-		if (!el) return;
 		e.preventDefault();
-		el.setPointerCapture(e.pointerId);
+		e.stopPropagation();
 		dragIndex = index;
 		dragStartY = e.clientY;
 		dragY = 0;
-		dragRowEl = el;
+		dragOverIndex = index;
+		window.addEventListener('pointermove', handlePointerMove);
+		window.addEventListener('pointerup', handlePointerUp);
 	}
 
 	function handlePointerMove(e: PointerEvent) {
 		if (dragIndex === null) return;
 		dragY = e.clientY - dragStartY;
-		// Calculate which row we're over
 		const rowsFromStart = Math.round(dragY / lineHeight);
 		const target = Math.max(0, Math.min(songs.length - 1, dragIndex + rowsFromStart));
 		dragOverIndex = target;
 	}
 
 	function handlePointerUp() {
+		window.removeEventListener('pointermove', handlePointerMove);
+		window.removeEventListener('pointerup', handlePointerUp);
 		if (dragIndex !== null && dragOverIndex !== null && dragIndex !== dragOverIndex) {
 			onreorder?.(dragIndex, dragOverIndex);
 		}
 		dragIndex = null;
 		dragOverIndex = null;
 		dragY = 0;
-		dragRowEl = null;
 	}
 
 	const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.userAgent);
@@ -112,8 +117,6 @@
 		font-family: {fontFamily};
 		font-weight: {fontWeight};
 	"
-	onpointermove={handlePointerMove}
-	onpointerup={handlePointerUp}
 >
 	<div class="setlist-header" style="height: {HEADER_HEIGHT}px; margin-bottom: {HEADER_GAP}px;">
 		{#if editingName}
@@ -138,16 +141,20 @@
 		{#each songs as entry, i (entry.id)}
 			{@const isDragging = dragIndex === i}
 			{@const isTarget = dragOverIndex === i && dragIndex !== null && dragIndex !== i}
+			{@const isSelected = selectedSongId != null && entry.song_id === selectedSongId}
+			<!-- svelte-ignore a11y_click_events_have_key_events -->
 			<div
 				class="setlist-row-wrapper"
 				class:dragging={isDragging}
 				class:drag-target-above={isTarget && dragIndex !== null && dragIndex > i}
 				class:drag-target-below={isTarget && dragIndex !== null && dragIndex < i}
+				class:selected={isSelected}
 				style="
 					height: {lineHeight}px;
 					font-size: {fontSize}px;
 					{isDragging ? `transform: translateY(${dragY}px); z-index: 10;` : ''}
 				"
+				onclick={() => onsongclick?.(entry)}
 			>
 				<button
 					class="drag-handle"
@@ -168,13 +175,22 @@
 					</svg>
 				</button>
 				<div class="setlist-row">
-					<span class="setlist-num">{i + 1}.</span>
+					{#if showNumbers}
+						<span class="setlist-num">{i + 1}.</span>
+					{/if}
 					<span class="setlist-title">{entry.title}</span>
 					{#if showKeys && entry.starting_key}
 						<span class="setlist-key">{entry.starting_key}</span>
 					{/if}
 				</div>
-				<button class="delete-btn" onclick={() => onremove?.(entry.id)} title="Remove song">
+				<button
+					class="delete-btn"
+					onclick={(e) => {
+						e.stopPropagation();
+						onremove?.(entry.id);
+					}}
+					title="Remove song"
+				>
 					<svg
 						xmlns="http://www.w3.org/2000/svg"
 						viewBox="0 0 20 20"
@@ -194,10 +210,6 @@
 		{#if songs.length === 0}
 			<button class="add-prompt" onclick={onaddclick}>
 				Press <kbd>{modKey}K</kbd> to add a song
-			</button>
-		{:else}
-			<button class="add-prompt add-prompt-small" onclick={onaddclick}>
-				<kbd>{modKey}K</kbd> to add more songs
 			</button>
 		{/if}
 	</div>
@@ -255,6 +267,13 @@
 
 	.setlist-row-wrapper:hover {
 		background: rgb(0 0 0 / 0.03);
+	}
+
+	.setlist-row-wrapper.selected {
+		outline: 2px solid #78716c;
+		outline-offset: -2px;
+		border-radius: 4px;
+		background: rgb(0 0 0 / 0.02);
 	}
 
 	.setlist-row-wrapper.dragging {
@@ -359,12 +378,7 @@
 		color: #666;
 	}
 
-	.add-prompt-small {
-		padding: 12px;
-		font-size: 12px;
-	}
-
-	.add-prompt kbd {
+.add-prompt kbd {
 		display: inline-block;
 		padding: 1px 6px;
 		margin: 0 2px;

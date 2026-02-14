@@ -9,6 +9,8 @@
 	} from '$lib/db/repositories/festivalBands';
 	import { getAllPlotsWithBandName, type PlotWithBand } from '$lib/db/repositories/plots';
 	import { saveFile, deleteFile } from '$lib/utils/opfsStorage';
+	import SaveButton from '$lib/components/SaveButton.svelte';
+	import BacklineList from '$lib/components/BacklineList.svelte';
 
 	type Props = {
 		festivalId: string;
@@ -37,9 +39,18 @@
 		expandedBandId = id;
 	}
 
-	async function handleFieldBlur(bandId: string, field: string, value: string | null) {
-		await updateFestivalBand(bandId, { [field]: value || null });
+	async function handleFieldBlur(bandId: string, field: string, value: string | number | null) {
+		await updateFestivalBand(bandId, { [field]: typeof value === 'number' ? value : value || null });
 		await reload();
+	}
+
+	function handleEditorKeydown(e: KeyboardEvent) {
+		if (e.key === 'Enter' && !e.shiftKey) {
+			const target = e.target as HTMLElement;
+			if (target.tagName === 'TEXTAREA') return;
+			e.preventDefault();
+			expandedBandId = null;
+		}
 	}
 
 	async function handlePlotSelect(bandId: string, plotId: string) {
@@ -108,6 +119,9 @@
 			>
 				<span class="min-w-0 flex-1 truncate text-sm font-medium text-text-primary">
 					{band.name}
+					{#if band.is_headliner === 1}
+						<span class="text-amber-500" title="Headliner">★</span>
+					{/if}
 				</span>
 				<svg
 					xmlns="http://www.w3.org/2000/svg"
@@ -127,7 +141,8 @@
 
 			<!-- Expanded editor -->
 			{#if expandedBandId === band.id}
-				<div class="border-t border-border-primary px-3 py-3">
+				<!-- svelte-ignore a11y_no_static_element_interactions -->
+				<div class="border-t border-border-primary px-3 py-3" onkeydown={handleEditorKeydown}>
 					<div class="flex flex-col gap-2.5">
 						<!-- Name -->
 						<div>
@@ -140,6 +155,18 @@
 								class="w-full rounded-md border border-border-primary bg-transparent px-2 py-1 text-sm text-text-primary focus:border-stone-500 focus:outline-none"
 							/>
 						</div>
+
+						<!-- Headliner -->
+						<label class="flex items-center gap-2 text-sm text-text-primary">
+							<input
+								type="checkbox"
+								checked={band.is_headliner === 1}
+								onchange={(e) =>
+									handleFieldBlur(band.id, 'is_headliner', (e.target as HTMLInputElement).checked ? 1 : 0)}
+								class="rounded border-border-primary"
+							/>
+							Headliner
+						</label>
 
 						<!-- Website -->
 						<div>
@@ -236,13 +263,20 @@
 							</div>
 						</div>
 
-						<!-- Delete -->
-						<button
-							onclick={() => handleDeleteBand(band.id)}
-							class="mt-1 self-start rounded-md px-2 py-1 text-xs text-red-500 transition hover:bg-red-50 hover:text-red-700 dark:hover:bg-red-900/20"
-						>
-							Delete band
-						</button>
+						<!-- Backline -->
+						<BacklineList festivalBandId={band.id} />
+
+						<!-- Actions -->
+						<div class="mt-1 flex items-center gap-2">
+							<button
+								onclick={() => handleDeleteBand(band.id)}
+								class="self-start rounded-md px-2 py-1 text-xs text-red-500 transition hover:bg-red-50 hover:text-red-700 dark:hover:bg-red-900/20"
+							>
+								Delete band
+							</button>
+							<div class="flex-1"></div>
+							<SaveButton onclick={() => (expandedBandId = null)} />
+						</div>
 					</div>
 				</div>
 			{/if}

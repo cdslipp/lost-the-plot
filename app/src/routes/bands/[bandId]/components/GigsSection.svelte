@@ -534,6 +534,5 @@
 				</div>
 			</div>
 		{/if}
-
 	</div>
 {/snippet}

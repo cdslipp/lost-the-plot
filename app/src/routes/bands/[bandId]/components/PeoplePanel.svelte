@@ -358,12 +358,12 @@
 					bind:this={nameInputEl}
 					bind:value={newPerson.name}
 					placeholder="Name"
-					class="min-w-0 flex-1 rounded-lg border border-transparent bg-transparent px-2 py-1.5 text-sm text-text-primary placeholder:text-text-tertiary focus:border-border-primary focus:bg-surface focus:ring-2 focus:ring-stone-500"
+					class="min-w-0 flex-1 rounded-lg border border-border-primary bg-surface px-2 py-1.5 text-sm text-text-primary placeholder:text-text-tertiary focus:border-stone-500 focus:ring-2 focus:ring-stone-500"
 				/>
 				<input
 					bind:value={newPerson.role}
 					placeholder="Role (e.g. Guitar, FOH)"
-					class="min-w-0 flex-1 rounded-lg border border-transparent bg-transparent px-2 py-1.5 text-sm text-text-primary placeholder:text-text-tertiary focus:border-border-primary focus:bg-surface focus:ring-2 focus:ring-stone-500"
+					class="min-w-0 flex-1 rounded-lg border border-border-primary bg-surface px-2 py-1.5 text-sm text-text-primary placeholder:text-text-tertiary focus:border-stone-500 focus:ring-2 focus:ring-stone-500"
 					onkeydown={handleRoleKeydown}
 				/>
 				{#if newPerson.name.trim()}

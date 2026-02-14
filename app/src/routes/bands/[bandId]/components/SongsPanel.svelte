@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { tick } from 'svelte';
 	import { slide } from 'svelte/transition';
 	import { db } from '$lib/db';
 
@@ -23,17 +24,11 @@
 	let editingSongId = $state<number | null>(null);
 	let expandedNoteId = $state<number | null>(null);
 	let flashSongId = $state<number | null>(null);
-	let showAddSong = $state(false);
 	let songFilter = $state<
 		'all' | 'starred' | 'ballad' | 'midtempo' | 'uptempo' | 'major' | 'minor' | 'unknown'
 	>('all');
-	let newSong = $state({
-		title: '',
-		starting_key: '',
-		starting_tempo: '' as string,
-		instruments: '',
-		notes: ''
-	});
+	let newSongTitle = $state('');
+	let songTitleInputEl = $state<HTMLInputElement | null>(null);
 
 	// Sort: starred first (alphabetically), then unstarred (alphabetically)
 	const sortedSongs = $derived(
@@ -76,29 +71,21 @@
 	);
 
 	async function addSong() {
-		if (!newSong.title.trim()) return;
-		const tempo = newSong.starting_tempo ? parseInt(newSong.starting_tempo) : null;
+		if (!newSongTitle.trim()) return;
 		const result = await db.run(
-			'INSERT INTO songs (band_id, title, starting_key, starting_tempo, instruments, notes) VALUES (?, ?, ?, ?, ?, ?)',
-			[
-				bandId,
-				newSong.title.trim(),
-				newSong.starting_key.trim() || null,
-				tempo,
-				newSong.instruments.trim() || null,
-				newSong.notes.trim() || null
-			]
+			'INSERT INTO songs (band_id, title) VALUES (?, ?)',
+			[bandId, newSongTitle.trim()]
 		);
 		const newId = result.lastInsertRowid;
 		songs = [
 			...songs,
 			{
 				id: newId,
-				title: newSong.title.trim(),
-				starting_key: newSong.starting_key.trim() || null,
-				starting_tempo: tempo,
-				instruments: newSong.instruments.trim() || null,
-				notes: newSong.notes.trim() || null,
+				title: newSongTitle.trim(),
+				starting_key: null,
+				starting_tempo: null,
+				instruments: null,
+				notes: null,
 				starred: 0
 			}
 		];
@@ -106,8 +93,9 @@
 		flashSongId = newId;
 		setTimeout(() => (flashSongId = null), 600);
 
-		newSong = { title: '', starting_key: '', starting_tempo: '', instruments: '', notes: '' };
-		showAddSong = false;
+		newSongTitle = '';
+		await tick();
+		songTitleInputEl?.focus();
 	}
 
 	async function deleteSong(songId: number) {

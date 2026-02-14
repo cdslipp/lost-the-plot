@@ -13,6 +13,7 @@ export interface FestivalBandRow {
 	file_path: string | null;
 	file_type: string | null;
 	original_filename: string | null;
+	is_headliner: number;
 	sort_order: number;
 	created_at?: string;
 	updated_at?: string;
@@ -21,7 +22,7 @@ export interface FestivalBandRow {
 export async function listFestivalBands(festivalId: string): Promise<FestivalBandRow[]> {
 	return db.query<FestivalBandRow>(
 		`SELECT id, festival_id, name, website, notes, plot_url, plot_id,
-			file_path, file_type, original_filename, sort_order, created_at, updated_at
+			file_path, file_type, original_filename, is_headliner, sort_order, created_at, updated_at
 		 FROM festival_bands WHERE festival_id = ? ORDER BY sort_order`,
 		[festivalId]
 	);
@@ -30,7 +31,7 @@ export async function listFestivalBands(festivalId: string): Promise<FestivalBan
 export async function getFestivalBandById(id: string): Promise<FestivalBandRow | null> {
 	return db.queryOne<FestivalBandRow>(
 		`SELECT id, festival_id, name, website, notes, plot_url, plot_id,
-			file_path, file_type, original_filename, sort_order, created_at, updated_at
+			file_path, file_type, original_filename, is_headliner, sort_order, created_at, updated_at
 		 FROM festival_bands WHERE id = ?`,
 		[id]
 	);
@@ -65,6 +66,7 @@ export async function updateFestivalBand(
 			| 'file_path'
 			| 'file_type'
 			| 'original_filename'
+			| 'is_headliner'
 		>
 	>
 ): Promise<void> {

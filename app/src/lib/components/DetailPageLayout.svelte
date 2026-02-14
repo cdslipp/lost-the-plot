@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
+	import CircleBackButton from '$lib/components/CircleBackButton.svelte';
 
 	type Props = {
 		backHref: string;
@@ -42,24 +43,7 @@
 	<div class="flex flex-col gap-6">
 		<!-- Header: Back + Editable Name -->
 		<div class="flex items-center gap-3">
-			<a
-				href={backHref}
-				class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-border-primary text-text-secondary transition hover:bg-surface-hover hover:text-text-primary"
-				aria-label={backLabel}
-			>
-				<svg
-					xmlns="http://www.w3.org/2000/svg"
-					class="h-5 w-5"
-					viewBox="0 0 20 20"
-					fill="currentColor"
-				>
-					<path
-						fill-rule="evenodd"
-						d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z"
-						clip-rule="evenodd"
-					/>
-				</svg>
-			</a>
+			<CircleBackButton href={backHref} ariaLabel={backLabel} />
 			{#if editing}
 				<form
 					onsubmit={(e) => {
