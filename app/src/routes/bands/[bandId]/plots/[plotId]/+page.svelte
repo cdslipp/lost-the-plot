@@ -819,10 +819,7 @@
 
 	{#snippet canvasContent()}
 		<div bind:this={canvasWrapperEl} class="flex min-h-0 flex-1 items-center justify-center">
-			<div
-				class="border border-border-primary bg-surface p-3 shadow-sm"
-				style="width: {canvasPixelWidth + 24}px;"
-			>
+			<div>
 				{#if viewOnly}
 					<!-- View-only canvas: no context menus, no interactions -->
 					<div
@@ -1152,20 +1149,6 @@
 				{/if}
 			</div>
 		</div>
-
-		{#if !viewOnly}
-			<div class="mt-1.5 flex justify-between text-xs text-text-tertiary">
-				<div class="flex items-center gap-3">
-					Items: {ps.items.length} | People: {ps.plotPersonIds.size}
-					{#if isAltPressed}
-						<span class="animate-bounce font-semibold text-blue-600">(Duplicate)</span>
-					{/if}
-				</div>
-				<div>
-					{#if placingItem}Click on canvas to place item. Press 'Escape' to cancel.{/if}
-				</div>
-			</div>
-		{/if}
 	{/snippet}
 
 	{#if layoutMode === 'desktop'}

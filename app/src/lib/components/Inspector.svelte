@@ -10,6 +10,10 @@
 	} from '$lib/utils/canvasUtils';
 	import { getPlotState } from '$lib/state/stagePlotState.svelte';
 	import type { StagePlotItem } from '@stageplotter/shared';
+	import { PressedKeys } from 'runed';
+
+	const keys = new PressedKeys();
+	const isAltPressed = $derived(keys.has('Alt'));
 
 	type Props = {
 		selectedItemIds?: number[];
@@ -144,7 +148,15 @@
 				</div>
 			{/if}
 
-			<div class="text-center text-[10px] text-text-tertiary">Select items to edit properties</div>
+			<div class="text-center text-[10px] text-text-tertiary">
+				{#if isAltPressed}
+					<span class="font-semibold text-blue-600 dark:text-blue-400">
+						Duplicate Mode — drag an item to clone it
+					</span>
+				{:else}
+					Select items to edit properties
+				{/if}
+			</div>
 
 			<!-- Stage Settings (only when nothing selected) -->
 			<div class="space-y-3 border-t border-border-primary pt-4">

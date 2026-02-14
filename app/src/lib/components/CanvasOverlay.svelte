@@ -1,9 +1,6 @@
 <script lang="ts">
 	// SPDX-License-Identifier: AGPL-3.0-only
-	import { browser } from '$app/environment';
-
-	const isMac = browser && /Mac|iPhone|iPad|iPod/.test(navigator.platform);
-	const modKey = isMac ? '⌘' : 'Ctrl+';
+	import { modKey } from '$lib/utils/platform';
 
 	let {
 		showZones,
@@ -63,7 +60,9 @@
 
 {#if itemCount === 0}
 	<div class="pointer-events-auto absolute inset-0 flex flex-col items-center justify-center gap-4">
-		<p class="text-lg text-text-secondary">
+		<p
+			class="rounded-full border border-border-primary bg-surface px-5 py-2.5 text-base text-text-secondary shadow-sm"
+		>
 			Press <kbd
 				class="rounded border border-border-primary bg-muted px-1.5 py-0.5 font-mono text-sm"
 				>{modKey}K</kbd

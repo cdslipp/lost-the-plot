@@ -10,13 +10,10 @@
 	} from '@stageplotter/shared/share-codec';
 
 	import { generateX32Scn, downloadScnFile, type ScnChannelData } from '$lib/utils/scnGenerator';
-	import { browser } from '$app/environment';
 	import { getPlotState } from '$lib/state/stagePlotState.svelte';
+	import { modKey } from '$lib/utils/platform';
 
 	const ps = getPlotState();
-
-	const isMac = browser && /Mac|iPhone|iPad|iPod/.test(navigator.platform);
-	const modKey = isMac ? '⌘' : 'Ctrl+';
 
 	let nameInput = $state<HTMLInputElement | null>(null);
 

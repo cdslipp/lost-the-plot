@@ -155,6 +155,27 @@
 		}
 	}
 
+	async function handleDuplicateSlot(id: string) {
+		if (!selectedDayId) return;
+		const source = slots.find((s) => s.id === id);
+		if (!source) return;
+		const newId = generateId();
+		await createFestivalSlot(newId, selectedDayId, {
+			slot_type: source.slot_type,
+			title: `${source.title} (copy)`,
+			sort_order: slots.length,
+			time_start: source.time_start,
+			duration: source.duration
+		});
+		if (source.note || source.colour) {
+			await updateFestivalSlot(newId, {
+				...(source.note ? { note: source.note } : {}),
+				...(source.colour ? { colour: source.colour } : {})
+			});
+		}
+		slots = await listFestivalSlots(selectedDayId);
+	}
+
 	onMount(() => {
 		load();
 	});
@@ -205,6 +226,7 @@
 						oncreate={handleCreateSlot}
 						onupdate={handleUpdateSlot}
 						ondelete={handleDeleteSlot}
+						onduplicate={handleDuplicateSlot}
 					/>
 				{/if}
 			</div>

@@ -3,6 +3,7 @@
 	import { db } from '$lib/db';
 	import { formatTimeMs, timeStringToMs, msToTimeString } from '$lib/utils/time';
 	import TimeInput from '$lib/components/TimeInput.svelte';
+	import { preferences } from '$lib/state/preferences.svelte';
 
 	interface PlotRow {
 		id: string;
@@ -145,7 +146,7 @@
 	}
 
 	function formatTime(timeStr: string | null): string {
-		return formatTimeMs(timeStringToMs(timeStr));
+		return formatTimeMs(timeStringToMs(timeStr), preferences.use24h);
 	}
 
 	function handleGigRowClick(gigId: number) {
@@ -212,6 +213,7 @@
 							time={timeStringToMs(newGig.time)}
 							onsubmit={(ms) => (newGig.time = msToTimeString(ms))}
 							placeholder="Load-in"
+							use24h={preferences.use24h}
 							class="w-full rounded-lg border border-border-primary bg-surface px-3 py-2 text-sm text-text-primary focus:border-stone-500 focus:ring-2 focus:ring-stone-500"
 						/>
 					</div>
@@ -223,6 +225,7 @@
 							time={timeStringToMs(newGig.set_time)}
 							onsubmit={(ms) => (newGig.set_time = msToTimeString(ms))}
 							placeholder="Set Time"
+							use24h={preferences.use24h}
 							class="w-full rounded-lg border border-border-primary bg-surface px-3 py-2 text-sm text-text-primary focus:border-stone-500 focus:ring-2 focus:ring-stone-500"
 						/>
 					</div>
@@ -235,6 +238,7 @@
 							onsubmit={(ms) => (newGig.changeover_minutes = String(Math.round(ms / 60000)))}
 							placeholder="Duration"
 							isDuration={true}
+							use24h={preferences.use24h}
 							class="w-full rounded-lg border border-border-primary bg-surface px-3 py-2 text-sm text-text-primary focus:border-stone-500 focus:ring-2 focus:ring-stone-500"
 						/>
 					</div>
@@ -474,6 +478,7 @@
 								time={timeStringToMs(gig.time)}
 								onsubmit={(ms) => updateGig(gig.id, 'time', msToTimeString(ms))}
 								placeholder="Load-in"
+								use24h={preferences.use24h}
 								class="w-full rounded-lg border border-border-primary bg-surface px-2 py-1.5 text-sm text-text-primary focus:border-stone-500 focus:ring-2 focus:ring-stone-500"
 							/>
 						</div>
@@ -485,6 +490,7 @@
 								time={timeStringToMs(gig.set_time)}
 								onsubmit={(ms) => updateGig(gig.id, 'set_time', msToTimeString(ms))}
 								placeholder="Set Time"
+								use24h={preferences.use24h}
 								class="w-full rounded-lg border border-border-primary bg-surface px-2 py-1.5 text-sm text-text-primary focus:border-stone-500 focus:ring-2 focus:ring-stone-500"
 							/>
 						</div>
@@ -498,6 +504,7 @@
 									updateGig(gig.id, 'changeover_minutes', String(Math.round(ms / 60000)))}
 								placeholder="Duration"
 								isDuration={true}
+								use24h={preferences.use24h}
 								class="w-full rounded-lg border border-border-primary bg-surface px-2 py-1.5 text-sm text-text-primary focus:border-stone-500 focus:ring-2 focus:ring-stone-500"
 							/>
 						</div>

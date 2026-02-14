@@ -1,12 +1,9 @@
 <script lang="ts">
-	import { browser } from '$app/environment';
 	import { getSetlistState } from '$lib/state/setlistEditorState.svelte';
 	import CircleBackButton from '$lib/components/CircleBackButton.svelte';
+	import { modKey } from '$lib/utils/platform';
 
 	const slState = getSetlistState();
-
-	const isMac = browser && /Mac|iPhone|iPad|iPod/.test(navigator.platform);
-	const modKey = isMac ? '⌘' : 'Ctrl+';
 
 	let shareCopied = $state(false);
 	let sharing = $state(false);
