@@ -13,6 +13,8 @@
 		updateBandName
 	} from '$lib/db/repositories/bands';
 	import { PlusIcon } from '$lib/components/icons';
+	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
+	import NotificationDialog from '$lib/components/NotificationDialog.svelte';
 	import type { BandWithPlotCount } from '$lib/db/repositories/bands';
 
 	let bands = $state<BandWithPlotCount[]>([]);
@@ -23,6 +25,15 @@
 	let editingBandId = $state<string | null>(null);
 	let bandNameInput = $state('');
 	let fileInput: HTMLInputElement;
+
+	// Dialog state
+	let deleteBandTarget = $state<{ id: string; name: string } | null>(null);
+	let notification = $state<{
+		open: boolean;
+		title: string;
+		description: string;
+		variant: 'success' | 'error';
+	}>({ open: false, title: '', description: '', variant: 'success' });
 
 	async function loadBands() {
 		await db.init();
@@ -37,14 +48,16 @@
 		goto(`/bands/${id}?new=1`);
 	}
 
-	async function handleDeleteBand(bandId: string, bandName: string) {
+	function handleDeleteBand(bandId: string, bandName: string) {
 		openMenuBandId = null;
-		const confirmed = confirm(
-			`Delete "${bandName}"? This removes all plots, people, songs, gigs, and setlists.`
-		);
-		if (!confirmed) return;
+		deleteBandTarget = { id: bandId, name: bandName };
+	}
+
+	async function confirmDeleteBand() {
+		if (!deleteBandTarget) return;
 		await db.init();
-		await deleteBandCascade(bandId);
+		await deleteBandCascade(deleteBandTarget.id);
+		deleteBandTarget = null;
 		await loadBands();
 	}
 
@@ -90,7 +103,12 @@
 			await exportAllBands();
 		} catch (error) {
 			console.error('Failed to export bands:', error);
-			alert('Export failed. Please try again.');
+			notification = {
+				open: true,
+				title: 'Export Failed',
+				description: 'Export failed. Please try again.',
+				variant: 'error'
+			};
 		} finally {
 			exporting = false;
 		}
@@ -108,10 +126,20 @@
 		try {
 			await handleImportFile(file);
 			await loadBands();
-			alert('Bands imported successfully.');
+			notification = {
+				open: true,
+				title: 'Import Successful',
+				description: 'Bands imported successfully.',
+				variant: 'success'
+			};
 		} catch (error) {
 			console.error('Import error:', error);
-			alert('Import failed. Please check the file format.');
+			notification = {
+				open: true,
+				title: 'Import Failed',
+				description: 'Import failed. Please check the file format.',
+				variant: 'error'
+			};
 		} finally {
 			importing = false;
 			target.value = '';
@@ -331,6 +359,29 @@
 		</button>
 	</div>
 </div>
+
+<ConfirmDialog
+	bind:open={
+		() => deleteBandTarget !== null,
+		(v) => {
+			if (!v) deleteBandTarget = null;
+		}
+	}
+	title="Delete Band"
+	description={deleteBandTarget
+		? `Delete "${deleteBandTarget.name}"? This removes all plots, people, songs, gigs, and setlists.`
+		: ''}
+	confirmLabel="Delete"
+	variant="destructive"
+	onconfirm={confirmDeleteBand}
+/>
+
+<NotificationDialog
+	bind:open={notification.open}
+	title={notification.title}
+	description={notification.description}
+	variant={notification.variant}
+/>
 
 <style>
 	/* Slim scrollbar */

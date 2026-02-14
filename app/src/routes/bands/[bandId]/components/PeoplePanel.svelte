@@ -433,31 +433,3 @@
 		</form>
 	</div>
 </div>
-
-<style>
-	.flash-green {
-		animation: flash-bg 600ms ease-out;
-	}
-
-	@keyframes flash-bg {
-		0% {
-			background-color: rgb(187 247 208); /* bg-green-200 */
-		}
-		100% {
-			background-color: transparent;
-		}
-	}
-
-	:global(.dark) .flash-green {
-		animation: flash-bg-dark 600ms ease-out;
-	}
-
-	@keyframes flash-bg-dark {
-		0% {
-			background-color: rgb(20 83 45); /* dark green */
-		}
-		100% {
-			background-color: transparent;
-		}
-	}
-</style>

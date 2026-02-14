@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { Combobox, Tabs, ContextMenu } from 'bits-ui';
+	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
 	import { loadFinalAssets, filterItems, type ProcessedItem } from '$lib/utils/finalAssetsLoader';
 	import { onMount } from 'svelte';
 	import {
@@ -78,6 +79,7 @@
 	// State for loaded items
 	let allAvailableItems: ProcessedItem[] = $state([]);
 	let loading = $state(true);
+	let showClearConfirm = $state(false);
 
 	// Build ProcessedItem maps from channel props (for combobox display)
 	const selectedInputItemsByChannel = $derived.by(() => {
@@ -522,10 +524,7 @@
 					</div>
 					{#if onClearPatch && !readonlyMode}
 						<button
-							onclick={() => {
-								if (confirm('Clear all channel assignments? Items will remain on the canvas.'))
-									onClearPatch();
-							}}
+							onclick={() => (showClearConfirm = true)}
 							class="rounded-md border border-border-primary px-2.5 py-1 text-xs text-text-secondary transition hover:border-red-300 hover:bg-red-50 hover:text-red-600 dark:hover:border-red-700 dark:hover:bg-red-900/20 dark:hover:text-red-400"
 							title="Clear all channel assignments"
 						>
@@ -585,3 +584,12 @@
 		</div>
 	</Tabs.Root>
 </div>
+
+<ConfirmDialog
+	bind:open={showClearConfirm}
+	title="Clear Patch"
+	description="Clear all channel assignments? Items will remain on the canvas."
+	confirmLabel="Clear"
+	variant="destructive"
+	onconfirm={() => onClearPatch?.()}
+/>

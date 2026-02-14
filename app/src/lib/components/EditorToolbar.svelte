@@ -1,6 +1,7 @@
 <script lang="ts">
 	// SPDX-License-Identifier: AGPL-3.0-only
 	import { ImportExport } from '$lib';
+	import NotificationDialog from '$lib/components/NotificationDialog.svelte';
 	import {
 		encodePayload,
 		buildShareUrl,
@@ -31,6 +32,7 @@
 	let sharing = $state(false);
 	let shareCopied = $state(false);
 	let editingDate = $state(false);
+	let showShareError = $state(false);
 
 	let {
 		onAddItem,
@@ -128,7 +130,7 @@
 			setTimeout(() => (shareCopied = false), 3000);
 		} catch (e) {
 			console.error('Share failed:', e);
-			alert('Failed to generate share link. Please try again.');
+			showShareError = true;
 		} finally {
 			sharing = false;
 		}
@@ -270,3 +272,10 @@
 		{/if}
 	</div>
 </div>
+
+<NotificationDialog
+	bind:open={showShareError}
+	title="Share Failed"
+	description="Failed to generate share link. Please try again."
+	variant="error"
+/>

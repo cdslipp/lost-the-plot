@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { slide } from 'svelte/transition';
 	import { db } from '$lib/db';
 	import {
 		getSetlistsByGigId,
@@ -61,6 +62,7 @@
 
 	let expandedGigId = $state<number | null>(null);
 	let editingGigId = $state<number | null>(null);
+	let flashGigId = $state<number | null>(null);
 	let showAddGig = $state(false);
 	let newGig = $state({
 		name: '',
@@ -129,6 +131,9 @@
 		gigSetlists[gigId] = [{ id: setlistResult.lastInsertRowid, gig_id: gigId, name: 'Set 1' }];
 		gigSetlistSongs[gigId] = { [setlistResult.lastInsertRowid]: [] };
 
+		flashGigId = gigId;
+		setTimeout(() => (flashGigId = null), 600);
+
 		newGig = {
 			name: '',
 			venue: '',
@@ -145,6 +150,8 @@
 	async function deleteGig(gigId: number) {
 		await db.run('DELETE FROM gigs WHERE id = ?', [gigId]);
 		gigs = gigs.filter((g) => g.id !== gigId);
+		if (editingGigId === gigId) editingGigId = null;
+		if (expandedGigId === gigId) expandedGigId = null;
 		delete gigSetlists[gigId];
 		delete gigSetlistSongs[gigId];
 	}
@@ -200,7 +207,6 @@
 
 	function formatDate(dateStr: string | null): string {
 		if (!dateStr) return '';
-		// Already in YYYY-MM-DD format from the DB
 		return dateStr;
 	}
 
@@ -213,6 +219,23 @@
 			return `${hour12}:${String(m).padStart(2, '0')} ${suffix}`;
 		} catch {
 			return timeStr;
+		}
+	}
+
+	function handleGigRowClick(gigId: number) {
+		editingGigId = editingGigId === gigId ? null : gigId;
+	}
+
+	function handleGigRowKeydown(e: KeyboardEvent, gigId: number) {
+		if (e.key === 'Enter' || e.key === ' ') {
+			e.preventDefault();
+			handleGigRowClick(gigId);
+		}
+	}
+
+	function handleEditKeydown(e: KeyboardEvent) {
+		if (e.key === 'Escape') {
+			editingGigId = null;
 		}
 	}
 </script>
@@ -396,33 +419,47 @@
 
 {#snippet gigCard(gig: GigRow, isPast: boolean)}
 	<div
-		class="group rounded-xl border border-border-primary bg-surface shadow-sm transition {isPast
+		class="group rounded-xl border border-border-primary bg-surface shadow-sm transition-colors {isPast
 			? 'opacity-60'
 			: ''}"
+		class:flash-green={flashGigId === gig.id}
 	>
-		<div class="flex items-center justify-between p-3">
-			<button onclick={() => toggleExpand(gig.id)} class="flex flex-1 items-center gap-3 text-left">
-				<svg
-					xmlns="http://www.w3.org/2000/svg"
-					class="h-4 w-4 text-text-tertiary transition {expandedGigId === gig.id
-						? 'rotate-90'
-						: ''}"
-					viewBox="0 0 20 20"
-					fill="currentColor"
+		<!-- View row (always visible, click to edit) -->
+		<div
+			class="flex items-center justify-between p-3 {editingGigId === gig.id
+				? ''
+				: 'cursor-pointer hover:bg-surface-hover'} rounded-xl"
+			role="button"
+			tabindex="0"
+			onclick={() => handleGigRowClick(gig.id)}
+			onkeydown={(e) => handleGigRowKeydown(e, gig.id)}
+		>
+			<div class="flex flex-1 items-center gap-3">
+				<!-- Chevron toggles setlist expansion independently -->
+				<button
+					onclick={(e) => {
+						e.stopPropagation();
+						toggleExpand(gig.id);
+					}}
+					class="shrink-0 rounded p-0.5 text-text-tertiary hover:bg-surface-hover hover:text-text-primary"
+					title={expandedGigId === gig.id ? 'Collapse setlists' : 'Expand setlists'}
 				>
-					<path
-						fill-rule="evenodd"
-						d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
-						clip-rule="evenodd"
-					/>
-				</svg>
+					<svg
+						xmlns="http://www.w3.org/2000/svg"
+						class="h-4 w-4 transition {expandedGigId === gig.id ? 'rotate-90' : ''}"
+						viewBox="0 0 20 20"
+						fill="currentColor"
+					>
+						<path
+							fill-rule="evenodd"
+							d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
+							clip-rule="evenodd"
+						/>
+					</svg>
+				</button>
 				<div>
 					<div class="flex items-center gap-2">
-						{#if editingGigId === gig.id}
-							<!-- handled below -->
-						{:else}
-							<span class="font-medium text-text-primary">{gig.name}</span>
-						{/if}
+						<span class="font-medium text-text-primary">{gig.name}</span>
 						{#if gig.plot_id}
 							{@const pName = plotName(gig.plot_id)}
 							{#if pName}
@@ -457,54 +494,46 @@
 						{/if}
 					</div>
 				</div>
-			</button>
-			<div class="flex items-center gap-1 opacity-0 transition group-hover:opacity-100">
-				<button
-					onclick={() => (editingGigId = editingGigId === gig.id ? null : gig.id)}
-					class="rounded p-1 text-text-tertiary hover:bg-surface-hover hover:text-text-primary"
-					title="Edit gig"
-				>
-					<svg
-						xmlns="http://www.w3.org/2000/svg"
-						class="h-4 w-4"
-						viewBox="0 0 20 20"
-						fill="currentColor"
-					>
-						<path
-							d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"
-						/>
-					</svg>
-				</button>
-				<button
-					onclick={() => deleteGig(gig.id)}
-					class="rounded p-1 text-text-tertiary hover:bg-red-100 hover:text-red-600 dark:hover:bg-red-900/30"
-					title="Delete gig"
-				>
-					<svg
-						xmlns="http://www.w3.org/2000/svg"
-						class="h-4 w-4"
-						viewBox="0 0 20 20"
-						fill="currentColor"
-					>
-						<path
-							fill-rule="evenodd"
-							d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
-							clip-rule="evenodd"
-						/>
-					</svg>
-				</button>
 			</div>
+			<button
+				onclick={(e) => {
+					e.stopPropagation();
+					deleteGig(gig.id);
+				}}
+				class="rounded p-1 text-text-tertiary opacity-0 transition group-hover:opacity-100 hover:bg-red-100 hover:text-red-600 focus:opacity-100 dark:hover:bg-red-900/30"
+				title="Delete gig"
+			>
+				<svg
+					xmlns="http://www.w3.org/2000/svg"
+					class="h-4 w-4"
+					viewBox="0 0 20 20"
+					fill="currentColor"
+				>
+					<path
+						fill-rule="evenodd"
+						d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+						clip-rule="evenodd"
+					/>
+				</svg>
+			</button>
 		</div>
 
+		<!-- Edit expansion -->
 		{#if editingGigId === gig.id}
-			<div class="border-t border-border-primary p-4">
+			<!-- svelte-ignore a11y_no_static_element_interactions -->
+			<div
+				transition:slide={{ duration: 200 }}
+				class="border-t border-border-primary px-4 pt-2 pb-2"
+				onclick={(e) => e.stopPropagation()}
+				onkeydown={handleEditKeydown}
+			>
 				<div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
 					<div>
 						<label class="mb-1 block text-xs font-medium text-text-secondary">Name</label>
 						<input
 							value={gig.name}
 							onchange={(e) => updateGig(gig.id, 'name', (e.target as HTMLInputElement).value)}
-							class="w-full rounded-lg border border-border-primary bg-surface px-2 py-1.5 text-sm"
+							class="w-full rounded-lg border border-border-primary bg-surface px-2 py-1.5 text-sm text-text-primary focus:border-stone-500 focus:ring-2 focus:ring-stone-500"
 						/>
 					</div>
 					<div>
@@ -512,7 +541,7 @@
 						<input
 							value={gig.venue || ''}
 							onchange={(e) => updateGig(gig.id, 'venue', (e.target as HTMLInputElement).value)}
-							class="w-full rounded-lg border border-border-primary bg-surface px-2 py-1.5 text-sm"
+							class="w-full rounded-lg border border-border-primary bg-surface px-2 py-1.5 text-sm text-text-primary focus:border-stone-500 focus:ring-2 focus:ring-stone-500"
 						/>
 					</div>
 					<div class="grid grid-cols-2 gap-3">
@@ -522,7 +551,7 @@
 								value={gig.date || ''}
 								type="date"
 								onchange={(e) => updateGig(gig.id, 'date', (e.target as HTMLInputElement).value)}
-								class="w-full rounded-lg border border-border-primary bg-surface px-2 py-1.5 text-sm"
+								class="w-full rounded-lg border border-border-primary bg-surface px-2 py-1.5 text-sm text-text-primary focus:border-stone-500 focus:ring-2 focus:ring-stone-500"
 							/>
 						</div>
 						<div>
@@ -531,7 +560,7 @@
 								value={gig.time || ''}
 								type="time"
 								onchange={(e) => updateGig(gig.id, 'time', (e.target as HTMLInputElement).value)}
-								class="w-full rounded-lg border border-border-primary bg-surface px-2 py-1.5 text-sm"
+								class="w-full rounded-lg border border-border-primary bg-surface px-2 py-1.5 text-sm text-text-primary focus:border-stone-500 focus:ring-2 focus:ring-stone-500"
 							/>
 						</div>
 					</div>
@@ -543,7 +572,7 @@
 								type="time"
 								onchange={(e) =>
 									updateGig(gig.id, 'set_time', (e.target as HTMLInputElement).value)}
-								class="w-full rounded-lg border border-border-primary bg-surface px-2 py-1.5 text-sm"
+								class="w-full rounded-lg border border-border-primary bg-surface px-2 py-1.5 text-sm text-text-primary focus:border-stone-500 focus:ring-2 focus:ring-stone-500"
 							/>
 						</div>
 						<div>
@@ -556,7 +585,7 @@
 								min="0"
 								onchange={(e) =>
 									updateGig(gig.id, 'changeover_minutes', (e.target as HTMLInputElement).value)}
-								class="w-full rounded-lg border border-border-primary bg-surface px-2 py-1.5 text-sm"
+								class="w-full rounded-lg border border-border-primary bg-surface px-2 py-1.5 text-sm text-text-primary focus:border-stone-500 focus:ring-2 focus:ring-stone-500"
 							/>
 						</div>
 					</div>
@@ -567,7 +596,7 @@
 								value={gig.plot_id || ''}
 								onchange={(e) =>
 									updateGig(gig.id, 'plot_id', (e.target as HTMLSelectElement).value)}
-								class="w-full rounded-lg border border-border-primary bg-surface px-2 py-1.5 text-sm"
+								class="w-full rounded-lg border border-border-primary bg-surface px-2 py-1.5 text-sm text-text-primary focus:border-stone-500 focus:ring-2 focus:ring-stone-500"
 							>
 								<option value="">None</option>
 								{#each plots as plot}
@@ -580,7 +609,7 @@
 				<div class="mt-3 flex justify-end">
 					<button
 						onclick={() => (editingGigId = null)}
-						class="rounded-lg px-3 py-1.5 text-sm text-stone-600 hover:bg-surface-hover hover:text-stone-800 dark:text-stone-400 dark:hover:text-stone-200"
+						class="rounded-lg px-3 py-1.5 text-sm text-text-secondary hover:bg-surface-hover hover:text-text-primary"
 					>
 						Done
 					</button>
@@ -588,8 +617,9 @@
 			</div>
 		{/if}
 
+		<!-- Setlist expansion (independent of edit) -->
 		{#if expandedGigId === gig.id}
-			<div class="border-t border-border-primary p-4">
+			<div transition:slide={{ duration: 200 }} class="border-t border-border-primary p-4">
 				{#if gigSetlists[gig.id] && gigSetlistSongs[gig.id]}
 					<SetlistEditor
 						gigId={gig.id}

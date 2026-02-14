@@ -5,6 +5,7 @@
 	import { page } from '$app/stores';
 	import { db } from '$lib/db';
 	import { Dialog } from 'bits-ui';
+	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
 	import PeoplePanel from './components/PeoplePanel.svelte';
 	import SongsPanel from './components/SongsPanel.svelte';
 	import GigsSection from './components/GigsSection.svelte';
@@ -55,6 +56,7 @@
 	let editingBandName = $state(false);
 	let bandNameInput = $state('');
 	let showNewPlotDialog = $state(false);
+	let deletePlotTarget = $state<{ id: string; name: string } | null>(null);
 
 	async function load() {
 		await db.init();
@@ -154,7 +156,10 @@
 		goto(`/bands/${bandId}/plots/${plotId}?new=1`);
 	}
 
-	async function deletePlot(plotId: string) {
+	async function confirmDeletePlot() {
+		if (!deletePlotTarget) return;
+		const plotId = deletePlotTarget.id;
+		deletePlotTarget = null;
 		await db.run('DELETE FROM stage_plots WHERE id = ?', [plotId]);
 		plots = plots.filter((p) => p.id !== plotId);
 	}
@@ -289,7 +294,7 @@
 								</div>
 							</a>
 							<button
-								onclick={() => deletePlot(plot.id)}
+								onclick={() => (deletePlotTarget = { id: plot.id, name: plot.name })}
 								class="absolute top-2 right-2 flex h-6 w-6 items-center justify-center rounded-full text-text-tertiary opacity-0 transition group-hover:opacity-100 hover:bg-red-100 hover:text-red-600 dark:hover:bg-red-900/30"
 								title="Delete plot"
 							>
@@ -419,4 +424,20 @@
 			</Dialog.Content>
 		</Dialog.Portal>
 	</Dialog.Root>
+
+	<ConfirmDialog
+		bind:open={
+			() => deletePlotTarget !== null,
+			(v) => {
+				if (!v) deletePlotTarget = null;
+			}
+		}
+		title="Delete Plot"
+		description={deletePlotTarget
+			? `Delete "${deletePlotTarget.name}"? This cannot be undone.`
+			: ''}
+		confirmLabel="Delete"
+		variant="destructive"
+		onconfirm={confirmDeletePlot}
+	/>
 {/if}
