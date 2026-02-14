@@ -351,6 +351,7 @@
 		<!-- Gigs Section -->
 		<GigsSection
 			{bandId}
+			bandName={band?.name || ''}
 			bind:gigs
 			plots={plots.map((p) => ({ id: p.id, name: p.name }))}
 			songs={songs.map((s) => ({

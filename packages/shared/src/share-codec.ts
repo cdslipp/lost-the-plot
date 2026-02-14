@@ -230,7 +230,7 @@ export async function encodePayload(
 	};
 
 	const json = JSON.stringify(payload);
-	return compress(json);
+	return compressToBase64url(json);
 }
 
 /**
@@ -303,7 +303,7 @@ export async function decodePayload(
 		variants: Record<string, string>;
 	}>
 ): Promise<DecodedPlot> {
-	const json = await decompress(payloadStr);
+	const json = await decompressFromBase64url(payloadStr);
 	const payload: SharePayload = JSON.parse(json);
 
 	if (payload.v !== 1 && payload.v !== 2) {
@@ -415,7 +415,7 @@ export async function decodePayload(
  * Compress a string using gzip via the CompressionStream API,
  * then encode as base64url.
  */
-async function compress(input: string): Promise<string> {
+export async function compressToBase64url(input: string): Promise<string> {
 	const encoder = new TextEncoder();
 	const data = encoder.encode(input);
 
@@ -449,7 +449,7 @@ async function compress(input: string): Promise<string> {
 /**
  * Decompress a base64url string using gzip via the DecompressionStream API.
  */
-async function decompress(base64url: string): Promise<string> {
+export async function decompressFromBase64url(base64url: string): Promise<string> {
 	const compressed = base64urlToUint8(base64url);
 
 	const ds = new DecompressionStream('gzip');

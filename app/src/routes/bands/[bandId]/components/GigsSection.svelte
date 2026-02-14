@@ -50,11 +50,13 @@
 
 	let {
 		bandId,
+		bandName,
 		gigs = $bindable([]),
 		plots,
 		songs
 	}: {
 		bandId: string;
+		bandName: string;
 		gigs: GigRow[];
 		plots: PlotRow[];
 		songs: SongRow[];
@@ -194,7 +196,7 @@
 			}
 			const allSongs = await getSetlistSongsWithSongInfoBySetlistIds(setlistIds);
 			for (const row of allSongs) {
-				songsBySetlist[row.setlist_id].push(row);
+				songsBySetlist[row.setlist_id].push(row as SetlistSongRow);
 			}
 			gigSetlistSongs[gigId] = songsBySetlist;
 		}
@@ -435,28 +437,6 @@
 			onkeydown={(e) => handleGigRowKeydown(e, gig.id)}
 		>
 			<div class="flex flex-1 items-center gap-3">
-				<!-- Chevron toggles setlist expansion independently -->
-				<button
-					onclick={(e) => {
-						e.stopPropagation();
-						toggleExpand(gig.id);
-					}}
-					class="shrink-0 rounded p-0.5 text-text-tertiary hover:bg-surface-hover hover:text-text-primary"
-					title={expandedGigId === gig.id ? 'Collapse setlists' : 'Expand setlists'}
-				>
-					<svg
-						xmlns="http://www.w3.org/2000/svg"
-						class="h-4 w-4 transition {expandedGigId === gig.id ? 'rotate-90' : ''}"
-						viewBox="0 0 20 20"
-						fill="currentColor"
-					>
-						<path
-							fill-rule="evenodd"
-							d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
-							clip-rule="evenodd"
-						/>
-					</svg>
-				</button>
 				<div>
 					<div class="flex items-center gap-2">
 						<span class="font-medium text-text-primary">{gig.name}</span>
@@ -472,6 +452,23 @@
 								</a>
 							{/if}
 						{/if}
+						<button
+							onclick={(e) => {
+								e.stopPropagation();
+								toggleExpand(gig.id);
+							}}
+							class="rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700 hover:bg-blue-200 dark:bg-blue-900 dark:text-blue-300 dark:hover:bg-blue-800 {expandedGigId ===
+							gig.id
+								? 'ring-2 ring-blue-300 dark:ring-blue-700'
+								: ''}"
+							title={expandedGigId === gig.id ? 'Hide setlists' : 'Edit setlists'}
+						>
+							{#if gigSetlists[gig.id] && gigSetlists[gig.id].length > 0}
+								Setlists ({gigSetlists[gig.id].length})
+							{:else}
+								Setlists
+							{/if}
+						</button>
 					</div>
 					<div class="mt-0.5 flex items-center gap-2 text-xs text-text-secondary">
 						{#if gig.date}
@@ -624,6 +621,8 @@
 					<SetlistEditor
 						gigId={gig.id}
 						{songs}
+						{bandName}
+						gigName={gig.name}
 						bind:setlists={gigSetlists[gig.id]}
 						bind:setlistSongs={gigSetlistSongs[gig.id]}
 					/>
