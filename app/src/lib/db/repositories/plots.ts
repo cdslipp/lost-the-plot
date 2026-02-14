@@ -30,7 +30,7 @@ export interface PlotRow {
 
 export async function getPlotsByBandId(bandId: string): Promise<PlotSummary[]> {
 	return db.query<PlotSummary>(
-		'SELECT id, name, revision_date, event_name FROM stage_plots WHERE band_id = ? ORDER BY updated_at DESC',
+		'SELECT id, name, revision_date, event_name FROM stage_plots WHERE band_id = ? AND COALESCE(is_template, 0) = 0 ORDER BY updated_at DESC',
 		[bandId]
 	);
 }
@@ -142,4 +142,95 @@ export async function getAllPlotsWithBandName(): Promise<PlotWithBand[]> {
 
 export async function deletePlotsByBandId(bandId: string): Promise<void> {
 	await db.run('DELETE FROM stage_plots WHERE band_id = ?', [bandId]);
+}
+
+export async function duplicatePlot(plotId: string, bandId: string): Promise<string> {
+	const plot = await getPlotById(plotId);
+	if (!plot) throw new Error('Plot not found');
+	const newId = crypto.randomUUID().replace(/-/g, '');
+	await db.run(
+		`INSERT INTO stage_plots (id, name, revision_date, canvas_width, canvas_height, metadata, band_id, stage_width, stage_depth, console_type, channel_colors, stereo_links, category_color_defaults, event_name, event_date, event_time, venue)
+		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		[
+			newId,
+			`${plot.name} (Copy)`,
+			new Date().toISOString().split('T')[0],
+			plot.canvas_width,
+			plot.canvas_height,
+			plot.metadata,
+			bandId,
+			plot.stage_width,
+			plot.stage_depth,
+			plot.console_type ?? null,
+			plot.channel_colors ?? null,
+			plot.stereo_links ?? null,
+			plot.category_color_defaults ?? null,
+			plot.event_name ?? null,
+			plot.event_date ?? null,
+			plot.event_time ?? null,
+			plot.venue ?? null
+		]
+	);
+	return newId;
+}
+
+export async function createTemplateFromPlot(plotId: string, bandId: string): Promise<string> {
+	const plot = await getPlotById(plotId);
+	if (!plot) throw new Error('Plot not found');
+	const newId = crypto.randomUUID().replace(/-/g, '');
+	await db.run(
+		`INSERT INTO stage_plots (id, name, revision_date, canvas_width, canvas_height, metadata, band_id, stage_width, stage_depth, console_type, channel_colors, stereo_links, category_color_defaults, is_template, source_plot_id)
+		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?)`,
+		[
+			newId,
+			`${plot.name} (Template)`,
+			new Date().toISOString().split('T')[0],
+			plot.canvas_width,
+			plot.canvas_height,
+			plot.metadata,
+			bandId,
+			plot.stage_width,
+			plot.stage_depth,
+			plot.console_type ?? null,
+			plot.channel_colors ?? null,
+			plot.stereo_links ?? null,
+			plot.category_color_defaults ?? null,
+			plotId
+		]
+	);
+	return newId;
+}
+
+export async function getTemplates(bandId: string): Promise<PlotSummary[]> {
+	return db.query<PlotSummary>(
+		'SELECT id, name, revision_date, event_name FROM stage_plots WHERE band_id = ? AND is_template = 1 ORDER BY updated_at DESC',
+		[bandId]
+	);
+}
+
+export async function createPlotFromTemplate(templateId: string, bandId: string): Promise<string> {
+	const template = await getPlotById(templateId);
+	if (!template) throw new Error('Template not found');
+	const newId = crypto.randomUUID().replace(/-/g, '');
+	await db.run(
+		`INSERT INTO stage_plots (id, name, revision_date, canvas_width, canvas_height, metadata, band_id, stage_width, stage_depth, console_type, channel_colors, stereo_links, category_color_defaults, source_plot_id)
+		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		[
+			newId,
+			template.name.replace(' (Template)', ''),
+			new Date().toISOString().split('T')[0],
+			template.canvas_width,
+			template.canvas_height,
+			template.metadata,
+			bandId,
+			template.stage_width,
+			template.stage_depth,
+			template.console_type ?? null,
+			template.channel_colors ?? null,
+			template.stereo_links ?? null,
+			template.category_color_defaults ?? null,
+			templateId
+		]
+	);
+	return newId;
 }

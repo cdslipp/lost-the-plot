@@ -108,13 +108,26 @@
 	let dragStartY = $state(0);
 	let sheetEl = $state<HTMLDivElement | null>(null);
 
-	// Build a flat map of all rows across sections with their Y offsets
-	function buildRowMap(): { sectionId: number; songIndex: number; yStart: number; yEnd: number }[] {
+	// Build a flat map of all rows across sections with their Y offsets.
+	// The dragged row has a CSS translateY transform, so we subtract it
+	// to get the row's original (logical) position in the layout.
+	function buildRowMap(): {
+		sectionId: number;
+		songIndex: number;
+		yStart: number;
+		yEnd: number;
+		isDragSource: boolean;
+	}[] {
 		if (!sheetEl) return [];
-		const rows: { sectionId: number; songIndex: number; yStart: number; yEnd: number }[] = [];
+		const rows: {
+			sectionId: number;
+			songIndex: number;
+			yStart: number;
+			yEnd: number;
+			isDragSource: boolean;
+		}[] = [];
 		const sheetRect = sheetEl.getBoundingClientRect();
 
-		// Walk through all section containers and their row wrappers
 		const songContainers = sheetEl.querySelectorAll('.setlist-songs');
 		let sectionIdx = 0;
 		for (const container of songContainers) {
@@ -123,11 +136,15 @@
 			const rowEls = container.querySelectorAll('.setlist-row-wrapper');
 			for (let i = 0; i < rowEls.length; i++) {
 				const rect = rowEls[i].getBoundingClientRect();
+				const isDragSource = section.setlistId === dragSectionId && i === dragIndex;
+				// Undo the translateY transform on the dragged row
+				const offset = isDragSource ? dragY : 0;
 				rows.push({
 					sectionId: section.setlistId,
 					songIndex: i,
-					yStart: rect.top - sheetRect.top,
-					yEnd: rect.bottom - sheetRect.top
+					yStart: rect.top - sheetRect.top - offset,
+					yEnd: rect.bottom - sheetRect.top - offset,
+					isDragSource
 				});
 			}
 			sectionIdx++;
@@ -152,17 +169,18 @@
 		if (dragIndex === null || dragSectionId === null || !sheetEl) return;
 		dragY = e.clientY - dragStartY;
 
-		// Use row map for cross-section detection
 		const rowMap = buildRowMap();
-		if (rowMap.length === 0) return;
+		// Filter out the dragged row — we want to find which *other* row we're closest to
+		const targets = rowMap.filter((r) => !r.isDragSource);
+		if (targets.length === 0) return;
 
 		const sheetRect = sheetEl.getBoundingClientRect();
 		const relativeY = e.clientY - sheetRect.top;
 
-		// Find closest row
-		let closest = rowMap[0];
+		// Find closest non-dragged row
+		let closest = targets[0];
 		let minDist = Infinity;
-		for (const row of rowMap) {
+		for (const row of targets) {
 			const mid = (row.yStart + row.yEnd) / 2;
 			const dist = Math.abs(relativeY - mid);
 			if (dist < minDist) {
@@ -174,12 +192,14 @@
 		dragOverSectionId = closest.sectionId;
 		dragOverIndex = closest.songIndex;
 
-		// If hovering past the last row in a section, target the end
-		if (closest.sectionId !== dragSectionId || closest.songIndex !== dragIndex) {
-			const sectionRows = rowMap.filter((r) => r.sectionId === closest.sectionId);
-			const lastRow = sectionRows[sectionRows.length - 1];
-			if (lastRow && relativeY > lastRow.yEnd) {
-				dragOverIndex = sectionRows.length;
+		// If cursor is below the closest row's midpoint, target the slot after it
+		const closestMid = (closest.yStart + closest.yEnd) / 2;
+		if (dragOverSectionId === dragSectionId) {
+			// Same-section: adjust index based on drag direction
+			if (relativeY > closestMid && closest.songIndex >= dragIndex!) {
+				dragOverIndex = closest.songIndex;
+			} else if (relativeY <= closestMid && closest.songIndex <= dragIndex!) {
+				dragOverIndex = closest.songIndex;
 			}
 		}
 	}

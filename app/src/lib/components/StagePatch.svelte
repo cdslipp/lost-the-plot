@@ -236,9 +236,9 @@
 											if (mode === 'input') {
 												onChannelSelect?.(channelNum, e);
 											} else {
-												// Output channels: select linked item on canvas if present
-												const itm = itemByChannel.get(channelNum);
-												if (itm) onSelectionChange?.([itm.id], e);
+												// Output channels: select linked output on canvas if present
+												const out = outputByChannel.get(channelNum);
+												if (out) onSelectionChange?.([out.id], e);
 											}
 										}}
 									>

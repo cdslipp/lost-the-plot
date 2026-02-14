@@ -55,6 +55,7 @@
 		if (!file) return;
 		if (e.key === 'Escape') {
 			e.preventDefault();
+			e.stopImmediatePropagation();
 			onclose();
 		} else if (e.key === 'ArrowLeft' && hasPrev) {
 			e.preventDefault();
