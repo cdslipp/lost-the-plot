@@ -908,7 +908,7 @@ export class StagePlotState {
 			const item = this.items.find((i) => i.id === itemId);
 			if (item) item.name = name;
 		}
-		this.commitChange();
+		this.debouncedWrite();
 	}
 
 	setChannelShortName(channelNum: number, shortName: string) {

@@ -14,6 +14,7 @@
 		onrename?: (newName: string) => void;
 		onaddclick?: () => void;
 		onsongclick?: (entry: SetlistSongRow) => void;
+		ondeselect?: () => void;
 	};
 
 	let {
@@ -28,10 +29,15 @@
 		onremove,
 		onrename,
 		onaddclick,
-		onsongclick
+		onsongclick,
+		ondeselect
 	}: Props = $props();
 
-	const FONTS = ["'DM Sans', sans-serif", "'Fraunces', serif", "'Permanent Marker', cursive"];
+	const FONTS = [
+		"'DM Sans', sans-serif",
+		"Georgia, 'Times New Roman', serif",
+		"'Permanent Marker', cursive"
+	];
 	const FONT_WEIGHTS = [600, 700, 400];
 	const PAGE_SIZES = {
 		0: { w: 816, h: 1056 },
@@ -108,6 +114,11 @@
 </script>
 
 <!-- svelte-ignore a11y_no_static_element_interactions -->
+<svelte:window
+	onkeydown={(e) => {
+		if (e.key === 'Escape' && selectedSongId != null) ondeselect?.();
+	}}
+/>
 <div
 	class="setlist-sheet"
 	style="
@@ -117,6 +128,7 @@
 		font-family: {fontFamily};
 		font-weight: {fontWeight};
 	"
+	onclick={() => ondeselect?.()}
 >
 	<div class="setlist-header" style="height: {HEADER_HEIGHT}px; margin-bottom: {HEADER_GAP}px;">
 		{#if editingName}
@@ -154,7 +166,10 @@
 					font-size: {fontSize}px;
 					{isDragging ? `transform: translateY(${dragY}px); z-index: 10;` : ''}
 				"
-				onclick={() => onsongclick?.(entry)}
+				onclick={(e) => {
+					e.stopPropagation();
+					onsongclick?.(entry);
+				}}
 			>
 				<button
 					class="drag-handle"

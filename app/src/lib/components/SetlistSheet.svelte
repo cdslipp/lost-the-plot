@@ -13,7 +13,11 @@
 		showKeys: boolean;
 	} = $props();
 
-	const FONTS = ["'DM Sans', sans-serif", "'Fraunces', serif", "'Permanent Marker', cursive"];
+	const FONTS = [
+		"'DM Sans', sans-serif",
+		"Georgia, 'Times New Roman', serif",
+		"'Permanent Marker', cursive"
+	];
 	const FONT_WEIGHTS = [600, 700, 400];
 
 	// Page dimensions at 96dpi

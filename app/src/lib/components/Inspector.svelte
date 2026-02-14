@@ -99,10 +99,11 @@
 					<input
 						type="text"
 						value={selectedChannel.name ?? ''}
-						onchange={(e) => {
-							const target = e.target as HTMLInputElement;
-							if (selectedChannelNum != null) ps.setChannelName(selectedChannelNum, target.value);
+						oninput={(e) => {
+							if (selectedChannelNum != null)
+								ps.setChannelName(selectedChannelNum, e.currentTarget.value);
 						}}
+						onchange={() => ps.commitChange()}
 						class="w-full rounded-lg border border-border-primary bg-surface px-2 py-1.5 text-sm text-text-primary focus:border-stone-500 focus:ring-2 focus:ring-stone-500"
 						placeholder="Channel name"
 					/>
@@ -120,10 +121,9 @@
 						type="text"
 						value={selectedChannel.shortName ?? ''}
 						maxlength={ps.consoleDef?.scribbleStripLength ?? undefined}
-						onchange={(e) => {
-							const target = e.target as HTMLInputElement;
+						oninput={(e) => {
 							if (selectedChannelNum != null)
-								ps.setChannelShortName(selectedChannelNum, target.value);
+								ps.setChannelShortName(selectedChannelNum, e.currentTarget.value);
 						}}
 						class="w-full rounded-lg border border-border-primary bg-surface px-2 py-1.5 text-sm text-text-primary focus:border-stone-500 focus:ring-2 focus:ring-stone-500"
 						placeholder="Short name"

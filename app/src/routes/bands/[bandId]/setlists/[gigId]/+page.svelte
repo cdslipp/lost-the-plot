@@ -120,6 +120,7 @@
 							onrename={(name) => editor.renameSetlist(setlist.id, name)}
 							onaddclick={() => openPaletteForSetlist(setlist.id)}
 							onsongclick={(entry) => (editor.selectedSongId = entry.song_id)}
+							ondeselect={() => (editor.selectedSongId = null)}
 						/>
 
 						{#if editor.setlists.length > 1}

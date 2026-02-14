@@ -18,6 +18,8 @@
 		selectedChannelNum?: number | null;
 		onSelectionChange?: (ids: number[], event: MouseEvent) => void;
 		onChannelSelect?: (channelNum: number, event: MouseEvent) => void;
+		onChannelNameInput?: (channelNum: number, name: string) => void;
+		onChannelNameCommit?: () => void;
 		onRemoveItem?: (channel: number) => void;
 		onOutputRemove?: (channel: number) => void;
 		onClearPatch?: () => void;
@@ -39,6 +41,8 @@
 		selectedChannelNum = null,
 		onSelectionChange,
 		onChannelSelect,
+		onChannelNameInput,
+		onChannelNameCommit,
 		onRemoveItem,
 		onOutputRemove,
 		onClearPatch,
@@ -115,13 +119,18 @@
 	}
 
 	// Get the CSS background color for an input channel number badge
-	function getInputBadgeStyle(channelNum: number): string {
+	function getInputBadgeStyle(channelNum: number, selected: boolean): string {
 		const ch = inputChannels[channelNum - 1];
 		if (ch?.color && consoleDef) {
 			const color = colorById.get(ch.color);
 			if (color) {
-				return `background-color: ${color.hex}; color: ${getContrastColor(color.hex)};`;
+				const bg = selected ? darkenHex(color.hex, 0.35) : color.hex;
+				const fg = selected ? '#ffffff' : getContrastColor(color.hex);
+				return `background-color: ${bg}; color: ${fg};`;
 			}
+		}
+		if (selected) {
+			return 'background-color: rgb(15, 23, 42); color: white;';
 		}
 		if (itemByChannel.get(channelNum)) {
 			return 'background-color: rgb(37, 99, 235); color: white;';
@@ -136,6 +145,13 @@
 		const b = parseInt(hex.slice(5, 7), 16);
 		const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
 		return luminance > 0.5 ? '#000000' : '#ffffff';
+	}
+
+	function darkenHex(hex: string, amount: number): string {
+		const r = Math.round(parseInt(hex.slice(1, 3), 16) * (1 - amount));
+		const g = Math.round(parseInt(hex.slice(3, 5), 16) * (1 - amount));
+		const b = Math.round(parseInt(hex.slice(5, 7), 16) * (1 - amount));
+		return `rgb(${r}, ${g}, ${b})`;
 	}
 
 	// Split input channels into columns
@@ -165,7 +181,6 @@
 	{@const lnkSet = mode === 'input' ? stereoLinkSet : outputStereoLinkSet}
 	{@const lnks = mode === 'input' ? stereoLinks : outputStereoLinks}
 	{@const onLnkChange = mode === 'input' ? onStereoLinksChange : onOutputStereoLinksChange}
-	{@const getBadgeStyle = mode === 'input' ? getInputBadgeStyle : getOutputBadgeStyle}
 	{@const onClearCh = mode === 'input' ? onRemoveItem : onOutputRemove}
 
 	<div
@@ -184,10 +199,14 @@
 							? selectedChannelNum === channelNum ||
 								(rowItem ? selectedIdSetLocal.has(rowItem.id) : false)
 							: false}
+					{@const badgeStyle =
+						mode === 'input'
+							? getInputBadgeStyle(channelNum, isRowSelected)
+							: getOutputBadgeStyle(channelNum)}
 					<ContextMenu.Root>
 						<ContextMenu.Trigger>
 							<div
-								class="flex items-center border-b border-border-primary last:border-b-0 {chLinkedTop
+								class="flex items-center border-b border-border-primary {chLinkedTop
 									? 'h-10 border-b-0'
 									: chLinkedBottom
 										? 'h-10 border-b border-border-primary'
@@ -202,10 +221,10 @@
 									<div
 										class="flex h-full w-full items-center justify-center text-xs font-semibold transition-colors {linked
 											? 'ring-1 ring-yellow-400/50 ring-inset'
-											: ''} {!readonlyMode ? 'cursor-pointer' : ''} {getBadgeStyle(channelNum)
-											? ''
-											: 'bg-muted/50 text-text-secondary'}"
-										style={getBadgeStyle(channelNum)}
+											: ''} {!readonlyMode ? 'cursor-pointer' : ''} {isRowSelected
+											? 'ring-2 ring-stone-900 ring-inset dark:ring-stone-200'
+											: ''} {badgeStyle ? '' : 'bg-muted/50 text-text-secondary'}"
+										style={badgeStyle}
 										onclick={(e) => {
 											if (readonlyMode) return;
 											e.stopPropagation();
@@ -234,15 +253,27 @@
 									</div>
 								</div>
 
-								<!-- Name display cell -->
+								<!-- Name cell -->
 								<div class="flex-1 px-1">
-									<div class="flex h-8 items-center truncate px-2 text-xs text-text-primary">
-										{#if mode === 'input'}
-											{inputChannels[channelNum - 1]?.name ?? ''}
-										{:else}
-											{outputByChannel.get(channelNum)?.name ?? ''}
-										{/if}
-									</div>
+									{#if mode === 'input' && !readonlyMode}
+										<input
+											type="text"
+											value={inputChannels[channelNum - 1]?.name ?? ''}
+											oninput={(e) => onChannelNameInput?.(channelNum, e.currentTarget.value)}
+											onchange={() => onChannelNameCommit?.()}
+											onfocus={(e) => onChannelSelect?.(channelNum, new MouseEvent('click'))}
+											class="h-8 w-full rounded border-0 bg-transparent px-2 text-xs text-text-primary outline-none placeholder:text-text-secondary/50 focus:ring-1 focus:ring-stone-400/50"
+											placeholder=""
+										/>
+									{:else}
+										<div class="flex h-8 items-center truncate px-2 text-xs text-text-primary">
+											{#if mode === 'input'}
+												{inputChannels[channelNum - 1]?.name ?? ''}
+											{:else}
+												{outputByChannel.get(channelNum)?.name ?? ''}
+											{/if}
+										</div>
+									{/if}
 								</div>
 							</div>
 						</ContextMenu.Trigger>

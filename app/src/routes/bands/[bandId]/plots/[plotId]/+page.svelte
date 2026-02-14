@@ -800,6 +800,8 @@
 				}
 			}}
 			onChannelSelect={(chNum, event) => selectChannel(chNum)}
+			onChannelNameInput={(chNum, name) => ps.setChannelName(chNum, name)}
+			onChannelNameCommit={() => ps.commitChange()}
 			{columnCount}
 			readonly={viewOnly}
 			onRemoveItem={(ch) => ps.removePatchItem(ch)}
