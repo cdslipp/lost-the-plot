@@ -286,15 +286,8 @@
 		<!-- Gigs Section -->
 		<GigsSection
 			{bandId}
-			bandName={band?.name || ''}
 			bind:gigs
 			plots={plots.map((p) => ({ id: p.id, name: p.name }))}
-			songs={songs.map((s) => ({
-				id: s.id,
-				title: s.title,
-				starting_key: s.starting_key,
-				starting_tempo: s.starting_tempo
-			}))}
 		/>
 
 		<Dialog.Root bind:open={showNewPlotDialog}>

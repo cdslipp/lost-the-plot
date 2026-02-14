@@ -3,6 +3,7 @@
 	import { goto } from '$app/navigation';
 	import { getAllBands, type BandRow } from '$lib/db/repositories/bands';
 	import { getAllPlotsWithBandName, type PlotWithBand } from '$lib/db/repositories/plots';
+	import { listFestivals, type FestivalRow } from '$lib/db/repositories/festivals';
 
 	type Props = {
 		open?: boolean;
@@ -12,6 +13,7 @@
 
 	let bands = $state<BandRow[]>([]);
 	let plots = $state<PlotWithBand[]>([]);
+	let festivals = $state<FestivalRow[]>([]);
 	let searchValue = $state('');
 
 	$effect(() => {
@@ -22,9 +24,14 @@
 	});
 
 	async function loadData() {
-		const [b, p] = await Promise.all([getAllBands(), getAllPlotsWithBandName()]);
+		const [b, p, f] = await Promise.all([
+			getAllBands(),
+			getAllPlotsWithBandName(),
+			listFestivals()
+		]);
 		bands = b;
 		plots = p;
+		festivals = f;
 	}
 
 	function fuzzyFilter(value: string, search: string, keywords?: string[]): number {
@@ -47,6 +54,11 @@
 	function selectPlot(plot: PlotWithBand) {
 		open = false;
 		goto(`/bands/${plot.band_id}/plots/${plot.id}`);
+	}
+
+	function selectFestival(festival: FestivalRow) {
+		open = false;
+		goto(`/festivals/${festival.id}`);
 	}
 
 	function handleKeydown(e: KeyboardEvent) {
@@ -82,7 +94,7 @@
 					<Command.Input
 						bind:value={searchValue}
 						class="w-full bg-transparent text-lg outline-none placeholder:text-text-secondary"
-						placeholder="Jump to band or plot..."
+						placeholder="Jump to band, plot, or festival..."
 						autofocus
 					/>
 				</div>
@@ -130,6 +142,27 @@
 										>
 											<span class="text-sm font-medium text-text-primary">{plot.name}</span>
 											<span class="text-xs text-text-tertiary">{plot.band_name}</span>
+										</Command.Item>
+									{/each}
+								</Command.GroupItems>
+							</Command.Group>
+						{/if}
+
+						{#if festivals.length > 0}
+							<Command.Group>
+								<Command.GroupHeading
+									class="px-2 py-2 text-xs font-semibold tracking-wider text-text-secondary uppercase"
+								>
+									Festivals
+								</Command.GroupHeading>
+								<Command.GroupItems>
+									{#each festivals as festival (festival.id)}
+										<Command.Item
+											value={festival.name}
+											class="flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2 transition-colors hover:bg-muted data-[selected]:bg-muted"
+											onSelect={() => selectFestival(festival)}
+										>
+											<span class="text-sm font-medium text-text-primary">{festival.name}</span>
 										</Command.Item>
 									{/each}
 								</Command.GroupItems>

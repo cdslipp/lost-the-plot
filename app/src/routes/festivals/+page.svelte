@@ -12,6 +12,7 @@
 	} from '$lib/db/repositories/festivals';
 	import { PlusIcon } from '$lib/components/icons';
 	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
+	import ListPageLayout from '$lib/components/ListPageLayout.svelte';
 	import type { FestivalRow } from '$lib/db/repositories/festivals';
 
 	let festivals = $state<FestivalRow[]>([]);
@@ -85,12 +86,7 @@
 	}}
 />
 
-<div class="mx-auto flex h-[calc(100dvh-1.25rem)] max-w-md flex-col gap-6 py-6">
-	<div class="flex items-center justify-between">
-		<h1 class="font-serif text-3xl font-bold text-text-primary">Your Festivals</h1>
-		<a href="/" class="text-sm text-text-tertiary transition hover:text-text-primary"> Home </a>
-	</div>
-
+<ListPageLayout title="Your Festivals">
 	{#if loading}
 		<div class="flex flex-1 items-center justify-center">
 			<p class="text-text-secondary">Loading...</p>
@@ -199,16 +195,18 @@
 		</div>
 	{/if}
 
-	<div class="mt-auto flex items-center justify-end pt-4">
-		<button
-			onclick={createFestival}
-			class="flex items-center gap-2 rounded-lg bg-stone-900 px-4 py-2 text-sm text-white transition hover:bg-stone-800 dark:bg-stone-100 dark:text-stone-900 dark:hover:bg-stone-200"
-		>
-			<PlusIcon />
-			New Festival
-		</button>
-	</div>
-</div>
+	{#snippet footer()}
+		<div class="mt-auto flex items-center justify-end pt-4">
+			<button
+				onclick={createFestival}
+				class="flex items-center gap-2 rounded-lg bg-stone-900 px-4 py-2 text-sm text-white transition hover:bg-stone-800 dark:bg-stone-100 dark:text-stone-900 dark:hover:bg-stone-200"
+			>
+				<PlusIcon />
+				New Festival
+			</button>
+		</div>
+	{/snippet}
+</ListPageLayout>
 
 <ConfirmDialog
 	bind:open={

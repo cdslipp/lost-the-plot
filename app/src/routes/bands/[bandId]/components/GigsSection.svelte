@@ -1,18 +1,6 @@
 <script lang="ts">
 	import { slide } from 'svelte/transition';
 	import { db } from '$lib/db';
-	import {
-		getSetlistsByGigId,
-		getSetlistSongsWithSongInfoBySetlistIds
-	} from '$lib/db/repositories/setlists';
-	import SetlistEditor from './SetlistEditor.svelte';
-
-	interface SongRow {
-		id: number;
-		title: string;
-		starting_key: string | null;
-		starting_tempo: number | null;
-	}
 
 	interface PlotRow {
 		id: string;
@@ -31,38 +19,16 @@
 		notes: string | null;
 	}
 
-	interface SetlistRow {
-		id: number;
-		gig_id: number;
-		name: string;
-	}
-
-	interface SetlistSongRow {
-		id: number;
-		setlist_id: number;
-		song_id: number;
-		position: number;
-		notes: string | null;
-		title: string;
-		starting_key: string | null;
-		starting_tempo: number | null;
-	}
-
 	let {
 		bandId,
-		bandName,
 		gigs = $bindable([]),
-		plots,
-		songs
+		plots
 	}: {
 		bandId: string;
-		bandName: string;
 		gigs: GigRow[];
 		plots: PlotRow[];
-		songs: SongRow[];
 	} = $props();
 
-	let expandedGigId = $state<number | null>(null);
 	let editingGigId = $state<number | null>(null);
 	let flashGigId = $state<number | null>(null);
 	let showAddGig = $state(false);
@@ -76,10 +42,6 @@
 		plot_id: '',
 		notes: ''
 	});
-
-	// Setlist data per gig
-	let gigSetlists = $state<Record<number, SetlistRow[]>>({});
-	let gigSetlistSongs = $state<Record<number, Record<number, SetlistSongRow[]>>>({});
 
 	const now = new Date().toISOString().slice(0, 10);
 	const sortedGigs = $derived(() => {
@@ -129,10 +91,6 @@
 		};
 		gigs = [...gigs, newGigRow];
 
-		// Store the auto-created setlist
-		gigSetlists[gigId] = [{ id: setlistResult.lastInsertRowid, gig_id: gigId, name: 'Set 1' }];
-		gigSetlistSongs[gigId] = { [setlistResult.lastInsertRowid]: [] };
-
 		flashGigId = gigId;
 		setTimeout(() => (flashGigId = null), 600);
 
@@ -153,9 +111,6 @@
 		await db.run('DELETE FROM gigs WHERE id = ?', [gigId]);
 		gigs = gigs.filter((g) => g.id !== gigId);
 		if (editingGigId === gigId) editingGigId = null;
-		if (expandedGigId === gigId) expandedGigId = null;
-		delete gigSetlists[gigId];
-		delete gigSetlistSongs[gigId];
 	}
 
 	async function updateGig(gigId: number, field: string, value: string) {
@@ -174,31 +129,6 @@
 			} else {
 				(g as any)[field] = value || null;
 			}
-		}
-	}
-
-	async function toggleExpand(gigId: number) {
-		if (expandedGigId === gigId) {
-			expandedGigId = null;
-			return;
-		}
-		expandedGigId = gigId;
-
-		// Load setlists if not loaded yet
-		if (!gigSetlists[gigId]) {
-			const sls = await getSetlistsByGigId(gigId);
-			gigSetlists[gigId] = sls;
-
-			const songsBySetlist: Record<number, SetlistSongRow[]> = {};
-			const setlistIds = sls.map((sl) => sl.id);
-			for (const sl of sls) {
-				songsBySetlist[sl.id] = [];
-			}
-			const allSongs = await getSetlistSongsWithSongInfoBySetlistIds(setlistIds);
-			for (const row of allSongs) {
-				songsBySetlist[row.setlist_id].push(row as SetlistSongRow);
-			}
-			gigSetlistSongs[gigId] = songsBySetlist;
 		}
 	}
 
@@ -452,23 +382,14 @@
 								</a>
 							{/if}
 						{/if}
-						<button
-							onclick={(e) => {
-								e.stopPropagation();
-								toggleExpand(gig.id);
-							}}
-							class="rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700 hover:bg-blue-200 dark:bg-blue-900 dark:text-blue-300 dark:hover:bg-blue-800 {expandedGigId ===
-							gig.id
-								? 'ring-2 ring-blue-300 dark:ring-blue-700'
-								: ''}"
-							title={expandedGigId === gig.id ? 'Hide setlists' : 'Edit setlists'}
+						<a
+							href="/bands/{bandId}/setlists/{gig.id}"
+							class="rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700 hover:bg-blue-200 dark:bg-blue-900 dark:text-blue-300 dark:hover:bg-blue-800"
+							onclick={(e) => e.stopPropagation()}
+							title="Edit setlists"
 						>
-							{#if gigSetlists[gig.id] && gigSetlists[gig.id].length > 0}
-								Setlists ({gigSetlists[gig.id].length})
-							{:else}
-								Setlists
-							{/if}
-						</button>
+							Setlists
+						</a>
 					</div>
 					<div class="mt-0.5 flex items-center gap-2 text-xs text-text-secondary">
 						{#if gig.date}
@@ -614,22 +535,5 @@
 			</div>
 		{/if}
 
-		<!-- Setlist expansion (independent of edit) -->
-		{#if expandedGigId === gig.id}
-			<div transition:slide={{ duration: 200 }} class="border-t border-border-primary p-4">
-				{#if gigSetlists[gig.id] && gigSetlistSongs[gig.id]}
-					<SetlistEditor
-						gigId={gig.id}
-						{songs}
-						{bandName}
-						gigName={gig.name}
-						bind:setlists={gigSetlists[gig.id]}
-						bind:setlistSongs={gigSetlistSongs[gig.id]}
-					/>
-				{:else}
-					<p class="text-sm text-text-tertiary">Loading setlists...</p>
-				{/if}
-			</div>
-		{/if}
 	</div>
 {/snippet}
