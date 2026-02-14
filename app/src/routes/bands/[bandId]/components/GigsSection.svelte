@@ -1,13 +1,9 @@
 <script lang="ts">
+	import { slide } from 'svelte/transition';
 	import { db } from '$lib/db';
-	import SetlistEditor from './SetlistEditor.svelte';
-
-	interface SongRow {
-		id: number;
-		title: string;
-		starting_key: string | null;
-		starting_tempo: number | null;
-	}
+	import { formatTimeMs, timeStringToMs, msToTimeString } from '$lib/utils/time';
+	import TimeInput from '$lib/components/TimeInput.svelte';
+	import { preferences } from '$lib/state/preferences.svelte';
 
 	interface PlotRow {
 		id: string;
@@ -26,37 +22,18 @@
 		notes: string | null;
 	}
 
-	interface SetlistRow {
-		id: number;
-		gig_id: number;
-		name: string;
-	}
-
-	interface SetlistSongRow {
-		id: number;
-		setlist_id: number;
-		song_id: number;
-		position: number;
-		notes: string | null;
-		title: string;
-		starting_key: string | null;
-		starting_tempo: number | null;
-	}
-
 	let {
 		bandId,
 		gigs = $bindable([]),
-		plots,
-		songs
+		plots
 	}: {
 		bandId: string;
 		gigs: GigRow[];
 		plots: PlotRow[];
-		songs: SongRow[];
 	} = $props();
 
-	let expandedGigId = $state<number | null>(null);
 	let editingGigId = $state<number | null>(null);
+	let flashGigId = $state<number | null>(null);
 	let showAddGig = $state(false);
 	let newGig = $state({
 		name: '',
@@ -68,10 +45,6 @@
 		plot_id: '',
 		notes: ''
 	});
-
-	// Setlist data per gig
-	let gigSetlists = $state<Record<number, SetlistRow[]>>({});
-	let gigSetlistSongs = $state<Record<number, Record<number, SetlistSongRow[]>>>({});
 
 	const now = new Date().toISOString().slice(0, 10);
 	const sortedGigs = $derived(() => {
@@ -121,9 +94,8 @@
 		};
 		gigs = [...gigs, newGigRow];
 
-		// Store the auto-created setlist
-		gigSetlists[gigId] = [{ id: setlistResult.lastInsertRowid, gig_id: gigId, name: 'Set 1' }];
-		gigSetlistSongs[gigId] = { [setlistResult.lastInsertRowid]: [] };
+		flashGigId = gigId;
+		setTimeout(() => (flashGigId = null), 600);
 
 		newGig = {
 			name: '',
@@ -141,8 +113,7 @@
 	async function deleteGig(gigId: number) {
 		await db.run('DELETE FROM gigs WHERE id = ?', [gigId]);
 		gigs = gigs.filter((g) => g.id !== gigId);
-		delete gigSetlists[gigId];
-		delete gigSetlistSongs[gigId];
+		if (editingGigId === gigId) editingGigId = null;
 	}
 
 	async function updateGig(gigId: number, field: string, value: string) {
@@ -164,38 +135,6 @@
 		}
 	}
 
-	async function toggleExpand(gigId: number) {
-		if (expandedGigId === gigId) {
-			expandedGigId = null;
-			return;
-		}
-		expandedGigId = gigId;
-
-		// Load setlists if not loaded yet
-		if (!gigSetlists[gigId]) {
-			const sls = await db.query<SetlistRow>(
-				'SELECT id, gig_id, name FROM setlists WHERE gig_id = ? ORDER BY id',
-				[gigId]
-			);
-			gigSetlists[gigId] = sls;
-
-			const songsBySetlist: Record<number, SetlistSongRow[]> = {};
-			for (const sl of sls) {
-				const slSongs = await db.query<SetlistSongRow>(
-					`SELECT ss.id, ss.setlist_id, ss.song_id, ss.position, ss.notes,
-					        s.title, s.starting_key, s.starting_tempo
-					 FROM setlist_songs ss
-					 JOIN songs s ON s.id = ss.song_id
-					 WHERE ss.setlist_id = ?
-					 ORDER BY ss.position`,
-					[sl.id]
-				);
-				songsBySetlist[sl.id] = slSongs;
-			}
-			gigSetlistSongs[gigId] = songsBySetlist;
-		}
-	}
-
 	function plotName(plotId: string | null): string | null {
 		if (!plotId) return null;
 		return plots.find((p) => p.id === plotId)?.name || null;
@@ -203,19 +142,27 @@
 
 	function formatDate(dateStr: string | null): string {
 		if (!dateStr) return '';
-		// Already in YYYY-MM-DD format from the DB
 		return dateStr;
 	}
 
 	function formatTime(timeStr: string | null): string {
-		if (!timeStr) return '';
-		try {
-			const [h, m] = timeStr.split(':').map(Number);
-			const suffix = h >= 12 ? 'PM' : 'AM';
-			const hour12 = h % 12 || 12;
-			return `${hour12}:${String(m).padStart(2, '0')} ${suffix}`;
-		} catch {
-			return timeStr;
+		return formatTimeMs(timeStringToMs(timeStr), preferences.use24h);
+	}
+
+	function handleGigRowClick(gigId: number) {
+		editingGigId = editingGigId === gigId ? null : gigId;
+	}
+
+	function handleGigRowKeydown(e: KeyboardEvent, gigId: number) {
+		if (e.key === 'Enter' || e.key === ' ') {
+			e.preventDefault();
+			handleGigRowClick(gigId);
+		}
+	}
+
+	function handleEditKeydown(e: KeyboardEvent) {
+		if (e.key === 'Escape') {
+			editingGigId = null;
 		}
 	}
 </script>
@@ -262,9 +209,11 @@
 					</div>
 					<div>
 						<label class="mb-1 block text-xs font-medium text-text-secondary">Load-in</label>
-						<input
-							bind:value={newGig.time}
-							type="time"
+						<TimeInput
+							time={timeStringToMs(newGig.time)}
+							onsubmit={(ms) => (newGig.time = msToTimeString(ms))}
+							placeholder="Load-in"
+							use24h={preferences.use24h}
 							class="w-full rounded-lg border border-border-primary bg-surface px-3 py-2 text-sm text-text-primary focus:border-stone-500 focus:ring-2 focus:ring-stone-500"
 						/>
 					</div>
@@ -272,9 +221,11 @@
 				<div class="grid grid-cols-2 gap-3">
 					<div>
 						<label class="mb-1 block text-xs font-medium text-text-secondary">Set Time</label>
-						<input
-							bind:value={newGig.set_time}
-							type="time"
+						<TimeInput
+							time={timeStringToMs(newGig.set_time)}
+							onsubmit={(ms) => (newGig.set_time = msToTimeString(ms))}
+							placeholder="Set Time"
+							use24h={preferences.use24h}
 							class="w-full rounded-lg border border-border-primary bg-surface px-3 py-2 text-sm text-text-primary focus:border-stone-500 focus:ring-2 focus:ring-stone-500"
 						/>
 					</div>
@@ -282,11 +233,12 @@
 						<label class="mb-1 block text-xs font-medium text-text-secondary"
 							>Changeover (min)</label
 						>
-						<input
-							bind:value={newGig.changeover_minutes}
-							type="number"
-							min="0"
-							placeholder="e.g. 30"
+						<TimeInput
+							time={newGig.changeover_minutes ? parseInt(newGig.changeover_minutes) * 60000 : null}
+							onsubmit={(ms) => (newGig.changeover_minutes = String(Math.round(ms / 60000)))}
+							placeholder="Duration"
+							isDuration={true}
+							use24h={preferences.use24h}
 							class="w-full rounded-lg border border-border-primary bg-surface px-3 py-2 text-sm text-text-primary focus:border-stone-500 focus:ring-2 focus:ring-stone-500"
 						/>
 					</div>
@@ -399,33 +351,25 @@
 
 {#snippet gigCard(gig: GigRow, isPast: boolean)}
 	<div
-		class="group rounded-xl border border-border-primary bg-surface shadow-sm transition {isPast
+		class="group rounded-xl border border-border-primary bg-surface shadow-sm transition-colors {isPast
 			? 'opacity-60'
 			: ''}"
+		class:flash-green={flashGigId === gig.id}
 	>
-		<div class="flex items-center justify-between p-3">
-			<button onclick={() => toggleExpand(gig.id)} class="flex flex-1 items-center gap-3 text-left">
-				<svg
-					xmlns="http://www.w3.org/2000/svg"
-					class="h-4 w-4 text-text-tertiary transition {expandedGigId === gig.id
-						? 'rotate-90'
-						: ''}"
-					viewBox="0 0 20 20"
-					fill="currentColor"
-				>
-					<path
-						fill-rule="evenodd"
-						d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
-						clip-rule="evenodd"
-					/>
-				</svg>
+		<!-- View row (always visible, click to edit) -->
+		<div
+			class="flex items-center justify-between p-3 {editingGigId === gig.id
+				? ''
+				: 'cursor-pointer hover:bg-surface-hover'} rounded-xl"
+			role="button"
+			tabindex="0"
+			onclick={() => handleGigRowClick(gig.id)}
+			onkeydown={(e) => handleGigRowKeydown(e, gig.id)}
+		>
+			<div class="flex flex-1 items-center gap-3">
 				<div>
 					<div class="flex items-center gap-2">
-						{#if editingGigId === gig.id}
-							<!-- handled below -->
-						{:else}
-							<span class="font-medium text-text-primary">{gig.name}</span>
-						{/if}
+						<span class="font-medium text-text-primary">{gig.name}</span>
 						{#if gig.plot_id}
 							{@const pName = plotName(gig.plot_id)}
 							{#if pName}
@@ -438,6 +382,14 @@
 								</a>
 							{/if}
 						{/if}
+						<a
+							href="/bands/{bandId}/setlists/{gig.id}"
+							class="rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700 hover:bg-blue-200 dark:bg-blue-900 dark:text-blue-300 dark:hover:bg-blue-800"
+							onclick={(e) => e.stopPropagation()}
+							title="Edit setlists"
+						>
+							Setlists
+						</a>
 					</div>
 					<div class="mt-0.5 flex items-center gap-2 text-xs text-text-secondary">
 						{#if gig.date}
@@ -460,54 +412,46 @@
 						{/if}
 					</div>
 				</div>
-			</button>
-			<div class="flex items-center gap-1 opacity-0 transition group-hover:opacity-100">
-				<button
-					onclick={() => (editingGigId = editingGigId === gig.id ? null : gig.id)}
-					class="rounded p-1 text-text-tertiary hover:bg-surface-hover hover:text-text-primary"
-					title="Edit gig"
-				>
-					<svg
-						xmlns="http://www.w3.org/2000/svg"
-						class="h-4 w-4"
-						viewBox="0 0 20 20"
-						fill="currentColor"
-					>
-						<path
-							d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"
-						/>
-					</svg>
-				</button>
-				<button
-					onclick={() => deleteGig(gig.id)}
-					class="rounded p-1 text-text-tertiary hover:bg-red-100 hover:text-red-600 dark:hover:bg-red-900/30"
-					title="Delete gig"
-				>
-					<svg
-						xmlns="http://www.w3.org/2000/svg"
-						class="h-4 w-4"
-						viewBox="0 0 20 20"
-						fill="currentColor"
-					>
-						<path
-							fill-rule="evenodd"
-							d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
-							clip-rule="evenodd"
-						/>
-					</svg>
-				</button>
 			</div>
+			<button
+				onclick={(e) => {
+					e.stopPropagation();
+					deleteGig(gig.id);
+				}}
+				class="rounded p-1 text-text-tertiary opacity-0 transition group-hover:opacity-100 hover:bg-red-100 hover:text-red-600 focus:opacity-100 dark:hover:bg-red-900/30"
+				title="Delete gig"
+			>
+				<svg
+					xmlns="http://www.w3.org/2000/svg"
+					class="h-4 w-4"
+					viewBox="0 0 20 20"
+					fill="currentColor"
+				>
+					<path
+						fill-rule="evenodd"
+						d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+						clip-rule="evenodd"
+					/>
+				</svg>
+			</button>
 		</div>
 
+		<!-- Edit expansion -->
 		{#if editingGigId === gig.id}
-			<div class="border-t border-border-primary p-4">
+			<!-- svelte-ignore a11y_no_static_element_interactions -->
+			<div
+				transition:slide={{ duration: 200 }}
+				class="border-t border-border-primary px-4 pt-2 pb-2"
+				onclick={(e) => e.stopPropagation()}
+				onkeydown={handleEditKeydown}
+			>
 				<div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
 					<div>
 						<label class="mb-1 block text-xs font-medium text-text-secondary">Name</label>
 						<input
 							value={gig.name}
 							onchange={(e) => updateGig(gig.id, 'name', (e.target as HTMLInputElement).value)}
-							class="w-full rounded-lg border border-border-primary bg-surface px-2 py-1.5 text-sm"
+							class="w-full rounded-lg border border-border-primary bg-surface px-2 py-1.5 text-sm text-text-primary focus:border-stone-500 focus:ring-2 focus:ring-stone-500"
 						/>
 					</div>
 					<div>
@@ -515,7 +459,7 @@
 						<input
 							value={gig.venue || ''}
 							onchange={(e) => updateGig(gig.id, 'venue', (e.target as HTMLInputElement).value)}
-							class="w-full rounded-lg border border-border-primary bg-surface px-2 py-1.5 text-sm"
+							class="w-full rounded-lg border border-border-primary bg-surface px-2 py-1.5 text-sm text-text-primary focus:border-stone-500 focus:ring-2 focus:ring-stone-500"
 						/>
 					</div>
 					<div class="grid grid-cols-2 gap-3">
@@ -525,41 +469,43 @@
 								value={gig.date || ''}
 								type="date"
 								onchange={(e) => updateGig(gig.id, 'date', (e.target as HTMLInputElement).value)}
-								class="w-full rounded-lg border border-border-primary bg-surface px-2 py-1.5 text-sm"
+								class="w-full rounded-lg border border-border-primary bg-surface px-2 py-1.5 text-sm text-text-primary focus:border-stone-500 focus:ring-2 focus:ring-stone-500"
 							/>
 						</div>
 						<div>
 							<label class="mb-1 block text-xs font-medium text-text-secondary">Load-in</label>
-							<input
-								value={gig.time || ''}
-								type="time"
-								onchange={(e) => updateGig(gig.id, 'time', (e.target as HTMLInputElement).value)}
-								class="w-full rounded-lg border border-border-primary bg-surface px-2 py-1.5 text-sm"
+							<TimeInput
+								time={timeStringToMs(gig.time)}
+								onsubmit={(ms) => updateGig(gig.id, 'time', msToTimeString(ms))}
+								placeholder="Load-in"
+								use24h={preferences.use24h}
+								class="w-full rounded-lg border border-border-primary bg-surface px-2 py-1.5 text-sm text-text-primary focus:border-stone-500 focus:ring-2 focus:ring-stone-500"
 							/>
 						</div>
 					</div>
 					<div class="grid grid-cols-2 gap-3">
 						<div>
 							<label class="mb-1 block text-xs font-medium text-text-secondary">Set Time</label>
-							<input
-								value={gig.set_time || ''}
-								type="time"
-								onchange={(e) =>
-									updateGig(gig.id, 'set_time', (e.target as HTMLInputElement).value)}
-								class="w-full rounded-lg border border-border-primary bg-surface px-2 py-1.5 text-sm"
+							<TimeInput
+								time={timeStringToMs(gig.set_time)}
+								onsubmit={(ms) => updateGig(gig.id, 'set_time', msToTimeString(ms))}
+								placeholder="Set Time"
+								use24h={preferences.use24h}
+								class="w-full rounded-lg border border-border-primary bg-surface px-2 py-1.5 text-sm text-text-primary focus:border-stone-500 focus:ring-2 focus:ring-stone-500"
 							/>
 						</div>
 						<div>
 							<label class="mb-1 block text-xs font-medium text-text-secondary"
 								>Changeover (min)</label
 							>
-							<input
-								value={gig.changeover_minutes ?? ''}
-								type="number"
-								min="0"
-								onchange={(e) =>
-									updateGig(gig.id, 'changeover_minutes', (e.target as HTMLInputElement).value)}
-								class="w-full rounded-lg border border-border-primary bg-surface px-2 py-1.5 text-sm"
+							<TimeInput
+								time={gig.changeover_minutes ? gig.changeover_minutes * 60000 : null}
+								onsubmit={(ms) =>
+									updateGig(gig.id, 'changeover_minutes', String(Math.round(ms / 60000)))}
+								placeholder="Duration"
+								isDuration={true}
+								use24h={preferences.use24h}
+								class="w-full rounded-lg border border-border-primary bg-surface px-2 py-1.5 text-sm text-text-primary focus:border-stone-500 focus:ring-2 focus:ring-stone-500"
 							/>
 						</div>
 					</div>
@@ -570,7 +516,7 @@
 								value={gig.plot_id || ''}
 								onchange={(e) =>
 									updateGig(gig.id, 'plot_id', (e.target as HTMLSelectElement).value)}
-								class="w-full rounded-lg border border-border-primary bg-surface px-2 py-1.5 text-sm"
+								class="w-full rounded-lg border border-border-primary bg-surface px-2 py-1.5 text-sm text-text-primary focus:border-stone-500 focus:ring-2 focus:ring-stone-500"
 							>
 								<option value="">None</option>
 								{#each plots as plot}
@@ -583,26 +529,11 @@
 				<div class="mt-3 flex justify-end">
 					<button
 						onclick={() => (editingGigId = null)}
-						class="rounded-lg px-3 py-1.5 text-sm text-stone-600 hover:bg-surface-hover hover:text-stone-800 dark:text-stone-400 dark:hover:text-stone-200"
+						class="rounded-lg px-3 py-1.5 text-sm text-text-secondary hover:bg-surface-hover hover:text-text-primary"
 					>
 						Done
 					</button>
 				</div>
-			</div>
-		{/if}
-
-		{#if expandedGigId === gig.id}
-			<div class="border-t border-border-primary p-4">
-				{#if gigSetlists[gig.id] && gigSetlistSongs[gig.id]}
-					<SetlistEditor
-						gigId={gig.id}
-						{songs}
-						bind:setlists={gigSetlists[gig.id]}
-						bind:setlistSongs={gigSetlistSongs[gig.id]}
-					/>
-				{:else}
-					<p class="text-sm text-text-tertiary">Loading setlists...</p>
-				{/if}
 			</div>
 		{/if}
 	</div>

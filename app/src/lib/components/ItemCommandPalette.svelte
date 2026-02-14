@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { Command } from 'bits-ui';
 	import { loadFinalAssets, filterItems, type ProcessedItem } from '$lib/utils/finalAssetsLoader';
+	import { modKey } from '$lib/utils/platform';
 
 	type Item = ProcessedItem;
 
@@ -28,8 +29,6 @@
 	};
 
 	const TAB_NAMES = Object.keys(TAB_MAP);
-	const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.userAgent);
-	const modKey = isMac ? '⌘' : 'Ctrl+';
 
 	// Load items when the component is initialized
 	$effect(() => {
@@ -125,6 +124,7 @@
 	function handleKeydown(e: KeyboardEvent) {
 		if (!open) return;
 		if (e.key === 'Escape') {
+			e.preventDefault();
 			open = false;
 			onclose?.();
 			return;

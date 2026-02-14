@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { db } from '$lib/db';
+	import { encodeSetlist, buildSetlistShareUrl } from '@stageplotter/shared';
 
 	interface SongRow {
 		id: number;
@@ -28,11 +29,15 @@
 	let {
 		gigId,
 		songs,
+		bandName,
+		gigName,
 		setlists = $bindable([]),
 		setlistSongs = $bindable({})
 	}: {
 		gigId: number;
 		songs: SongRow[];
+		bandName: string;
+		gigName: string;
 		setlists: SetlistRow[];
 		setlistSongs: Record<number, SetlistSongRow[]>;
 	} = $props();
@@ -42,6 +47,7 @@
 	let editingNotesId = $state<number | null>(null);
 	let editingSetNameId = $state<number | null>(null);
 	let editingSetNameValue = $state('');
+	let copyFeedback = $state(false);
 
 	async function addSetlist() {
 		const name = `Set ${setlists.length + 1}`;
@@ -153,6 +159,37 @@
 		const current = setlistSongs[setlistId] || [];
 		const usedIds = new Set(current.map((s) => s.song_id));
 		return songs.filter((s) => !usedIds.has(s.id));
+	}
+
+	async function shareSetlists() {
+		try {
+			// Gather all setlists and their songs
+			const setsData = setlists.map((setlist) => {
+				const songs = (setlistSongs[setlist.id] || []).map((entry) => ({
+					title: entry.title,
+					key: entry.starting_key || ''
+				}));
+				return {
+					name: setlist.name,
+					songs
+				};
+			});
+
+			// Encode with default display preferences
+			const payload = await encodeSetlist({
+				sets: setsData,
+				font: 0, // sans
+				pageSize: 0, // letter
+				showKeys: 1 // yes
+			});
+
+			const url = buildSetlistShareUrl(window.location.origin, bandName, gigName, payload);
+			await navigator.clipboard.writeText(url);
+			copyFeedback = true;
+			setTimeout(() => (copyFeedback = false), 2000);
+		} catch (err) {
+			console.error('Failed to share setlists:', err);
+		}
 	}
 </script>
 
@@ -381,4 +418,13 @@
 	>
 		+ Add Another Set
 	</button>
+
+	{#if setlists.length > 0}
+		<button
+			onclick={shareSetlists}
+			class="w-full rounded-lg bg-stone-900 py-2 text-xs font-medium text-white hover:bg-stone-800 dark:bg-stone-100 dark:text-stone-900 dark:hover:bg-stone-200"
+		>
+			{copyFeedback ? '✓ Copied to Clipboard!' : 'Share Setlists'}
+		</button>
+	{/if}
 </div>

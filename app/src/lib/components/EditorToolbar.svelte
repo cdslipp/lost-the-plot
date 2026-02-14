@@ -1,6 +1,8 @@
 <script lang="ts">
 	// SPDX-License-Identifier: AGPL-3.0-only
 	import { ImportExport } from '$lib';
+	import CircleBackButton from '$lib/components/CircleBackButton.svelte';
+	import NotificationDialog from '$lib/components/NotificationDialog.svelte';
 	import {
 		encodePayload,
 		buildShareUrl,
@@ -8,13 +10,10 @@
 	} from '@stageplotter/shared/share-codec';
 
 	import { generateX32Scn, downloadScnFile, type ScnChannelData } from '$lib/utils/scnGenerator';
-	import { browser } from '$app/environment';
 	import { getPlotState } from '$lib/state/stagePlotState.svelte';
+	import { modKey } from '$lib/utils/platform';
 
 	const ps = getPlotState();
-
-	const isMac = browser && /Mac|iPhone|iPad|iPod/.test(navigator.platform);
-	const modKey = isMac ? '⌘' : 'Ctrl+';
 
 	let nameInput = $state<HTMLInputElement | null>(null);
 
@@ -31,6 +30,7 @@
 	let sharing = $state(false);
 	let shareCopied = $state(false);
 	let editingDate = $state(false);
+	let showShareError = $state(false);
 
 	let {
 		onAddItem,
@@ -128,7 +128,7 @@
 			setTimeout(() => (shareCopied = false), 3000);
 		} catch (e) {
 			console.error('Share failed:', e);
-			alert('Failed to generate share link. Please try again.');
+			showShareError = true;
 		} finally {
 			sharing = false;
 		}
@@ -138,28 +138,14 @@
 <div class="mb-2 flex items-start justify-between gap-4">
 	<div class="flex min-w-0 flex-1 items-start gap-3">
 		{#if backHref}
-			<a
-				href={backHref}
-				class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-border-primary text-text-secondary transition hover:bg-surface-hover hover:text-text-primary"
-				aria-label="Back"
-			>
-				<svg
-					xmlns="http://www.w3.org/2000/svg"
-					class="h-5 w-5"
-					viewBox="0 0 20 20"
-					fill="currentColor"
-				>
-					<path
-						fill-rule="evenodd"
-						d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z"
-						clip-rule="evenodd"
-					/>
-				</svg>
-			</a>
+			<CircleBackButton href={backHref} />
 		{/if}
 		<div class="min-w-0 flex-1">
 			{#if viewOnly}
-				<div class="px-2 py-1 font-serif text-3xl font-bold text-text-primary">
+				<div
+					class="px-2 py-1 text-3xl font-bold text-text-primary"
+					style="font-family: Georgia, 'Times New Roman', serif;"
+				>
 					{ps.plotName || 'Untitled Plot'}
 				</div>
 			{:else}
@@ -170,7 +156,8 @@
 						if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
 					}}
 					bind:this={nameInput}
-					class="w-full min-w-0 border-b-2 border-dashed border-border-secondary bg-transparent px-2 py-1 font-serif text-3xl font-bold text-text-primary transition-all placeholder:font-normal placeholder:text-text-tertiary hover:border-border-primary focus:border-solid focus:border-stone-500 focus:outline-none"
+					class="w-full min-w-0 border-b-2 border-dashed border-border-secondary bg-transparent px-2 py-1 text-3xl font-bold text-text-primary transition-all placeholder:font-normal placeholder:text-text-tertiary hover:border-border-primary focus:border-solid focus:border-stone-500 focus:outline-none"
+					style="font-family: Georgia, 'Times New Roman', serif;"
 					placeholder="Plot Name"
 				/>
 			{/if}
@@ -270,3 +257,10 @@
 		{/if}
 	</div>
 </div>
+
+<NotificationDialog
+	bind:open={showShareError}
+	title="Share Failed"
+	description="Failed to generate share link. Please try again."
+	variant="error"
+/>

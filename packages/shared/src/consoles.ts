@@ -34,6 +34,8 @@ export interface ConsoleDefinition {
 	channelOptions: number[];
 	/** Supported output count options for the UI */
 	outputOptions: number[];
+	/** Max characters for scribble strip names (e.g. 12 for X32/M32) */
+	scribbleStripLength?: number;
 }
 
 /**
@@ -115,7 +117,8 @@ export const X32_CONSOLE: ConsoleDefinition = {
 	outputBuses: 16,
 	colors: X32_COLORS,
 	channelOptions: [8, 16, 24, 32],
-	outputOptions: [8, 16]
+	outputOptions: [8, 16],
+	scribbleStripLength: 12
 };
 
 /** Default category → color mapping for X32 */
@@ -152,7 +155,8 @@ export const SQ_CONSOLE: ConsoleDefinition = {
 	outputBuses: 16,
 	colors: SQ_COLORS,
 	channelOptions: [8, 16, 24, 32, 48],
-	outputOptions: [8, 12, 16]
+	outputOptions: [8, 12, 16],
+	scribbleStripLength: 8
 };
 
 /** Default category → color mapping for SQ */
@@ -188,7 +192,8 @@ export const WING_CONSOLE: ConsoleDefinition = {
 	outputBuses: 48,
 	colors: WING_COLORS,
 	channelOptions: [8, 16, 24, 32, 48],
-	outputOptions: [8, 16, 24, 32, 48]
+	outputOptions: [8, 16, 24, 32, 48],
+	scribbleStripLength: 12
 };
 
 /** Default category → color mapping for WING */

@@ -145,7 +145,7 @@
 				</h1>
 				<p class="mt-6 text-lg leading-relaxed text-stone-500 dark:text-stone-400">
 					Professional stage plots and input lists in minutes, from any device. No signup, no
-					subscription. Just drag, drop, and share with the crew.
+					subscription, everything is open source and free.
 				</p>
 				<div class="mt-10 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
 					<a

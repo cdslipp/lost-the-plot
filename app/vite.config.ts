@@ -94,7 +94,7 @@ export default defineConfig({
 			},
 			workbox: {
 				globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
-				globIgnores: ['**/sqlite3*.wasm']
+				globIgnores: ['**/sqlite3*.wasm', '**/pdf.worker*']
 			}
 		})
 	],

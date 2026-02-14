@@ -308,7 +308,10 @@ export class StagePlotState {
 		return Array.from({ length: count }, (_, i) => ({
 			channelNum: i + 1,
 			itemId: null,
-			color: null
+			color: null,
+			name: null,
+			shortName: null,
+			phantom: false
 		}));
 	}
 
@@ -320,17 +323,21 @@ export class StagePlotState {
 	}
 
 	assignItemToChannel(itemId: number, channelNum: number) {
-		// Clear any previous assignment for this item
+		// Clear any previous assignment for this item (keep name/color on old channel)
 		for (const ch of this.inputChannels) {
 			if (ch.itemId === itemId) {
 				ch.itemId = null;
-				ch.color = null;
 			}
 		}
 		// Assign to new channel
 		const idx = channelNum - 1;
 		if (idx >= 0 && idx < this.inputChannels.length) {
 			this.inputChannels[idx].itemId = itemId;
+			// Seed channel name from item if channel has no name yet
+			if (!this.inputChannels[idx].name) {
+				const item = this.items.find((i) => i.id === itemId);
+				if (item) this.inputChannels[idx].name = item.name;
+			}
 		}
 	}
 
@@ -339,6 +346,7 @@ export class StagePlotState {
 		if (idx >= 0 && idx < this.inputChannels.length) {
 			this.inputChannels[idx].itemId = null;
 			this.inputChannels[idx].color = null;
+			// Keep name and shortName — channel identity persists after unlinking
 		}
 	}
 
@@ -347,7 +355,14 @@ export class StagePlotState {
 		if (newMode === current) return;
 		if (newMode > current) {
 			for (let i = current + 1; i <= newMode; i++) {
-				this.inputChannels.push({ channelNum: i, itemId: null, color: null });
+				this.inputChannels.push({
+					channelNum: i,
+					itemId: null,
+					color: null,
+					name: null,
+					shortName: null,
+					phantom: false
+				});
 			}
 		} else {
 			this.inputChannels = this.inputChannels.slice(0, newMode);
@@ -418,6 +433,21 @@ export class StagePlotState {
 			this.outputChannels = Array.isArray(meta.outputChannels)
 				? meta.outputChannels
 				: this.buildOutputChannels(16);
+
+			// Backfill name/shortName for channels from before this field existed
+			const itemMap = new Map<number, (typeof this.items)[number]>();
+			for (const item of this.items) itemMap.set(item.id, item);
+			for (const ch of this.inputChannels) {
+				if (ch.name === undefined) {
+					ch.name = ch.itemId != null ? (itemMap.get(ch.itemId)?.name ?? null) : null;
+				}
+				if (ch.shortName === undefined) {
+					ch.shortName = null;
+				}
+				if ((ch as any).phantom === undefined) {
+					ch.phantom = false;
+				}
+			}
 		} else {
 			// Old format: build channel arrays from item.channel values
 			let oldChannelColors: Record<string, string> = {};
@@ -436,6 +466,7 @@ export class StagePlotState {
 					const chNum = parseInt(item.channel);
 					if (chNum >= 1 && chNum <= this.inputChannels.length) {
 						this.inputChannels[chNum - 1].itemId = item.id;
+						this.inputChannels[chNum - 1].name = item.name || null;
 						const colorId = oldChannelColors[String(chNum)];
 						if (colorId) {
 							this.inputChannels[chNum - 1].color = colorId;
@@ -482,15 +513,20 @@ export class StagePlotState {
 			this.history.startRecording(savedLog, savedRedoStack);
 		}
 
-		// Load people
-		const personIds = await getPlotPersonIds(this.plotId);
+		// Load people + band in parallel
+		const [personIds, plotPersons, bandPersons, bandPersonsFull, band] = await Promise.all([
+			getPlotPersonIds(this.plotId),
+			getPersonsForPlot(this.plotId),
+			getActivePersonsByBandId(this.bandId),
+			getFullPersonsByBandId(this.bandId),
+			getBandById(this.bandId)
+		]);
 		this.plotPersonIds = new Set(personIds);
-		this.plotPersons = await getPersonsForPlot(this.plotId);
-		this.bandPersons = await getActivePersonsByBandId(this.bandId);
-		this.bandPersonsFull = await getFullPersonsByBandId(this.bandId);
+		this.plotPersons = plotPersons;
+		this.bandPersons = bandPersons;
+		this.bandPersonsFull = bandPersonsFull;
 
 		// Band name
-		const band = await getBandById(this.bandId);
 		this.bandName = band?.name ?? '';
 
 		return true;
@@ -574,6 +610,16 @@ export class StagePlotState {
 			}
 		} else {
 			(item as any)[property] = value;
+			// Sync item name → linked channel name
+			if (property === 'name') {
+				const chNum = this.channelByItemId.get(itemId);
+				if (chNum != null) {
+					const idx = chNum - 1;
+					if (idx >= 0 && idx < this.inputChannels.length) {
+						this.inputChannels[idx].name = value || null;
+					}
+				}
+			}
 		}
 		this.commitChange();
 	}
@@ -687,6 +733,8 @@ export class StagePlotState {
 		for (const ch of this.inputChannels) {
 			ch.itemId = null;
 			ch.color = null;
+			ch.name = null;
+			ch.shortName = null;
 		}
 		for (const item of this.items) {
 			item.person_id = null;
@@ -843,6 +891,14 @@ export class StagePlotState {
 			if (StagePlotState.CHANNEL_OPTIONS.includes(maxOut) && this.outputChannels.length > maxOut) {
 				this.setOutputChannelMode(maxOut);
 			}
+			// Truncate short names that exceed the new console's scribble strip length
+			if (def.scribbleStripLength) {
+				for (const ch of this.inputChannels) {
+					if (ch.shortName && ch.shortName.length > def.scribbleStripLength) {
+						ch.shortName = ch.shortName.slice(0, def.scribbleStripLength);
+					}
+				}
+			}
 		}
 		this.debouncedWrite();
 	}
@@ -855,8 +911,52 @@ export class StagePlotState {
 		this.debouncedWrite();
 	}
 
+	setChannelName(channelNum: number, name: string) {
+		const idx = channelNum - 1;
+		if (idx < 0 || idx >= this.inputChannels.length) return;
+		this.inputChannels[idx].name = name || null;
+		// Sync to linked item if present
+		const itemId = this.inputChannels[idx].itemId;
+		if (itemId != null) {
+			const item = this.items.find((i) => i.id === itemId);
+			if (item) item.name = name;
+		}
+		this.debouncedWrite();
+	}
+
+	setChannelShortName(channelNum: number, shortName: string) {
+		const idx = channelNum - 1;
+		if (idx < 0 || idx >= this.inputChannels.length) return;
+		const maxLen = this.consoleDef?.scribbleStripLength;
+		const clamped = maxLen && shortName.length > maxLen ? shortName.slice(0, maxLen) : shortName;
+		this.inputChannels[idx].shortName = clamped || null;
+		this.debouncedWrite();
+	}
+
 	setStereoLinks(links: number[]) {
 		this.stereoLinks = links;
+		this.debouncedWrite();
+	}
+
+	setChannelPhantom(channelNum: number, on: boolean) {
+		const idx = channelNum - 1;
+		if (idx < 0 || idx >= this.inputChannels.length) return;
+		this.inputChannels[idx].phantom = on;
+		this.debouncedWrite();
+	}
+
+	toggleStereoLink(channelNum: number) {
+		// Stereo links are keyed by the odd channel of a pair
+		const startCh = channelNum % 2 === 0 ? channelNum - 1 : channelNum;
+		const newLinks = [...this.stereoLinks];
+		const idx = newLinks.indexOf(startCh);
+		if (idx >= 0) {
+			newLinks.splice(idx, 1);
+		} else {
+			newLinks.push(startCh);
+			newLinks.sort((a, b) => a - b);
+		}
+		this.stereoLinks = newLinks;
 		this.debouncedWrite();
 	}
 

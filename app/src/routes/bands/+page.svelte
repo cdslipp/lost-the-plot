@@ -13,6 +13,9 @@
 		updateBandName
 	} from '$lib/db/repositories/bands';
 	import { PlusIcon } from '$lib/components/icons';
+	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
+	import NotificationDialog from '$lib/components/NotificationDialog.svelte';
+	import ListPageLayout from '$lib/components/ListPageLayout.svelte';
 	import type { BandWithPlotCount } from '$lib/db/repositories/bands';
 
 	let bands = $state<BandWithPlotCount[]>([]);
@@ -23,6 +26,15 @@
 	let editingBandId = $state<string | null>(null);
 	let bandNameInput = $state('');
 	let fileInput: HTMLInputElement;
+
+	// Dialog state
+	let deleteBandTarget = $state<{ id: string; name: string } | null>(null);
+	let notification = $state<{
+		open: boolean;
+		title: string;
+		description: string;
+		variant: 'success' | 'error';
+	}>({ open: false, title: '', description: '', variant: 'success' });
 
 	async function loadBands() {
 		await db.init();
@@ -37,14 +49,16 @@
 		goto(`/bands/${id}?new=1`);
 	}
 
-	async function handleDeleteBand(bandId: string, bandName: string) {
+	function handleDeleteBand(bandId: string, bandName: string) {
 		openMenuBandId = null;
-		const confirmed = confirm(
-			`Delete "${bandName}"? This removes all plots, people, songs, gigs, and setlists.`
-		);
-		if (!confirmed) return;
+		deleteBandTarget = { id: bandId, name: bandName };
+	}
+
+	async function confirmDeleteBand() {
+		if (!deleteBandTarget) return;
 		await db.init();
-		await deleteBandCascade(bandId);
+		await deleteBandCascade(deleteBandTarget.id);
+		deleteBandTarget = null;
 		await loadBands();
 	}
 
@@ -90,7 +104,12 @@
 			await exportAllBands();
 		} catch (error) {
 			console.error('Failed to export bands:', error);
-			alert('Export failed. Please try again.');
+			notification = {
+				open: true,
+				title: 'Export Failed',
+				description: 'Export failed. Please try again.',
+				variant: 'error'
+			};
 		} finally {
 			exporting = false;
 		}
@@ -108,10 +127,20 @@
 		try {
 			await handleImportFile(file);
 			await loadBands();
-			alert('Bands imported successfully.');
+			notification = {
+				open: true,
+				title: 'Import Successful',
+				description: 'Bands imported successfully.',
+				variant: 'success'
+			};
 		} catch (error) {
 			console.error('Import error:', error);
-			alert('Import failed. Please check the file format.');
+			notification = {
+				open: true,
+				title: 'Import Failed',
+				description: 'Import failed. Please check the file format.',
+				variant: 'error'
+			};
 		} finally {
 			importing = false;
 			target.value = '';
@@ -133,11 +162,7 @@
 	}}
 />
 
-<div class="mx-auto flex h-[calc(100dvh-1.25rem)] max-w-md flex-col gap-6 py-6">
-	<div class="flex items-center justify-between">
-		<h1 class="font-serif text-3xl font-bold text-text-primary">Your Bands</h1>
-	</div>
-
+<ListPageLayout title="Your Bands">
 	{#if loading}
 		<div class="flex flex-1 items-center justify-center">
 			<p class="text-text-secondary">Loading...</p>
@@ -272,65 +297,90 @@
 		</p>
 	</div>
 
-	<div class="mt-auto flex flex-wrap items-center justify-between gap-3 pt-4">
-		<input
-			bind:this={fileInput}
-			type="file"
-			accept=".json"
-			onchange={handleImport}
-			style="display: none"
-		/>
-		<div class="flex flex-wrap items-center gap-2">
-			<button
-				onclick={triggerImport}
-				disabled={loading || importing}
-				class="flex items-center gap-2 rounded-lg border border-border-primary px-4 py-2 text-sm text-text-primary transition hover:bg-surface-hover disabled:cursor-not-allowed disabled:opacity-60"
-				title="Import bands and plots"
-			>
-				<svg
-					xmlns="http://www.w3.org/2000/svg"
-					class="h-4 w-4"
-					viewBox="0 0 20 20"
-					fill="currentColor"
+	{#snippet footer()}
+		<div class="mt-auto flex flex-wrap items-center justify-between gap-3 pt-4">
+			<input
+				bind:this={fileInput}
+				type="file"
+				accept=".json"
+				onchange={handleImport}
+				style="display: none"
+			/>
+			<div class="flex flex-wrap items-center gap-2">
+				<button
+					onclick={triggerImport}
+					disabled={loading || importing}
+					class="flex items-center gap-2 rounded-lg border border-border-primary px-4 py-2 text-sm text-text-primary transition hover:bg-surface-hover disabled:cursor-not-allowed disabled:opacity-60"
+					title="Import bands and plots"
 				>
-					<path
-						fill-rule="evenodd"
-						d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM6.293 6.707a1 1 0 010-1.414l3-3a1 1 0 011.414 0l3 3a1 1 0 01-1.414 1.414L11 5.414V13a1 1 0 11-2 0V5.414L7.707 6.707a1 1 0 01-1.414 0z"
-						clip-rule="evenodd"
-					/>
-				</svg>
-				{importing ? 'Importing...' : 'Import'}
-			</button>
-			<button
-				onclick={handleExportAllBands}
-				disabled={loading || bands.length === 0 || exporting}
-				class="flex items-center gap-2 rounded-lg border border-border-primary px-4 py-2 text-sm text-text-primary transition hover:bg-surface-hover disabled:cursor-not-allowed disabled:opacity-60"
-				title="Export all bands and plots"
-			>
-				<svg
-					xmlns="http://www.w3.org/2000/svg"
-					class="h-4 w-4"
-					viewBox="0 0 20 20"
-					fill="currentColor"
+					<svg
+						xmlns="http://www.w3.org/2000/svg"
+						class="h-4 w-4"
+						viewBox="0 0 20 20"
+						fill="currentColor"
+					>
+						<path
+							fill-rule="evenodd"
+							d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM6.293 6.707a1 1 0 010-1.414l3-3a1 1 0 011.414 0l3 3a1 1 0 01-1.414 1.414L11 5.414V13a1 1 0 11-2 0V5.414L7.707 6.707a1 1 0 01-1.414 0z"
+							clip-rule="evenodd"
+						/>
+					</svg>
+					{importing ? 'Importing...' : 'Import'}
+				</button>
+				<button
+					onclick={handleExportAllBands}
+					disabled={loading || bands.length === 0 || exporting}
+					class="flex items-center gap-2 rounded-lg border border-border-primary px-4 py-2 text-sm text-text-primary transition hover:bg-surface-hover disabled:cursor-not-allowed disabled:opacity-60"
+					title="Export all bands and plots"
 				>
-					<path
-						fill-rule="evenodd"
-						d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z"
-						clip-rule="evenodd"
-					/>
-				</svg>
-				{exporting ? 'Exporting...' : 'Export All'}
+					<svg
+						xmlns="http://www.w3.org/2000/svg"
+						class="h-4 w-4"
+						viewBox="0 0 20 20"
+						fill="currentColor"
+					>
+						<path
+							fill-rule="evenodd"
+							d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z"
+							clip-rule="evenodd"
+						/>
+					</svg>
+					{exporting ? 'Exporting...' : 'Export All'}
+				</button>
+			</div>
+			<button
+				onclick={createBand}
+				class="flex items-center gap-2 rounded-lg bg-stone-900 px-4 py-2 text-sm text-white transition hover:bg-stone-800 dark:bg-stone-100 dark:text-stone-900 dark:hover:bg-stone-200"
+			>
+				<PlusIcon />
+				New Band
 			</button>
 		</div>
-		<button
-			onclick={createBand}
-			class="flex items-center gap-2 rounded-lg bg-stone-900 px-4 py-2 text-sm text-white transition hover:bg-stone-800 dark:bg-stone-100 dark:text-stone-900 dark:hover:bg-stone-200"
-		>
-			<PlusIcon />
-			New Band
-		</button>
-	</div>
-</div>
+	{/snippet}
+</ListPageLayout>
+
+<ConfirmDialog
+	bind:open={
+		() => deleteBandTarget !== null,
+		(v) => {
+			if (!v) deleteBandTarget = null;
+		}
+	}
+	title="Delete Band"
+	description={deleteBandTarget
+		? `Delete "${deleteBandTarget.name}"? This removes all plots, people, songs, gigs, and setlists.`
+		: ''}
+	confirmLabel="Delete"
+	variant="destructive"
+	onconfirm={confirmDeleteBand}
+/>
+
+<NotificationDialog
+	bind:open={notification.open}
+	title={notification.title}
+	description={notification.description}
+	variant={notification.variant}
+/>
 
 <style>
 	/* Slim scrollbar */

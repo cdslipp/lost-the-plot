@@ -27,3 +27,12 @@ You MUST use this tool whenever writing Svelte code before sending it to the use
 
 Generates a Svelte Playground link with the provided code.
 After completing the code, ask the user if they want a playground link. Only call this tool after user confirmation and NEVER if code was written to files in their project.
+
+---
+
+## Settings / Preferences
+
+- **Preferences singleton**: `app/src/lib/state/preferences.svelte.ts` — Svelte 5 class with `$state` + `$effect` + localStorage. Export: `preferences`.
+- **Time format**: `preferences.timeFormat` ('12h' | '24h'), convenience getter `preferences.use24h`. localStorage key: `stageplotter-time-format`.
+- **Dark mode**: Managed by `mode-watcher` (not in preferences singleton). Use `mode.current`, `setMode()`, `toggleMode()` from `mode-watcher`.
+- **Time formatting utility**: `app/src/lib/utils/time.ts` — `formatTimeMs(ms, use24h?)` for consistent time display.

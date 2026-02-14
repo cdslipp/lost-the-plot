@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { DropdownMenu } from 'bits-ui';
+	import NotificationDialog from '$lib/components/NotificationDialog.svelte';
 	import {
 		getStandardConfig,
 		type CanvasConfig,
@@ -53,6 +54,12 @@
 
 	let fileInput: HTMLInputElement;
 	let isMenuOpen = $state(false);
+	let notification = $state<{
+		open: boolean;
+		title: string;
+		description: string;
+		variant: 'success' | 'error';
+	}>({ open: false, title: '', description: '', variant: 'success' });
 
 	// Export functionality
 	function exportStagePlot() {
@@ -138,7 +145,12 @@
 		if (!file) return;
 
 		if (!file.name.endsWith('.json')) {
-			alert('Please select a JSON file.');
+			notification = {
+				open: true,
+				title: 'Invalid File',
+				description: 'Please select a JSON file.',
+				variant: 'error'
+			};
 			return;
 		}
 
@@ -188,10 +200,20 @@
 
 				if (onImportComplete) onImportComplete();
 
-				alert('Stage plot imported successfully!');
+				notification = {
+					open: true,
+					title: 'Import Successful',
+					description: 'Stage plot imported successfully!',
+					variant: 'success'
+				};
 			} catch (error) {
 				console.error('Import error:', error);
-				alert('Error importing stage plot. Please check the file format.');
+				notification = {
+					open: true,
+					title: 'Import Error',
+					description: 'Error importing stage plot. Please check the file format.',
+					variant: 'error'
+				};
 			}
 		};
 
@@ -316,3 +338,10 @@
 		{/if}
 	</DropdownMenu.Content>
 </DropdownMenu.Root>
+
+<NotificationDialog
+	bind:open={notification.open}
+	title={notification.title}
+	description={notification.description}
+	variant={notification.variant}
+/>

@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 import { db } from '$lib/db';
+import { insertMany } from '$lib/db/batch';
 
 export interface PersonRow {
 	id: number;
@@ -92,6 +93,36 @@ export async function createPerson(
 		]
 	);
 	return result.lastInsertRowid;
+}
+
+export async function insertPersonsForBand(
+	bandId: string,
+	persons: Array<{
+		name: string;
+		role: string | null;
+		pronouns: string | null;
+		phone: string | null;
+		email: string | null;
+		member_type: string | null;
+		status: string | null;
+	}>
+): Promise<void> {
+	if (persons.length === 0) return;
+	const rows = persons.map((person) => [
+		bandId,
+		person.name,
+		person.role,
+		person.pronouns,
+		person.phone,
+		person.email,
+		person.member_type,
+		person.status
+	]);
+	await insertMany(
+		'persons',
+		['band_id', 'name', 'role', 'pronouns', 'phone', 'email', 'member_type', 'status'],
+		rows
+	);
 }
 
 export async function updatePersonField(

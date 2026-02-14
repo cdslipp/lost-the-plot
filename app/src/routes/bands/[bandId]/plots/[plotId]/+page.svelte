@@ -48,10 +48,12 @@
 
 	// --- Selection & interaction state (ID-based) ---
 	let selectedItemIds = $state<number[]>([]);
+	let selectedChannelNum = $state<number | null>(null);
 	const selectedIdSet = $derived(new Set(selectedItemIds));
 	let isAddingItem = $state(false);
 	let replacingItemId = $state<number | null>(null);
 	let placingItem = $state<any>(null);
+	let pendingChannelLink = $state<number | null>(null);
 	let selecto: any;
 	// Plain `let` (not $state) — used as a synchronous flag to prevent click-after-select races
 	let justSelected = false;
@@ -172,15 +174,25 @@
 	keys.onKeys(['Backspace'], () => !viewOnly && handleDeleteHotkey());
 
 	// --- Selection helpers ---
-	function clearSelections() {
+	function clearItemSelection() {
 		if (selectedItemIds.length > 0) {
 			selectedItemIds = [];
 			selecto?.setSelectedTargets([]);
 		}
 	}
 
+	function clearChannelSelection() {
+		selectedChannelNum = null;
+	}
+
+	function clearSelections() {
+		clearItemSelection();
+		clearChannelSelection();
+	}
+
 	/** Set selection to the given IDs and sync Selecto's DOM state */
 	function selectItems(ids: number[]) {
+		clearChannelSelection();
 		selectedItemIds = ids;
 		if (selecto && canvasEl) {
 			const els = ids
@@ -188,6 +200,12 @@
 				.filter(Boolean) as HTMLElement[];
 			selecto.setSelectedTargets(els);
 		}
+	}
+
+	function selectChannel(chNum: number) {
+		clearItemSelection();
+		selectedChannelNum = chNum;
+		sidePanelTab = 'inspector';
 	}
 
 	/** Toggle item selection with shift/ctrl support */
@@ -364,6 +382,8 @@
 
 	// --- Command palette / item placement ---
 	function openAddMenu() {
+		mediumMainTab = 'canvas';
+		mobileMainTab = 'canvas';
 		isAddingItem = true;
 	}
 
@@ -391,7 +411,14 @@
 			return;
 		}
 		isAddingItem = false;
-		await preparePlacingItem(item);
+		const ch = pendingChannelLink;
+		pendingChannelLink = null;
+		await preparePlacingItem(item, ch);
+	}
+
+	function placeItemForChannel(channelNum: number) {
+		pendingChannelLink = channelNum;
+		openAddMenu();
 	}
 
 	function openReplaceMenu(itemId: number) {
@@ -473,11 +500,8 @@
 
 			ps.items.push(newItem);
 
-			// Assign to channel
-			let ch = placingItem.channel;
-			if (ch == null && placingItem.type === 'input') {
-				ch = ps.getNextAvailableChannel();
-			}
+			// Assign to channel only if explicitly set
+			const ch = placingItem.channel;
 			if (ch != null) {
 				ps.assignItemToChannel(newItem.id, ch);
 			}
@@ -659,24 +683,6 @@
 		dragging = null;
 	}
 
-	// --- Patch handlers (thin wrappers) ---
-	function handlePatchAddItem(item: any, channel: number) {
-		ps.preparePatchChannel(channel, item);
-		preparePlacingItem(item, channel);
-	}
-
-	function handlePatchOutputSelect(item: any, channel: number) {
-		if (item) {
-			ps.setOutput(channel, {
-				id: Date.now(),
-				name: item.name,
-				itemData: item
-			});
-		} else {
-			ps.removeOutput(channel);
-		}
-	}
-
 	// --- Riser placement (dimensions in feet) ---
 	function placeRiser(riserWidth: number, riserDepth: number, riserHeight: number) {
 		placingItem = {
@@ -792,6 +798,7 @@
 			itemByChannel={ps.itemByChannel}
 			outputByChannel={ps.outputByChannel}
 			{selectedItemIds}
+			{selectedChannelNum}
 			onSelectionChange={(ids, event) => {
 				if (ids.length) {
 					toggleItemSelection(ids[0], event);
@@ -800,12 +807,13 @@
 					clearSelections();
 				}
 			}}
+			onChannelSelect={(chNum, event) => selectChannel(chNum)}
+			onChannelNameInput={(chNum, name) => ps.setChannelName(chNum, name)}
+			onChannelNameCommit={() => ps.commitChange()}
 			{columnCount}
 			readonly={viewOnly}
-			onAddItem={handlePatchAddItem}
 			onRemoveItem={(ch) => ps.removePatchItem(ch)}
 			onClearPatch={() => ps.clearAllPatch()}
-			onOutputSelect={handlePatchOutputSelect}
 			onOutputRemove={(ch) => ps.removeOutput(ch)}
 			consoleType={ps.consoleType}
 			stereoLinks={ps.stereoLinks}
@@ -817,10 +825,7 @@
 
 	{#snippet canvasContent()}
 		<div bind:this={canvasWrapperEl} class="flex min-h-0 flex-1 items-center justify-center">
-			<div
-				class="border border-border-primary bg-surface p-3 shadow-sm"
-				style="width: {canvasPixelWidth + 24}px;"
-			>
+			<div>
 				{#if viewOnly}
 					<!-- View-only canvas: no context menus, no interactions -->
 					<div
@@ -1150,20 +1155,6 @@
 				{/if}
 			</div>
 		</div>
-
-		{#if !viewOnly}
-			<div class="mt-1.5 flex justify-between text-xs text-text-tertiary">
-				<div class="flex items-center gap-3">
-					Items: {ps.items.length} | People: {ps.plotPersonIds.size}
-					{#if isAltPressed}
-						<span class="animate-bounce font-semibold text-blue-600">(Duplicate)</span>
-					{/if}
-				</div>
-				<div>
-					{#if placingItem}Click on canvas to place item. Press 'Escape' to cancel.{/if}
-				</div>
-			</div>
-		{/if}
 	{/snippet}
 
 	{#if layoutMode === 'desktop'}
@@ -1185,8 +1176,10 @@
 				<EditorSidePanel
 					bind:activeTab={sidePanelTab}
 					bind:selectedItemIds
+					{selectedChannelNum}
 					onPlaceRiser={placeRiser}
 					onAddPersonToPlot={addPersonToPlot}
+					onPlaceItemForChannel={placeItemForChannel}
 				/>
 			</div>
 		</div>
@@ -1233,8 +1226,10 @@
 				<EditorSidePanel
 					bind:activeTab={sidePanelTab}
 					bind:selectedItemIds
+					{selectedChannelNum}
 					onPlaceRiser={placeRiser}
 					onAddPersonToPlot={addPersonToPlot}
+					onPlaceItemForChannel={placeItemForChannel}
 				/>
 			</div>
 		</div>
@@ -1313,6 +1308,7 @@
 			onclose={() => {
 				isAddingItem = false;
 				replacingItemId = null;
+				pendingChannelLink = null;
 			}}
 		/>
 	</div>

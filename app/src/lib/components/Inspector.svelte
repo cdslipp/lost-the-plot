@@ -1,5 +1,6 @@
 <script lang="ts">
 	import PersonCombobox from './PersonCombobox.svelte';
+	import SegmentedToggle from './SegmentedToggle.svelte';
 	import { displayValue, toFeet, unitLabel } from '$lib/utils/scale';
 	import { toggleMode } from 'mode-watcher';
 	import {
@@ -10,13 +11,24 @@
 	} from '$lib/utils/canvasUtils';
 	import { getPlotState } from '$lib/state/stagePlotState.svelte';
 	import type { StagePlotItem } from '@stageplotter/shared';
+	import { PressedKeys } from 'runed';
+
+	const keys = new PressedKeys();
+	const isAltPressed = $derived(keys.has('Alt'));
 
 	type Props = {
 		selectedItemIds?: number[];
+		selectedChannelNum?: number | null;
 		onPlaceRiser?: (riserWidth: number, riserDepth: number, riserHeight: number) => void;
+		onPlaceItemForChannel?: (channelNum: number) => void;
 	};
 
-	let { selectedItemIds = $bindable<number[]>([]), onPlaceRiser }: Props = $props();
+	let {
+		selectedItemIds = $bindable<number[]>([]),
+		selectedChannelNum = null,
+		onPlaceRiser,
+		onPlaceItemForChannel
+	}: Props = $props();
 
 	const ps = getPlotState();
 
@@ -38,6 +50,16 @@
 			selectedItemsData[0].type !== 'riser' &&
 			getVariantKeys(selectedItemsData[0]).length > 1
 	);
+
+	// Channel inspector
+	const selectedChannel = $derived.by(() => {
+		if (selectedChannelNum == null) return null;
+		return ps.inputChannels[selectedChannelNum - 1] ?? null;
+	});
+	const linkedItem = $derived.by(() => {
+		if (!selectedChannel || selectedChannel.itemId == null) return null;
+		return ps.items.find((i) => i.id === selectedChannel.itemId) ?? null;
+	});
 
 	// For bulk editing
 	let bulkPersonId = $state<number | null>(null);
@@ -67,7 +89,171 @@
 </script>
 
 <div class="flex h-full flex-col overflow-y-auto">
-	{#if selectedItemsData.length === 0}
+	{#snippet channelFields(ch: import('@stageplotter/shared').InputChannel, chNum: number)}
+		<div class="space-y-4">
+			<div>
+				<label class="mb-1 block text-xs text-text-secondary">Name</label>
+				<input
+					type="text"
+					value={ch.name ?? ''}
+					oninput={(e) => ps.setChannelName(chNum, e.currentTarget.value)}
+					onchange={() => ps.commitChange()}
+					class="w-full rounded-lg border border-border-primary bg-surface px-2 py-1.5 text-sm text-text-primary focus:border-stone-500 focus:ring-2 focus:ring-stone-500"
+					placeholder="Channel name"
+				/>
+			</div>
+			<div>
+				<label class="mb-1 block text-xs text-text-secondary">Short Name</label>
+				<input
+					type="text"
+					value={ch.shortName ?? ''}
+					maxlength={ps.consoleDef?.scribbleStripLength ?? undefined}
+					oninput={(e) => ps.setChannelShortName(chNum, e.currentTarget.value)}
+					class="w-full rounded-lg border border-border-primary bg-surface px-2 py-1.5 text-sm text-text-primary focus:border-stone-500 focus:ring-2 focus:ring-stone-500"
+					placeholder="Short name"
+				/>
+				{#if ps.consoleDef?.scribbleStripLength}
+					<span class="text-xs text-text-tertiary">
+						{(ch.shortName ?? '').length}/{ps.consoleDef.scribbleStripLength}
+					</span>
+				{/if}
+			</div>
+
+			<!-- Channel Color -->
+			{#if ps.consoleDef}
+				{@const currentColorId = ch.color ?? null}
+				{@const normalColors = ps.consoleDef.colors.filter((c) => !c.inverted)}
+				{@const invertedColors = ps.consoleDef.colors.filter((c) => c.inverted)}
+				<div>
+					<label class="mb-1 block text-xs text-text-secondary">Channel Color</label>
+					<div class="grid grid-cols-8 gap-1.5">
+						{#each normalColors as color (color.id)}
+							<button
+								type="button"
+								onclick={() => ps.setChannelColor(chNum, color.id)}
+								class="h-6 w-6 rounded-md border-2 transition-all hover:scale-110 focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 focus:outline-none {currentColorId ===
+								color.id
+									? 'border-white ring-2 ring-blue-500'
+									: 'border-transparent'}"
+								style="background-color: {color.hex};"
+								title={color.label}
+							></button>
+						{/each}
+					</div>
+					{#if invertedColors.length > 0}
+						<div class="mt-1.5 mb-1 text-[10px] text-text-secondary">Inverted</div>
+						<div class="grid grid-cols-8 gap-1.5">
+							{#each invertedColors as color (color.id)}
+								<button
+									type="button"
+									onclick={() => ps.setChannelColor(chNum, color.id)}
+									class="h-6 w-6 rounded-md border-2 border-dashed transition-all hover:scale-110 focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 focus:outline-none {currentColorId ===
+									color.id
+										? 'border-white ring-2 ring-blue-500'
+										: 'border-transparent'}"
+									style="background-color: {color.hex};"
+									title={color.label}
+								></button>
+							{/each}
+						</div>
+					{/if}
+				</div>
+			{/if}
+
+			<!-- +48V Phantom Power -->
+			<div class="flex items-center justify-between">
+				<span class="text-xs text-text-secondary">+48V</span>
+				<button
+					onclick={() => ps.setChannelPhantom(chNum, !ch.phantom)}
+					class="relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full transition-colors duration-200 {ch.phantom
+						? 'bg-red-600 dark:bg-red-500'
+						: 'bg-gray-300 dark:bg-gray-600'}"
+					role="switch"
+					aria-checked={ch.phantom}
+				>
+					<span
+						class="pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-sm ring-0 transition-transform duration-200 dark:bg-gray-900 {ch.phantom
+							? 'translate-x-4'
+							: 'translate-x-0.5'}"
+						style="margin-top: 2px;"
+					></span>
+				</button>
+			</div>
+
+			<!-- Stereo Link -->
+			{#if true}
+				{@const linkStartCh = chNum % 2 === 0 ? chNum - 1 : chNum}
+				{@const isStereoLinked = ps.stereoLinks.includes(linkStartCh)}
+				<div class="flex items-center justify-between">
+					<span class="text-xs text-text-secondary"
+						>Stereo Link ({linkStartCh}/{linkStartCh + 1})</span
+					>
+					<button
+						onclick={() => ps.toggleStereoLink(chNum)}
+						class="relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full transition-colors duration-200 {isStereoLinked
+							? 'bg-stone-900 dark:bg-stone-100'
+							: 'bg-gray-300 dark:bg-gray-600'}"
+						role="switch"
+						aria-checked={isStereoLinked}
+					>
+						<span
+							class="pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-sm ring-0 transition-transform duration-200 dark:bg-gray-900 {isStereoLinked
+								? 'translate-x-4'
+								: 'translate-x-0.5'}"
+							style="margin-top: 2px;"
+						></span>
+					</button>
+				</div>
+			{/if}
+
+			<!-- Linked Item -->
+			{#if ch.itemId != null}
+				{@const chLinkedItem = ps.items.find((i) => i.id === ch.itemId)}
+				<div>
+					<label class="mb-1 block text-xs text-text-secondary">Linked Item</label>
+					{#if chLinkedItem}
+						<div
+							class="flex items-center justify-between rounded-lg border border-border-primary bg-muted/50 px-3 py-2"
+						>
+							<span class="truncate text-sm text-text-primary">{chLinkedItem.name}</span>
+							<button
+								onclick={() => {
+									ps.unassignChannel(chNum);
+									ps.commitChange();
+								}}
+								class="ml-2 shrink-0 rounded px-2 py-0.5 text-xs text-red-500 transition hover:bg-red-50 dark:hover:bg-red-900/20"
+							>
+								Unlink
+							</button>
+						</div>
+					{/if}
+				</div>
+			{:else}
+				<div>
+					<label class="mb-1 block text-xs text-text-secondary">Linked Item</label>
+					<button
+						type="button"
+						onclick={() => onPlaceItemForChannel?.(chNum)}
+						class="hover:border-accent hover:text-accent w-full rounded-lg border border-dashed border-border-primary px-3 py-2 text-sm text-text-tertiary transition"
+					>
+						Place Item...
+					</button>
+				</div>
+			{/if}
+		</div>
+	{/snippet}
+
+	{#if selectedChannel}
+		<!-- Channel inspector -->
+		<div class="flex flex-1 flex-col">
+			<h3 class="mb-4 font-serif font-semibold text-text-primary">
+				Channel {selectedChannelNum}
+			</h3>
+			<div class="flex-1">
+				{@render channelFields(selectedChannel, selectedChannelNum!)}
+			</div>
+		</div>
+	{:else if selectedItemsData.length === 0}
 		<!-- Plot overview when nothing selected -->
 		<div class="space-y-4">
 			<!-- Quick stats -->
@@ -104,26 +290,14 @@
 				</div>
 				<div class="flex items-center justify-between">
 					<span class="text-xs text-text-secondary">Page Size</span>
-					<div class="flex rounded-md border border-border-primary text-xs">
-						<button
-							onclick={() => (ps.pdfPageFormat = 'letter')}
-							class="px-2 py-0.5 transition {ps.pdfPageFormat === 'letter'
-								? 'bg-stone-900 text-white dark:bg-stone-100 dark:text-stone-900'
-								: 'text-text-secondary hover:bg-surface-hover'}"
-							style="border-radius: 0.3rem 0 0 0.3rem;"
-						>
-							Letter
-						</button>
-						<button
-							onclick={() => (ps.pdfPageFormat = 'a4')}
-							class="px-2 py-0.5 transition {ps.pdfPageFormat === 'a4'
-								? 'bg-stone-900 text-white dark:bg-stone-100 dark:text-stone-900'
-								: 'text-text-secondary hover:bg-surface-hover'}"
-							style="border-radius: 0 0.3rem 0.3rem 0;"
-						>
-							A4
-						</button>
-					</div>
+					<SegmentedToggle
+						options={[
+							{ label: 'Letter', value: 'letter' },
+							{ label: 'A4', value: 'a4' }
+						]}
+						value={ps.pdfPageFormat}
+						onchange={(v) => (ps.pdfPageFormat = v)}
+					/>
 				</div>
 			</div>
 
@@ -144,33 +318,29 @@
 				</div>
 			{/if}
 
-			<div class="text-center text-[10px] text-text-tertiary">Select items to edit properties</div>
+			<div class="text-center text-[10px] text-text-tertiary">
+				{#if isAltPressed}
+					<span class="font-semibold text-blue-600 dark:text-blue-400">
+						Duplicate Mode — drag an item to clone it
+					</span>
+				{:else}
+					Select items to edit properties
+				{/if}
+			</div>
 
 			<!-- Stage Settings (only when nothing selected) -->
 			<div class="space-y-3 border-t border-border-primary pt-4">
 				<!-- Unit toggle -->
 				<div class="flex items-center justify-between">
 					<span class="text-xs text-text-secondary">Units</span>
-					<div class="flex rounded-md border border-border-primary text-xs">
-						<button
-							onclick={() => (ps.unit = 'imperial')}
-							class="px-2 py-0.5 transition {ps.unit === 'imperial'
-								? 'bg-stone-900 text-white dark:bg-stone-100 dark:text-stone-900'
-								: 'text-text-secondary hover:bg-surface-hover'}"
-							style="border-radius: 0.3rem 0 0 0.3rem;"
-						>
-							ft
-						</button>
-						<button
-							onclick={() => (ps.unit = 'metric')}
-							class="px-2 py-0.5 transition {ps.unit === 'metric'
-								? 'bg-stone-900 text-white dark:bg-stone-100 dark:text-stone-900'
-								: 'text-text-secondary hover:bg-surface-hover'}"
-							style="border-radius: 0 0.3rem 0.3rem 0;"
-						>
-							m
-						</button>
-					</div>
+					<SegmentedToggle
+						options={[
+							{ label: 'ft', value: 'imperial' },
+							{ label: 'm', value: 'metric' }
+						]}
+						value={ps.unit}
+						onchange={(v) => (ps.unit = v)}
+					/>
 				</div>
 
 				<div>
@@ -610,6 +780,20 @@
 						</div>
 					{/if}
 				</div>
+
+				<!-- Linked Channel (when item has a channel assignment) -->
+				{#if ps.channelByItemId.has(selectedItemsData[0].id)}
+					{@const linkedChNum = ps.channelByItemId.get(selectedItemsData[0].id)!}
+					{@const linkedCh = ps.inputChannels[linkedChNum - 1]}
+					{#if linkedCh}
+						<div class="mt-2 border-t border-border-primary pt-4">
+							<h4 class="mb-3 text-[10px] font-medium tracking-wider text-text-tertiary uppercase">
+								Linked Channel {linkedChNum}
+							</h4>
+							{@render channelFields(linkedCh, linkedChNum)}
+						</div>
+					{/if}
+				{/if}
 			</div>
 		</div>
 	{:else}
