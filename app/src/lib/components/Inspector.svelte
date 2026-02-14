@@ -1,5 +1,6 @@
 <script lang="ts">
 	import PersonCombobox from './PersonCombobox.svelte';
+	import SegmentedToggle from './SegmentedToggle.svelte';
 	import { displayValue, toFeet, unitLabel } from '$lib/utils/scale';
 	import { toggleMode } from 'mode-watcher';
 	import {
@@ -17,10 +18,15 @@
 
 	type Props = {
 		selectedItemIds?: number[];
+		selectedChannelNum?: number | null;
 		onPlaceRiser?: (riserWidth: number, riserDepth: number, riserHeight: number) => void;
 	};
 
-	let { selectedItemIds = $bindable<number[]>([]), onPlaceRiser }: Props = $props();
+	let {
+		selectedItemIds = $bindable<number[]>([]),
+		selectedChannelNum = null,
+		onPlaceRiser
+	}: Props = $props();
 
 	const ps = getPlotState();
 
@@ -42,6 +48,16 @@
 			selectedItemsData[0].type !== 'riser' &&
 			getVariantKeys(selectedItemsData[0]).length > 1
 	);
+
+	// Channel inspector
+	const selectedChannel = $derived.by(() => {
+		if (selectedChannelNum == null) return null;
+		return ps.inputChannels[selectedChannelNum - 1] ?? null;
+	});
+	const linkedItem = $derived.by(() => {
+		if (!selectedChannel || selectedChannel.itemId == null) return null;
+		return ps.items.find((i) => i.id === selectedChannel.itemId) ?? null;
+	});
 
 	// For bulk editing
 	let bulkPersonId = $state<number | null>(null);
@@ -71,7 +87,127 @@
 </script>
 
 <div class="flex h-full flex-col overflow-y-auto">
-	{#if selectedItemsData.length === 0}
+	{#if selectedChannel}
+		<!-- Channel inspector -->
+		<div class="flex flex-1 flex-col">
+			<h3 class="mb-4 font-serif font-semibold text-text-primary">
+				Channel {selectedChannelNum}
+			</h3>
+			<div class="flex-1 space-y-4">
+				<div>
+					<label class="mb-1 block text-xs text-text-secondary">Name</label>
+					<input
+						type="text"
+						value={selectedChannel.name ?? ''}
+						onchange={(e) => {
+							const target = e.target as HTMLInputElement;
+							if (selectedChannelNum != null) ps.setChannelName(selectedChannelNum, target.value);
+						}}
+						class="w-full rounded-lg border border-border-primary bg-surface px-2 py-1.5 text-sm text-text-primary focus:border-stone-500 focus:ring-2 focus:ring-stone-500"
+						placeholder="Channel name"
+					/>
+				</div>
+				<div>
+					<label class="mb-1 block text-xs text-text-secondary">
+						Short Name
+						{#if ps.consoleDef?.scribbleStripLength}
+							<span class="text-text-tertiary">
+								(max {ps.consoleDef.scribbleStripLength} chars)
+							</span>
+						{/if}
+					</label>
+					<input
+						type="text"
+						value={selectedChannel.shortName ?? ''}
+						maxlength={ps.consoleDef?.scribbleStripLength ?? undefined}
+						onchange={(e) => {
+							const target = e.target as HTMLInputElement;
+							if (selectedChannelNum != null)
+								ps.setChannelShortName(selectedChannelNum, target.value);
+						}}
+						class="w-full rounded-lg border border-border-primary bg-surface px-2 py-1.5 text-sm text-text-primary focus:border-stone-500 focus:ring-2 focus:ring-stone-500"
+						placeholder="Short name"
+					/>
+				</div>
+
+				<!-- Channel Color -->
+				{#if ps.consoleDef}
+					{@const currentColorId = selectedChannel.color ?? null}
+					{@const normalColors = ps.consoleDef.colors.filter((c) => !c.inverted)}
+					{@const invertedColors = ps.consoleDef.colors.filter((c) => c.inverted)}
+					<div>
+						<label class="mb-1 block text-xs text-text-secondary">Channel Color</label>
+						<div class="grid grid-cols-8 gap-1.5">
+							{#each normalColors as color (color.id)}
+								<button
+									type="button"
+									onclick={() => {
+										if (selectedChannelNum != null)
+											ps.setChannelColor(selectedChannelNum, color.id);
+									}}
+									class="h-6 w-6 rounded-md border-2 transition-all hover:scale-110 focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 focus:outline-none {currentColorId ===
+									color.id
+										? 'border-white ring-2 ring-blue-500'
+										: 'border-transparent'}"
+									style="background-color: {color.hex};"
+									title={color.label}
+								></button>
+							{/each}
+						</div>
+						{#if invertedColors.length > 0}
+							<div class="mt-1.5 mb-1 text-[10px] text-text-secondary">Inverted</div>
+							<div class="grid grid-cols-8 gap-1.5">
+								{#each invertedColors as color (color.id)}
+									<button
+										type="button"
+										onclick={() => {
+											if (selectedChannelNum != null)
+												ps.setChannelColor(selectedChannelNum, color.id);
+										}}
+										class="h-6 w-6 rounded-md border-2 border-dashed transition-all hover:scale-110 focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 focus:outline-none {currentColorId ===
+										color.id
+											? 'border-white ring-2 ring-blue-500'
+											: 'border-transparent'}"
+										style="background-color: {color.hex};"
+										title={color.label}
+									></button>
+								{/each}
+							</div>
+						{/if}
+					</div>
+				{/if}
+
+				<!-- Linked Item -->
+				<div>
+					<label class="mb-1 block text-xs text-text-secondary">Linked Item</label>
+					{#if linkedItem}
+						<div
+							class="flex items-center justify-between rounded-lg border border-border-primary bg-muted/50 px-3 py-2"
+						>
+							<span class="truncate text-sm text-text-primary">{linkedItem.name}</span>
+							<button
+								onclick={() => {
+									if (selectedChannelNum != null) {
+										ps.unassignChannel(selectedChannelNum);
+										ps.commitChange();
+									}
+								}}
+								class="ml-2 shrink-0 rounded px-2 py-0.5 text-xs text-red-500 transition hover:bg-red-50 dark:hover:bg-red-900/20"
+							>
+								Unlink
+							</button>
+						</div>
+					{:else}
+						<div
+							class="rounded-lg border border-dashed border-border-primary px-3 py-2 text-sm text-text-tertiary"
+						>
+							No item linked
+						</div>
+					{/if}
+				</div>
+			</div>
+		</div>
+	{:else if selectedItemsData.length === 0}
 		<!-- Plot overview when nothing selected -->
 		<div class="space-y-4">
 			<!-- Quick stats -->
@@ -108,26 +244,14 @@
 				</div>
 				<div class="flex items-center justify-between">
 					<span class="text-xs text-text-secondary">Page Size</span>
-					<div class="flex rounded-md border border-border-primary text-xs">
-						<button
-							onclick={() => (ps.pdfPageFormat = 'letter')}
-							class="px-2 py-0.5 transition {ps.pdfPageFormat === 'letter'
-								? 'bg-stone-900 text-white dark:bg-stone-100 dark:text-stone-900'
-								: 'text-text-secondary hover:bg-surface-hover'}"
-							style="border-radius: 0.3rem 0 0 0.3rem;"
-						>
-							Letter
-						</button>
-						<button
-							onclick={() => (ps.pdfPageFormat = 'a4')}
-							class="px-2 py-0.5 transition {ps.pdfPageFormat === 'a4'
-								? 'bg-stone-900 text-white dark:bg-stone-100 dark:text-stone-900'
-								: 'text-text-secondary hover:bg-surface-hover'}"
-							style="border-radius: 0 0.3rem 0.3rem 0;"
-						>
-							A4
-						</button>
-					</div>
+					<SegmentedToggle
+						options={[
+							{ label: 'Letter', value: 'letter' },
+							{ label: 'A4', value: 'a4' }
+						]}
+						value={ps.pdfPageFormat}
+						onchange={(v) => (ps.pdfPageFormat = v)}
+					/>
 				</div>
 			</div>
 
@@ -163,26 +287,14 @@
 				<!-- Unit toggle -->
 				<div class="flex items-center justify-between">
 					<span class="text-xs text-text-secondary">Units</span>
-					<div class="flex rounded-md border border-border-primary text-xs">
-						<button
-							onclick={() => (ps.unit = 'imperial')}
-							class="px-2 py-0.5 transition {ps.unit === 'imperial'
-								? 'bg-stone-900 text-white dark:bg-stone-100 dark:text-stone-900'
-								: 'text-text-secondary hover:bg-surface-hover'}"
-							style="border-radius: 0.3rem 0 0 0.3rem;"
-						>
-							ft
-						</button>
-						<button
-							onclick={() => (ps.unit = 'metric')}
-							class="px-2 py-0.5 transition {ps.unit === 'metric'
-								? 'bg-stone-900 text-white dark:bg-stone-100 dark:text-stone-900'
-								: 'text-text-secondary hover:bg-surface-hover'}"
-							style="border-radius: 0 0.3rem 0.3rem 0;"
-						>
-							m
-						</button>
-					</div>
+					<SegmentedToggle
+						options={[
+							{ label: 'ft', value: 'imperial' },
+							{ label: 'm', value: 'metric' }
+						]}
+						value={ps.unit}
+						onchange={(v) => (ps.unit = v)}
+					/>
 				</div>
 
 				<div>

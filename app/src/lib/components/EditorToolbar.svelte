@@ -142,7 +142,10 @@
 		{/if}
 		<div class="min-w-0 flex-1">
 			{#if viewOnly}
-				<div class="px-2 py-1 font-serif text-3xl font-bold text-text-primary">
+				<div
+					class="px-2 py-1 text-3xl font-bold text-text-primary"
+					style="font-family: Georgia, 'Times New Roman', serif;"
+				>
 					{ps.plotName || 'Untitled Plot'}
 				</div>
 			{:else}
@@ -153,7 +156,8 @@
 						if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
 					}}
 					bind:this={nameInput}
-					class="w-full min-w-0 border-b-2 border-dashed border-border-secondary bg-transparent px-2 py-1 font-serif text-3xl font-bold text-text-primary transition-all placeholder:font-normal placeholder:text-text-tertiary hover:border-border-primary focus:border-solid focus:border-stone-500 focus:outline-none"
+					class="w-full min-w-0 border-b-2 border-dashed border-border-secondary bg-transparent px-2 py-1 text-3xl font-bold text-text-primary transition-all placeholder:font-normal placeholder:text-text-tertiary hover:border-border-primary focus:border-solid focus:border-stone-500 focus:outline-none"
+					style="font-family: Georgia, 'Times New Roman', serif;"
 					placeholder="Plot Name"
 				/>
 			{/if}

@@ -93,12 +93,14 @@
 		></div>
 	</div>
 {:else}
-	<div class="flex h-[calc(100dvh-4.25rem)] flex-col overflow-hidden">
-		<SetlistEditorToolbar
-			backHref="/bands/{bandId}"
-			onAddSong={() => openPaletteForSetlist(editor.activeSetlistId ?? editor.setlists[0]?.id)}
-			onExportPdf={handleExportPdf}
-		/>
+	<div class="flex h-[calc(100dvh-4.25rem)] flex-col gap-3 overflow-hidden px-4 pt-4">
+		<div class="shrink-0">
+			<SetlistEditorToolbar
+				backHref="/bands/{bandId}"
+				onAddSong={() => openPaletteForSetlist(editor.activeSetlistId ?? editor.setlists[0]?.id)}
+				onExportPdf={handleExportPdf}
+			/>
+		</div>
 
 		<div class="flex min-h-0 flex-1 gap-5 overflow-hidden">
 			<div class="sheets-area">

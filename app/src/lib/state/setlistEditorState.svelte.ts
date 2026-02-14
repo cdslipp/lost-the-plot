@@ -22,7 +22,7 @@ import {
 	updateSongField,
 	type SongRow
 } from '$lib/db/repositories/songs';
-import { getGigsByBandId, type GigRow } from '$lib/db/repositories/gigs';
+import { getGigsByBandId, updateGigField, type GigRow } from '$lib/db/repositories/gigs';
 import { getBandById } from '$lib/db/repositories/bands';
 import { encodeSetlist, buildSetlistShareUrl } from '@stageplotter/shared';
 import { getContext, setContext } from 'svelte';
@@ -136,6 +136,11 @@ export class SetlistEditorState {
 		}
 
 		return true;
+	}
+
+	async updateGigName(name: string) {
+		this.gigName = name;
+		await updateGigField(this.gigId, 'name', name);
 	}
 
 	// --- Setlist management ---

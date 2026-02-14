@@ -48,6 +48,7 @@
 
 	// --- Selection & interaction state (ID-based) ---
 	let selectedItemIds = $state<number[]>([]);
+	let selectedChannelNum = $state<number | null>(null);
 	const selectedIdSet = $derived(new Set(selectedItemIds));
 	let isAddingItem = $state(false);
 	let replacingItemId = $state<number | null>(null);
@@ -172,15 +173,25 @@
 	keys.onKeys(['Backspace'], () => !viewOnly && handleDeleteHotkey());
 
 	// --- Selection helpers ---
-	function clearSelections() {
+	function clearItemSelection() {
 		if (selectedItemIds.length > 0) {
 			selectedItemIds = [];
 			selecto?.setSelectedTargets([]);
 		}
 	}
 
+	function clearChannelSelection() {
+		selectedChannelNum = null;
+	}
+
+	function clearSelections() {
+		clearItemSelection();
+		clearChannelSelection();
+	}
+
 	/** Set selection to the given IDs and sync Selecto's DOM state */
 	function selectItems(ids: number[]) {
+		clearChannelSelection();
 		selectedItemIds = ids;
 		if (selecto && canvasEl) {
 			const els = ids
@@ -188,6 +199,12 @@
 				.filter(Boolean) as HTMLElement[];
 			selecto.setSelectedTargets(els);
 		}
+	}
+
+	function selectChannel(chNum: number) {
+		clearItemSelection();
+		selectedChannelNum = chNum;
+		sidePanelTab = 'inspector';
 	}
 
 	/** Toggle item selection with shift/ctrl support */
@@ -475,11 +492,8 @@
 
 			ps.items.push(newItem);
 
-			// Assign to channel
-			let ch = placingItem.channel;
-			if (ch == null && placingItem.type === 'input') {
-				ch = ps.getNextAvailableChannel();
-			}
+			// Assign to channel only if explicitly set
+			const ch = placingItem.channel;
 			if (ch != null) {
 				ps.assignItemToChannel(newItem.id, ch);
 			}
@@ -661,24 +675,6 @@
 		dragging = null;
 	}
 
-	// --- Patch handlers (thin wrappers) ---
-	function handlePatchAddItem(item: any, channel: number) {
-		ps.preparePatchChannel(channel, item);
-		preparePlacingItem(item, channel);
-	}
-
-	function handlePatchOutputSelect(item: any, channel: number) {
-		if (item) {
-			ps.setOutput(channel, {
-				id: Date.now(),
-				name: item.name,
-				itemData: item
-			});
-		} else {
-			ps.removeOutput(channel);
-		}
-	}
-
 	// --- Riser placement (dimensions in feet) ---
 	function placeRiser(riserWidth: number, riserDepth: number, riserHeight: number) {
 		placingItem = {
@@ -794,6 +790,7 @@
 			itemByChannel={ps.itemByChannel}
 			outputByChannel={ps.outputByChannel}
 			{selectedItemIds}
+			{selectedChannelNum}
 			onSelectionChange={(ids, event) => {
 				if (ids.length) {
 					toggleItemSelection(ids[0], event);
@@ -802,12 +799,11 @@
 					clearSelections();
 				}
 			}}
+			onChannelSelect={(chNum, event) => selectChannel(chNum)}
 			{columnCount}
 			readonly={viewOnly}
-			onAddItem={handlePatchAddItem}
 			onRemoveItem={(ch) => ps.removePatchItem(ch)}
 			onClearPatch={() => ps.clearAllPatch()}
-			onOutputSelect={handlePatchOutputSelect}
 			onOutputRemove={(ch) => ps.removeOutput(ch)}
 			consoleType={ps.consoleType}
 			stereoLinks={ps.stereoLinks}
@@ -1170,6 +1166,7 @@
 				<EditorSidePanel
 					bind:activeTab={sidePanelTab}
 					bind:selectedItemIds
+					{selectedChannelNum}
 					onPlaceRiser={placeRiser}
 					onAddPersonToPlot={addPersonToPlot}
 				/>
@@ -1218,6 +1215,7 @@
 				<EditorSidePanel
 					bind:activeTab={sidePanelTab}
 					bind:selectedItemIds
+					{selectedChannelNum}
 					onPlaceRiser={placeRiser}
 					onAddPersonToPlot={addPersonToPlot}
 				/>

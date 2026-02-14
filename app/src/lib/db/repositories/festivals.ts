@@ -170,6 +170,7 @@ export async function updateFestivalSlot(
 			| 'time_start'
 			| 'time_end'
 			| 'duration'
+			| 'band_id'
 			| 'note'
 			| 'colour'
 			| 'sort_order'

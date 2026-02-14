@@ -7,16 +7,20 @@
 
 	type Props = {
 		slots: FestivalSlotRow[];
+		bandNameMap: Map<string, string>;
 		oncreate: (slotType: SlotType) => void;
 		onupdate: (id: string, data: Record<string, unknown>) => void;
 		ondelete: (id: string) => void;
 		onduplicate: (id: string) => void;
+		onassignband: (slotId: string, bandId: string) => void;
 	};
 
-	let { slots, oncreate, onupdate, ondelete, onduplicate }: Props = $props();
+	let { slots, bandNameMap, oncreate, onupdate, ondelete, onduplicate, onassignband }: Props =
+		$props();
 
 	let expandedSlotId = $state<string | null>(null);
 	let showAddMenu = $state(false);
+	let dragOverSlotId = $state<string | null>(null);
 
 	// Local edits for reactive end-time computation (preview while typing)
 	let localEdits = $state<Record<string, { time_start?: number | null; duration?: number | null }>>(
@@ -67,14 +71,37 @@
 	}
 </script>
 
-<div class="flex flex-col gap-2">
+<!-- svelte-ignore a11y_no_static_element_interactions -->
+<div class="flex flex-col gap-2" ondragend={() => (dragOverSlotId = null)}>
 	{#each slots as slot (slot.id)}
 		<ContextMenu.Root>
 			<ContextMenu.Trigger>
 				{#snippet child({ props })}
+					<!-- svelte-ignore a11y_no_static_element_interactions -->
 					<div
 						{...props}
-						class="group relative rounded-xl border border-border-primary bg-surface shadow-sm transition hover:border-stone-400"
+						class="group relative rounded-xl border bg-surface shadow-sm transition {dragOverSlotId ===
+						slot.id
+							? 'border-blue-400 bg-blue-50 dark:border-blue-500 dark:bg-blue-900/20'
+							: 'border-border-primary hover:border-stone-400'}"
+						ondragover={(e) => {
+							if (e.dataTransfer?.types.includes('application/x-festival-band')) {
+								e.preventDefault();
+								if (e.dataTransfer) e.dataTransfer.dropEffect = 'copy';
+								dragOverSlotId = slot.id;
+							}
+						}}
+						ondragleave={() => (dragOverSlotId = null)}
+						ondrop={(e) => {
+							e.preventDefault();
+							dragOverSlotId = null;
+							const raw = e.dataTransfer?.getData('application/x-festival-band');
+							if (!raw) return;
+							try {
+								const { id } = JSON.parse(raw);
+								if (id) onassignband(slot.id, id);
+							} catch {}
+						}}
 					>
 						<!-- Slot summary row -->
 						<button
@@ -92,6 +119,11 @@
 							<!-- Title -->
 							<span class="min-w-0 flex-1 truncate text-sm font-medium text-text-primary">
 								{slot.title || '(untitled)'}
+								{#if slot.band_id && bandNameMap.get(slot.band_id)}
+									<span class="font-normal text-text-secondary">
+										— {bandNameMap.get(slot.band_id)}</span
+									>
+								{/if}
 							</span>
 
 							<!-- Time info -->
@@ -124,9 +156,9 @@
 						<!-- Expanded inline editor -->
 						{#if expandedSlotId === slot.id}
 							<div class="border-t border-border-primary px-4 py-3">
-								<div class="grid grid-cols-2 gap-3">
-									<!-- Title -->
-									<div class="col-span-2">
+								<div class="grid grid-cols-3 gap-3">
+									<!-- Row 1: Title, Band, Type -->
+									<div>
 										<label class="mb-1 block text-xs text-text-secondary">Title</label>
 										<input
 											type="text"
@@ -137,7 +169,28 @@
 										/>
 									</div>
 
-									<!-- Slot type -->
+									<div>
+										<label class="mb-1 block text-xs text-text-secondary">Band</label>
+										{#if slot.band_id && bandNameMap.get(slot.band_id)}
+											<div
+												class="flex items-center gap-2 rounded-lg border border-border-primary px-3 py-1.5"
+											>
+												<span class="flex-1 truncate text-sm">{bandNameMap.get(slot.band_id)}</span>
+												<button
+													onclick={() => onupdate(slot.id, { band_id: null })}
+													class="flex-shrink-0 text-text-tertiary hover:text-text-primary"
+													title="Unassign band">&times;</button
+												>
+											</div>
+										{:else}
+											<div
+												class="rounded-lg border border-dashed border-border-primary px-3 py-1.5 text-sm text-text-tertiary"
+											>
+												Drag to assign
+											</div>
+										{/if}
+									</div>
+
 									<div>
 										<label class="mb-1 block text-xs text-text-secondary">Type</label>
 										<select
@@ -156,9 +209,9 @@
 										</select>
 									</div>
 
-									<!-- Start time -->
+									<!-- Row 2: Start, Duration, End -->
 									<div>
-										<label class="mb-1 block text-xs text-text-secondary">Start Time</label>
+										<label class="mb-1 block text-xs text-text-secondary">Start</label>
 										<TimeInput
 											time={slot.time_start}
 											onsubmit={(ms) => handleFieldBlur(slot.id, 'time_start', ms)}
@@ -174,7 +227,6 @@
 										/>
 									</div>
 
-									<!-- Duration -->
 									<div>
 										<label class="mb-1 block text-xs text-text-secondary">Duration</label>
 										<TimeInput
@@ -193,9 +245,8 @@
 										/>
 									</div>
 
-									<!-- End time (read-only, reactively computed) -->
 									<div>
-										<label class="mb-1 block text-xs text-text-secondary">End Time</label>
+										<label class="mb-1 block text-xs text-text-secondary">End</label>
 										<div
 											class="rounded-lg border border-border-primary bg-muted/30 px-3 py-1.5 text-sm text-text-tertiary"
 										>
@@ -203,8 +254,8 @@
 										</div>
 									</div>
 
-									<!-- Note -->
-									<div class="col-span-2">
+									<!-- Row 3: Note (full width) -->
+									<div class="col-span-3">
 										<label class="mb-1 block text-xs text-text-secondary">Note</label>
 										<textarea
 											value={slot.note}
@@ -229,6 +280,13 @@
 						class="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700"
 						>Duplicate</ContextMenu.Item
 					>
+					{#if slot.band_id}
+						<ContextMenu.Item
+							onSelect={() => onupdate(slot.id, { band_id: null })}
+							class="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700"
+							>Unassign Band</ContextMenu.Item
+						>
+					{/if}
 					<ContextMenu.Separator class="-mx-1 my-1 block h-px bg-muted" />
 					<ContextMenu.Item
 						onSelect={() => ondelete(slot.id)}

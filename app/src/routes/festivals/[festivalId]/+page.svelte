@@ -22,6 +22,7 @@
 		type FestivalSlotRow,
 		type SlotType
 	} from '$lib/db/repositories/festivals';
+	import { listFestivalBands } from '$lib/db/repositories/festivalBands';
 	import DayTabs from './components/DayTabs.svelte';
 	import SlotList from './components/SlotList.svelte';
 	import BandsPanel from './components/BandsPanel.svelte';
@@ -40,6 +41,21 @@
 	let slots = $state<FestivalSlotRow[]>([]);
 
 	let deleteDayTarget = $state<{ id: string; name: string } | null>(null);
+
+	let bandNameMap = $state<Map<string, string>>(new Map());
+
+	async function refreshBandMap() {
+		const bands = await listFestivalBands(festivalId);
+		bandNameMap = new Map(bands.map((b) => [b.id, b.name]));
+	}
+
+	function handleBandsChanged() {
+		refreshBandMap();
+	}
+
+	async function handleAssignBand(slotId: string, bandId: string) {
+		await handleUpdateSlot(slotId, { band_id: bandId });
+	}
 
 	async function load() {
 		await db.init();
@@ -60,6 +76,7 @@
 		}
 		selectedDayId = days[0].id;
 		slots = await listFestivalSlots(days[0].id);
+		await refreshBandMap();
 
 		loading = false;
 
@@ -167,11 +184,12 @@
 			time_start: source.time_start,
 			duration: source.duration
 		});
-		if (source.note || source.colour) {
-			await updateFestivalSlot(newId, {
-				...(source.note ? { note: source.note } : {}),
-				...(source.colour ? { colour: source.colour } : {})
-			});
+		const extraFields: Record<string, unknown> = {};
+		if (source.note) extraFields.note = source.note;
+		if (source.colour) extraFields.colour = source.colour;
+		if (source.band_id) extraFields.band_id = source.band_id;
+		if (Object.keys(extraFields).length > 0) {
+			await updateFestivalSlot(newId, extraFields);
 		}
 		slots = await listFestivalSlots(selectedDayId);
 	}
@@ -204,7 +222,7 @@
 		<div class="flex flex-col gap-6 md:flex-row">
 			<!-- Bands panel (left) -->
 			<div class="w-full flex-shrink-0 md:w-[280px] {bandsPanelOpen ? '' : 'hidden md:block'}">
-				<BandsPanel {festivalId} />
+				<BandsPanel {festivalId} onbandschanged={handleBandsChanged} />
 			</div>
 
 			<!-- Schedule (right) -->
@@ -223,10 +241,12 @@
 				{#if selectedDayId}
 					<SlotList
 						{slots}
+						{bandNameMap}
 						oncreate={handleCreateSlot}
 						onupdate={handleUpdateSlot}
 						ondelete={handleDeleteSlot}
 						onduplicate={handleDuplicateSlot}
+						onassignband={handleAssignBand}
 					/>
 				{/if}
 			</div>

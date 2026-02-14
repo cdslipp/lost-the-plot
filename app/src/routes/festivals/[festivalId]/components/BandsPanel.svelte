@@ -14,9 +14,10 @@
 
 	type Props = {
 		festivalId: string;
+		onbandschanged?: () => void;
 	};
 
-	let { festivalId }: Props = $props();
+	let { festivalId, onbandschanged }: Props = $props();
 
 	let bands = $state<FestivalBandRow[]>([]);
 	let expandedBandId = $state<string | null>(null);
@@ -26,6 +27,7 @@
 
 	export async function reload() {
 		bands = await listFestivalBands(festivalId);
+		onbandschanged?.();
 	}
 
 	async function loadPlots() {
@@ -115,13 +117,24 @@
 	<h3 class="text-xs font-semibold tracking-wide text-text-tertiary uppercase">Bands</h3>
 
 	{#each bands as band (band.id)}
+		<!-- svelte-ignore a11y_no_static_element_interactions -->
 		<div
 			class="group rounded-lg border border-border-primary bg-surface shadow-sm transition hover:border-stone-400"
+			draggable={expandedBandId !== band.id}
+			ondragstart={(e) => {
+				e.dataTransfer?.setData(
+					'application/x-festival-band',
+					JSON.stringify({ id: band.id, name: band.name })
+				);
+				if (e.dataTransfer) e.dataTransfer.effectAllowed = 'copy';
+			}}
 		>
 			<!-- Collapsed row -->
 			<button
 				onclick={() => toggleExpand(band.id)}
-				class="flex w-full items-center gap-2 px-3 py-2 text-left"
+				class="flex w-full items-center gap-2 px-3 py-2 text-left {expandedBandId !== band.id
+					? 'cursor-grab active:cursor-grabbing'
+					: ''}"
 			>
 				<span class="min-w-0 flex-1 truncate text-sm font-medium text-text-primary">
 					{band.name}

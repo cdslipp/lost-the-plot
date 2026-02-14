@@ -121,6 +121,8 @@ export interface InputChannel {
 	channelNum: number; // 1-based
 	itemId: number | null; // → StagePlotItem.id
 	color: string | null; // console scribble-strip color ID
+	name: string | null; // independent channel name
+	shortName: string | null; // abbreviated name for console scribble strips
 }
 
 /** An output channel assignment (channels own outputs, not the reverse). */

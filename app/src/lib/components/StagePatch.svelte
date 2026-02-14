@@ -1,8 +1,6 @@
 <script lang="ts">
-	import { Combobox, Tabs, ContextMenu } from 'bits-ui';
+	import { Tabs, ContextMenu } from 'bits-ui';
 	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
-	import { loadFinalAssets, filterItems, type ProcessedItem } from '$lib/utils/finalAssetsLoader';
-	import { onMount } from 'svelte';
 	import {
 		CONSOLES,
 		type StagePlotItem,
@@ -17,10 +15,10 @@
 		itemByChannel: Map<number, StagePlotItem>;
 		outputByChannel: Map<number, PlotOutputItem>;
 		selectedItemIds?: number[];
+		selectedChannelNum?: number | null;
 		onSelectionChange?: (ids: number[], event: MouseEvent) => void;
-		onAddItem?: (item: ProcessedItem, channel: number) => void;
+		onChannelSelect?: (channelNum: number, event: MouseEvent) => void;
 		onRemoveItem?: (channel: number) => void;
-		onOutputSelect?: (item: ProcessedItem, channel: number) => void;
 		onOutputRemove?: (channel: number) => void;
 		onClearPatch?: () => void;
 		consoleType?: string | null;
@@ -38,10 +36,10 @@
 		itemByChannel,
 		outputByChannel,
 		selectedItemIds = [],
+		selectedChannelNum = null,
 		onSelectionChange,
-		onAddItem,
+		onChannelSelect,
 		onRemoveItem,
-		onOutputSelect,
 		onOutputRemove,
 		onClearPatch,
 		consoleType = null,
@@ -76,74 +74,7 @@
 		return map;
 	});
 
-	// State for loaded items
-	let allAvailableItems: ProcessedItem[] = $state([]);
-	let loading = $state(true);
 	let showClearConfirm = $state(false);
-
-	// Build ProcessedItem maps from channel props (for combobox display)
-	const selectedInputItemsByChannel = $derived.by(() => {
-		const map: Record<number, ProcessedItem | null> = {};
-		for (const [chNum, item] of itemByChannel) {
-			if (item.itemData) {
-				map[chNum] = { ...(item.itemData as ProcessedItem), name: item.name } as ProcessedItem;
-			} else {
-				map[chNum] = {
-					id: String(item.id),
-					name: item.name,
-					category: item.category ?? 'Input',
-					image: '',
-					type: 'input',
-					keywords: []
-				} as unknown as ProcessedItem;
-			}
-		}
-		return map;
-	});
-
-	// Keep combobox search boxes in sync with canvas
-	$effect(() => {
-		void [...itemByChannel.values()].map((i) => i.name).join('|');
-		for (const ch of inputChannelNumbers) {
-			const proc = selectedInputItemsByChannel[ch] as ProcessedItem | null;
-			inputSearchValues[ch] = proc ? proc.name : '';
-		}
-	});
-
-	const selectedOutputItemsByChannel = $derived.by(() => {
-		const map: Record<number, ProcessedItem | null> = {};
-		for (const [chNum, output] of outputByChannel) {
-			if (output.itemData) {
-				map[chNum] = {
-					...(output.itemData as ProcessedItem),
-					name: output.name
-				} as ProcessedItem;
-			} else {
-				map[chNum] = {
-					id: String(output.id),
-					name: output.name,
-					category: 'Output',
-					image: '',
-					type: 'output',
-					keywords: []
-				} as unknown as ProcessedItem;
-			}
-		}
-		return map;
-	});
-
-	// Search values for each combobox (separate for inputs and outputs)
-	let inputSearchValues = $state<Record<number, string>>({});
-	let outputSearchValues = $state<Record<number, string>>({});
-
-	// Keep output combobox search boxes in sync with outputs prop
-	$effect(() => {
-		void [...outputByChannel.values()].map((o) => o.name).join('|');
-		for (const ch of outputChannelNumbers) {
-			const proc = selectedOutputItemsByChannel[ch] as ProcessedItem | null;
-			outputSearchValues[ch] = proc ? proc.name : '';
-		}
-	});
 
 	// Create channel lists based on current arrays
 	const inputChannelNumbers = $derived(inputChannels.map((ch) => ch.channelNum));
@@ -181,61 +112,6 @@
 			return 'background-color: rgb(37, 99, 235); color: white;';
 		}
 		return '';
-	}
-
-	// Load items on component mount
-	onMount(async () => {
-		try {
-			loading = true;
-			const loadedItems = await loadFinalAssets();
-			allAvailableItems = filterItems(loadedItems, {
-				includeInputs: true,
-				includeAccessories: true,
-				includeSymbols: false
-			});
-		} catch (err) {
-			console.error('Error loading final assets:', err);
-		} finally {
-			loading = false;
-		}
-	});
-
-	// Simple memoization: cache filtered results so repeated calls with the
-	// same search string (e.g. from multiple channel comboboxes that are all
-	// empty) don't re-scan the entire catalog each time.
-	let _filterCache: { key: string; result: ProcessedItem[] } = { key: '\0', result: [] };
-
-	function getFilteredItems(searchValue: string) {
-		if (!searchValue) return allAvailableItems;
-
-		if (_filterCache.key === searchValue) return _filterCache.result;
-
-		const searchLower = searchValue.toLowerCase();
-		const result = allAvailableItems.filter(
-			(item) =>
-				item.name.toLowerCase().includes(searchLower) ||
-				item.keywords.some((kw) => kw.includes(searchLower))
-		);
-		_filterCache = { key: searchValue, result };
-		return result;
-	}
-
-	// Handle input item selection
-	function handleInputItemSelect(channel: number, item: ProcessedItem | null) {
-		if (item) {
-			onAddItem?.(item, channel);
-		} else {
-			onRemoveItem?.(channel);
-		}
-	}
-
-	// Handle output item selection
-	function handleOutputItemSelect(channel: number, item: ProcessedItem | null) {
-		if (item) {
-			onOutputSelect?.(item, channel);
-		} else {
-			onOutputRemove?.(channel);
-		}
 	}
 
 	// Get the CSS background color for an input channel number badge
@@ -286,12 +162,10 @@
 
 {#snippet channelGrid(mode: 'input' | 'output')}
 	{@const columns = mode === 'input' ? inputColumns : outputColumns}
-	{@const itemMap = mode === 'input' ? selectedInputItemsByChannel : selectedOutputItemsByChannel}
 	{@const lnkSet = mode === 'input' ? stereoLinkSet : outputStereoLinkSet}
 	{@const lnks = mode === 'input' ? stereoLinks : outputStereoLinks}
 	{@const onLnkChange = mode === 'input' ? onStereoLinksChange : onOutputStereoLinksChange}
 	{@const getBadgeStyle = mode === 'input' ? getInputBadgeStyle : getOutputBadgeStyle}
-	{@const handleSelect = mode === 'input' ? handleInputItemSelect : handleOutputItemSelect}
 	{@const onClearCh = mode === 'input' ? onRemoveItem : onOutputRemove}
 
 	<div
@@ -306,7 +180,10 @@
 					{@const chLinkedBottom = isChLinkedBottom(channelNum, lnkSet)}
 					{@const rowItem = mode === 'input' ? itemByChannel.get(channelNum) : null}
 					{@const isRowSelected =
-						mode === 'input' && rowItem ? selectedIdSetLocal.has(rowItem.id) : false}
+						mode === 'input'
+							? selectedChannelNum === channelNum ||
+								(rowItem ? selectedIdSetLocal.has(rowItem.id) : false)
+							: false}
 					<ContextMenu.Root>
 						<ContextMenu.Trigger>
 							<div
@@ -316,7 +193,7 @@
 										? 'h-10 border-b border-border-primary'
 										: 'h-10'} {isRowSelected ? 'bg-blue-50 dark:bg-blue-900/20' : ''}"
 							>
-								<!-- Channel number cell (click to select on canvas) -->
+								<!-- Channel number cell (click to select channel) -->
 								<div
 									class="flex h-full w-10 flex-shrink-0 items-center justify-center border-r border-border-primary"
 								>
@@ -332,9 +209,12 @@
 										onclick={(e) => {
 											if (readonlyMode) return;
 											e.stopPropagation();
-											const itm = itemByChannel.get(channelNum);
-											if (itm) {
-												onSelectionChange?.([itm.id], e);
+											if (mode === 'input') {
+												onChannelSelect?.(channelNum, e);
+											} else {
+												// Output channels: select linked item on canvas if present
+												const itm = itemByChannel.get(channelNum);
+												if (itm) onSelectionChange?.([itm.id], e);
 											}
 										}}
 									>
@@ -354,86 +234,15 @@
 									</div>
 								</div>
 
-								<!-- Combobox cell -->
+								<!-- Name display cell -->
 								<div class="flex-1 px-1">
-									{#if readonlyMode}
-										<div class="flex h-8 items-center truncate px-2 text-xs text-text-primary">
-											{itemMap[channelNum]?.name ?? ''}
-										</div>
-									{:else}
-										<Combobox.Root
-											value={itemMap[channelNum]?.id ?? undefined}
-											type="single"
-											name="{mode}-{channelNum}"
-											inputValue={itemMap[channelNum]?.name ?? ''}
-											onValueChange={(value) => {
-												const selected = allAvailableItems.find((item) => item.id === value);
-												handleSelect(channelNum, selected || null);
-											}}
-										>
-											<div class="relative">
-												<Combobox.Input
-													class="focus:ring-foreground/20 h-8 w-full rounded border-0 bg-transparent px-2 text-xs outline-none placeholder:text-text-secondary/50 focus:ring-1"
-													placeholder="Select item..."
-													oninput={(e) => {
-														const val = (e.currentTarget as HTMLInputElement).value;
-														if (mode === 'input') inputSearchValues[channelNum] = val;
-														else outputSearchValues[channelNum] = val;
-													}}
-												/>
-												<Combobox.Trigger
-													class="absolute top-1/2 right-1 h-4 w-4 -translate-y-1/2 opacity-50 hover:opacity-100"
-												>
-													<svg
-														xmlns="http://www.w3.org/2000/svg"
-														viewBox="0 0 24 24"
-														fill="none"
-														stroke="currentColor"
-														stroke-width="2"
-														class="h-full w-full"
-													>
-														<path d="M6 9l6 6 6-6" />
-													</svg>
-												</Combobox.Trigger>
-											</div>
-
-											<Combobox.Portal>
-												<Combobox.Content
-													class="z-50 max-h-60 w-[var(--bits-combobox-anchor-width)] min-w-[200px] overflow-hidden rounded-md border border-border-primary bg-surface shadow-lg"
-													sideOffset={4}
-												>
-													<Combobox.Viewport class="p-1">
-														{#each getFilteredItems((mode === 'input' ? inputSearchValues[channelNum] : outputSearchValues[channelNum]) || '') as item (item.id)}
-															<Combobox.Item
-																value={item.id}
-																label={item.name}
-																class="relative flex cursor-pointer items-center rounded px-2 py-1.5 text-xs outline-none select-none data-[highlighted]:bg-muted"
-															>
-																{#snippet children({ selected })}
-																	<span class="truncate">{item.name}</span>
-																	{#if selected}
-																		<svg
-																			class="ml-auto h-3 w-3"
-																			viewBox="0 0 24 24"
-																			fill="none"
-																			stroke="currentColor"
-																			stroke-width="2"
-																		>
-																			<path d="M20 6L9 17l-5-5" />
-																		</svg>
-																	{/if}
-																{/snippet}
-															</Combobox.Item>
-														{:else}
-															<div class="px-2 py-1.5 text-xs text-text-secondary">
-																No items found
-															</div>
-														{/each}
-													</Combobox.Viewport>
-												</Combobox.Content>
-											</Combobox.Portal>
-										</Combobox.Root>
-									{/if}
+									<div class="flex h-8 items-center truncate px-2 text-xs text-text-primary">
+										{#if mode === 'input'}
+											{inputChannels[channelNum - 1]?.name ?? ''}
+										{:else}
+											{outputByChannel.get(channelNum)?.name ?? ''}
+										{/if}
+									</div>
 								</div>
 							</div>
 						</ContextMenu.Trigger>
@@ -489,7 +298,7 @@
 										Select on Canvas
 									</ContextMenu.Item>
 								{/if}
-								{#if itemMap[channelNum] && !readonlyMode}
+								{#if (mode === 'input' ? inputChannels[channelNum - 1]?.itemId != null : outputByChannel.get(channelNum)) && !readonlyMode}
 									<ContextMenu.Item
 										class="flex cursor-pointer items-center rounded px-2 py-1.5 text-xs text-red-500 outline-none hover:bg-muted"
 										onSelect={() => onClearCh?.(channelNum)}
@@ -553,33 +362,11 @@
 		<!-- Tab Contents -->
 		<div class="p-4">
 			<Tabs.Content value="inputs" class="mt-0">
-				{#if loading}
-					<div class="py-8 text-center text-text-secondary">
-						<div class="flex flex-col items-center gap-2">
-							<div
-								class="h-6 w-6 animate-spin rounded-full border-2 border-text-secondary border-t-transparent"
-							></div>
-							<div>Loading items...</div>
-						</div>
-					</div>
-				{:else}
-					{@render channelGrid('input')}
-				{/if}
+				{@render channelGrid('input')}
 			</Tabs.Content>
 
 			<Tabs.Content value="outputs" class="mt-0">
-				{#if loading}
-					<div class="py-8 text-center text-text-secondary">
-						<div class="flex flex-col items-center gap-2">
-							<div
-								class="h-6 w-6 animate-spin rounded-full border-2 border-text-secondary border-t-transparent"
-							></div>
-							<div>Loading items...</div>
-						</div>
-					</div>
-				{:else}
-					{@render channelGrid('output')}
-				{/if}
+				{@render channelGrid('output')}
 			</Tabs.Content>
 		</div>
 	</Tabs.Root>
