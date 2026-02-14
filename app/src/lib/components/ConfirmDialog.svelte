@@ -20,8 +20,8 @@
 	} = $props();
 
 	function handleConfirm() {
-		open = false;
 		onconfirm();
+		open = false;
 	}
 </script>
 

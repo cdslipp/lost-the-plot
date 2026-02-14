@@ -6,3 +6,4 @@ export * as songsRepo from './songs.js';
 export * as gigsRepo from './gigs.js';
 export * as setlistsRepo from './setlists.js';
 export * as plotPersonsRepo from './plotPersons.js';
+export * as festivalBandsRepo from './festivalBands.js';

@@ -13,6 +13,30 @@
 	let expandedSlotId = $state<string | null>(null);
 	let showAddMenu = $state(false);
 
+	// Local edits for reactive end-time computation
+	let localEdits = $state<Record<string, { time_start?: number | null; duration?: number | null }>>(
+		{}
+	);
+
+	function getLocalStart(slot: FestivalSlotRow): number | null {
+		return localEdits[slot.id]?.time_start !== undefined
+			? localEdits[slot.id].time_start!
+			: slot.time_start;
+	}
+
+	function getLocalDuration(slot: FestivalSlotRow): number | null {
+		return localEdits[slot.id]?.duration !== undefined
+			? localEdits[slot.id].duration!
+			: slot.duration;
+	}
+
+	function computeEndTime(slot: FestivalSlotRow): number | null {
+		const start = getLocalStart(slot);
+		const dur = getLocalDuration(slot);
+		if (start != null && dur != null) return start + dur;
+		return null;
+	}
+
 	function slotColour(type: SlotType): string {
 		return SLOT_TYPES.find((s) => s.value === type)?.colour ?? '#9d9d9d';
 	}
@@ -55,10 +79,18 @@
 
 	function toggleExpand(id: string) {
 		expandedSlotId = expandedSlotId === id ? null : id;
+		// Clear local edits when collapsing
+		if (expandedSlotId !== id) {
+			delete localEdits[id];
+		}
 	}
 
 	function handleFieldBlur(slotId: string, field: string, value: unknown) {
 		onupdate(slotId, { [field]: value });
+		// Clear local edit for this field after persisting
+		if (localEdits[slotId]) {
+			delete localEdits[slotId][field as keyof (typeof localEdits)[string]];
+		}
 	}
 </script>
 
@@ -169,6 +201,12 @@
 								type="text"
 								value={formatMs(slot.time_start)}
 								placeholder="HH:MM"
+								oninput={(e) => {
+									const ms = parseTimeToMs((e.target as HTMLInputElement).value);
+									if (ms !== null) {
+										localEdits[slot.id] = { ...localEdits[slot.id], time_start: ms };
+									}
+								}}
 								onblur={(e) => {
 									const ms = parseTimeToMs((e.target as HTMLInputElement).value);
 									if (ms !== null) handleFieldBlur(slot.id, 'time_start', ms);
@@ -184,6 +222,12 @@
 								type="number"
 								value={slot.duration != null ? Math.round(slot.duration / 60000) : ''}
 								min="0"
+								oninput={(e) => {
+									const ms = parseDurationToMs((e.target as HTMLInputElement).value);
+									if (ms !== null) {
+										localEdits[slot.id] = { ...localEdits[slot.id], duration: ms };
+									}
+								}}
 								onblur={(e) => {
 									const ms = parseDurationToMs((e.target as HTMLInputElement).value);
 									if (ms !== null) handleFieldBlur(slot.id, 'duration', ms);
@@ -192,13 +236,13 @@
 							/>
 						</div>
 
-						<!-- End time (read-only, auto-computed) -->
+						<!-- End time (read-only, reactively computed) -->
 						<div>
 							<label class="mb-1 block text-xs text-text-secondary">End Time</label>
 							<div
 								class="rounded-lg border border-border-primary bg-muted/30 px-3 py-1.5 text-sm text-text-tertiary"
 							>
-								{formatMs(slot.time_end)}
+								{formatMs(computeEndTime(slot))}
 							</div>
 						</div>
 

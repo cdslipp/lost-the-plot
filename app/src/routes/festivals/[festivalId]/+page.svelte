@@ -24,6 +24,9 @@
 	} from '$lib/db/repositories/festivals';
 	import DayTabs from './components/DayTabs.svelte';
 	import SlotList from './components/SlotList.svelte';
+	import BandsPanel from './components/BandsPanel.svelte';
+
+	let bandsPanelOpen = $state(true);
 
 	let festivalId = $derived($page.params.festivalId as string);
 
@@ -169,42 +172,43 @@
 	onedit={() => (editingName = true)}
 >
 	{#if festival}
-		<DayTabs
-			{days}
-			{selectedDayId}
-			onselect={handleSelectDay}
-			oncreate={handleCreateDay}
-			onrename={handleRenameDay}
-			ondelete={handleRequestDeleteDay}
-		/>
+		<!-- Mobile: toggle bands panel -->
+		<button
+			onclick={() => (bandsPanelOpen = !bandsPanelOpen)}
+			class="text-xs text-text-tertiary transition hover:text-text-primary md:hidden"
+		>
+			{bandsPanelOpen ? 'Hide' : 'Show'} Bands
+		</button>
 
-		<hr class="border-border-primary" />
-
-		{#if selectedDayId}
-			<SlotList
-				{slots}
-				oncreate={handleCreateSlot}
-				onupdate={handleUpdateSlot}
-				ondelete={handleDeleteSlot}
-			/>
-		{/if}
-	{/if}
-		{:else}
-			<div class="flex flex-1 items-center justify-center py-12">
-				<div class="rounded-xl border border-border-primary bg-surface p-8 text-center shadow-sm">
-					<p class="font-serif text-lg text-text-secondary">No days yet</p>
-					<p class="mt-1 text-sm text-text-tertiary">
-						Add your first day to start building the schedule.
-					</p>
-					<button
-						onclick={handleCreateDay}
-						class="mt-4 rounded-lg bg-stone-900 px-6 py-3 text-white transition hover:bg-stone-800 dark:bg-stone-100 dark:text-stone-900 dark:hover:bg-stone-200"
-					>
-						Add Day
-					</button>
-				</div>
+		<div class="flex flex-col gap-6 md:flex-row">
+			<!-- Bands panel (left) -->
+			<div class="w-full flex-shrink-0 md:w-[280px] {bandsPanelOpen ? '' : 'hidden md:block'}">
+				<BandsPanel {festivalId} />
 			</div>
-		{/if}
+
+			<!-- Schedule (right) -->
+			<div class="min-w-0 flex-1">
+				<DayTabs
+					{days}
+					{selectedDayId}
+					onselect={handleSelectDay}
+					oncreate={handleCreateDay}
+					onrename={handleRenameDay}
+					ondelete={handleRequestDeleteDay}
+				/>
+
+				<hr class="my-3 border-border-primary" />
+
+				{#if selectedDayId}
+					<SlotList
+						{slots}
+						oncreate={handleCreateSlot}
+						onupdate={handleUpdateSlot}
+						ondelete={handleDeleteSlot}
+					/>
+				{/if}
+			</div>
+		</div>
 	{/if}
 </DetailPageLayout>
 

@@ -164,6 +164,7 @@
 <div class="mx-auto flex h-[calc(100dvh-1.25rem)] max-w-md flex-col gap-6 py-6">
 	<div class="flex items-center justify-between">
 		<h1 class="font-serif text-3xl font-bold text-text-primary">Your Bands</h1>
+		<a href="/" class="text-sm text-text-tertiary transition hover:text-text-primary">Home</a>
 	</div>
 
 	{#if loading}

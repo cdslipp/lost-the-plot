@@ -22,3 +22,4 @@ export * as migration009 from './migrations/009_add_console_settings.js';
 export * as migration010 from './migrations/010_plot_persons.js';
 export * as migration011 from './migrations/011_add_festivals.js';
 export * as migration012 from './migrations/012_add_festival_schedule.js';
+export * as migration013 from './migrations/013_add_festival_bands.js';
