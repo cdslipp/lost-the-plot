@@ -21,6 +21,8 @@
 	let bands = $state<FestivalBandRow[]>([]);
 	let expandedBandId = $state<string | null>(null);
 	let allPlots = $state<PlotWithBand[]>([]);
+	let newBandName = $state('');
+	let bandNameInputEl = $state<HTMLInputElement | null>(null);
 
 	export async function reload() {
 		bands = await listFestivalBands(festivalId);
@@ -33,14 +35,18 @@
 	}
 
 	async function handleAddBand() {
+		if (!newBandName.trim()) return;
 		const id = generateId();
-		await createFestivalBand(id, festivalId, 'New Band');
+		await createFestivalBand(id, festivalId, newBandName.trim());
+		newBandName = '';
 		await reload();
 		expandedBandId = id;
 	}
 
 	async function handleFieldBlur(bandId: string, field: string, value: string | number | null) {
-		await updateFestivalBand(bandId, { [field]: typeof value === 'number' ? value : value || null });
+		await updateFestivalBand(bandId, {
+			[field]: typeof value === 'number' ? value : value || null
+		});
 		await reload();
 	}
 
@@ -162,7 +168,11 @@
 								type="checkbox"
 								checked={band.is_headliner === 1}
 								onchange={(e) =>
-									handleFieldBlur(band.id, 'is_headliner', (e.target as HTMLInputElement).checked ? 1 : 0)}
+									handleFieldBlur(
+										band.id,
+										'is_headliner',
+										(e.target as HTMLInputElement).checked ? 1 : 0
+									)}
 								class="rounded border-border-primary"
 							/>
 							Headliner
@@ -283,23 +293,43 @@
 		</div>
 	{/each}
 
-	<!-- Add band button -->
-	<button
-		onclick={handleAddBand}
-		class="flex w-full items-center justify-center gap-1.5 rounded-lg border border-dashed border-border-primary px-3 py-2 text-sm text-text-secondary transition hover:border-stone-400 hover:bg-surface-hover hover:text-text-primary"
+	<!-- Always-visible inline add row -->
+	<form
+		onsubmit={(e) => {
+			e.preventDefault();
+			handleAddBand();
+		}}
+		class="rounded-lg border border-dashed border-border-primary bg-surface shadow-sm"
 	>
-		<svg
-			xmlns="http://www.w3.org/2000/svg"
-			class="h-3.5 w-3.5"
-			viewBox="0 0 20 20"
-			fill="currentColor"
-		>
-			<path
-				fill-rule="evenodd"
-				d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z"
-				clip-rule="evenodd"
+		<button type="submit" class="hidden"></button>
+		<div class="flex items-center gap-2 px-3 py-2">
+			<svg
+				xmlns="http://www.w3.org/2000/svg"
+				class="h-3.5 w-3.5 shrink-0 text-text-tertiary"
+				viewBox="0 0 20 20"
+				fill="currentColor"
+			>
+				<path
+					fill-rule="evenodd"
+					d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z"
+					clip-rule="evenodd"
+				/>
+			</svg>
+			<input
+				bind:this={bandNameInputEl}
+				bind:value={newBandName}
+				placeholder="Band name"
+				class="min-w-0 flex-1 rounded-md border border-border-primary bg-surface px-2 py-1 text-sm text-text-primary placeholder:text-text-tertiary focus:border-stone-500 focus:ring-2 focus:ring-stone-500"
+				onkeydown={(e) => {
+					if (e.key === 'Escape') {
+						newBandName = '';
+						(e.target as HTMLElement)?.blur();
+					}
+				}}
 			/>
-		</svg>
-		Add Band
-	</button>
+			{#if newBandName.trim()}
+				<span class="shrink-0 text-xs text-text-tertiary">&#x21B5; to add</span>
+			{/if}
+		</div>
+	</form>
 </div>

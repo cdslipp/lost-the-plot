@@ -1,5 +1,7 @@
 <script lang="ts">
 	import { SLOT_TYPES, type FestivalSlotRow, type SlotType } from '$lib/db/repositories/festivals';
+	import { formatTimeMs, formatDurationMs } from '$lib/utils/time';
+	import TimeInput from '$lib/components/TimeInput.svelte';
 
 	type Props = {
 		slots: FestivalSlotRow[];
@@ -13,7 +15,7 @@
 	let expandedSlotId = $state<string | null>(null);
 	let showAddMenu = $state(false);
 
-	// Local edits for reactive end-time computation
+	// Local edits for reactive end-time computation (preview while typing)
 	let localEdits = $state<Record<string, { time_start?: number | null; duration?: number | null }>>(
 		{}
 	);
@@ -43,38 +45,6 @@
 
 	function slotLabel(type: SlotType): string {
 		return SLOT_TYPES.find((s) => s.value === type)?.label ?? type;
-	}
-
-	function formatMs(ms: number | null): string {
-		if (ms == null) return '--:--';
-		const totalMinutes = Math.floor(ms / 60000);
-		const hours = Math.floor(totalMinutes / 60);
-		const minutes = totalMinutes % 60;
-		return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
-	}
-
-	function formatDuration(ms: number | null): string {
-		if (ms == null) return '';
-		const totalMinutes = Math.round(ms / 60000);
-		if (totalMinutes < 60) return `${totalMinutes}m`;
-		const h = Math.floor(totalMinutes / 60);
-		const m = totalMinutes % 60;
-		return m > 0 ? `${h}h ${m}m` : `${h}h`;
-	}
-
-	function parseTimeToMs(value: string): number | null {
-		const match = value.match(/^(\d{1,2}):(\d{2})$/);
-		if (!match) return null;
-		const h = parseInt(match[1]);
-		const m = parseInt(match[2]);
-		if (h > 23 || m > 59) return null;
-		return (h * 60 + m) * 60000;
-	}
-
-	function parseDurationToMs(value: string): number | null {
-		const num = parseInt(value);
-		if (isNaN(num) || num < 0) return null;
-		return num * 60000;
 	}
 
 	function toggleExpand(id: string) {
@@ -119,10 +89,10 @@
 
 				<!-- Time info -->
 				<span class="flex-shrink-0 text-xs text-text-tertiary">
-					{formatMs(slot.time_start)}
+					{formatTimeMs(slot.time_start)}
 					{#if slot.duration}
 						<span class="mx-1 text-text-tertiary/50">&middot;</span>
-						{formatDuration(slot.duration)}
+						{formatDurationMs(slot.duration)}
 					{/if}
 				</span>
 
@@ -197,41 +167,28 @@
 						<!-- Start time -->
 						<div>
 							<label class="mb-1 block text-xs text-text-secondary">Start Time</label>
-							<input
-								type="text"
-								value={formatMs(slot.time_start)}
-								placeholder="HH:MM"
-								oninput={(e) => {
-									const ms = parseTimeToMs((e.target as HTMLInputElement).value);
-									if (ms !== null) {
-										localEdits[slot.id] = { ...localEdits[slot.id], time_start: ms };
-									}
+							<TimeInput
+								time={slot.time_start}
+								onsubmit={(ms) => handleFieldBlur(slot.id, 'time_start', ms)}
+								onpreview={(ms) => {
+									localEdits[slot.id] = { ...localEdits[slot.id], time_start: ms };
 								}}
-								onblur={(e) => {
-									const ms = parseTimeToMs((e.target as HTMLInputElement).value);
-									if (ms !== null) handleFieldBlur(slot.id, 'time_start', ms);
-								}}
+								placeholder="Start"
 								class="w-full rounded-lg border border-border-primary bg-transparent px-3 py-1.5 text-sm text-text-primary focus:border-stone-500 focus:outline-none"
 							/>
 						</div>
 
 						<!-- Duration -->
 						<div>
-							<label class="mb-1 block text-xs text-text-secondary">Duration (min)</label>
-							<input
-								type="number"
-								value={slot.duration != null ? Math.round(slot.duration / 60000) : ''}
-								min="0"
-								oninput={(e) => {
-									const ms = parseDurationToMs((e.target as HTMLInputElement).value);
-									if (ms !== null) {
-										localEdits[slot.id] = { ...localEdits[slot.id], duration: ms };
-									}
+							<label class="mb-1 block text-xs text-text-secondary">Duration</label>
+							<TimeInput
+								time={slot.duration}
+								onsubmit={(ms) => handleFieldBlur(slot.id, 'duration', ms)}
+								onpreview={(ms) => {
+									localEdits[slot.id] = { ...localEdits[slot.id], duration: ms };
 								}}
-								onblur={(e) => {
-									const ms = parseDurationToMs((e.target as HTMLInputElement).value);
-									if (ms !== null) handleFieldBlur(slot.id, 'duration', ms);
-								}}
+								placeholder="Duration"
+								isDuration={true}
 								class="w-full rounded-lg border border-border-primary bg-transparent px-3 py-1.5 text-sm text-text-primary focus:border-stone-500 focus:outline-none"
 							/>
 						</div>
@@ -242,7 +199,7 @@
 							<div
 								class="rounded-lg border border-border-primary bg-muted/30 px-3 py-1.5 text-sm text-text-tertiary"
 							>
-								{formatMs(computeEndTime(slot))}
+								{formatTimeMs(computeEndTime(slot))}
 							</div>
 						</div>
 

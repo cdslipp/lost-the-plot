@@ -225,7 +225,6 @@ export async function exportSetlistToPdf({
 					'.drag-handle',
 					'.delete-btn',
 					'.add-prompt',
-					'.setlist-header-btn',
 					'.delete-set-btn',
 					'.add-set-btn'
 				];

@@ -1,6 +1,8 @@
 <script lang="ts">
 	import { slide } from 'svelte/transition';
 	import { db } from '$lib/db';
+	import { formatTimeMs, timeStringToMs, msToTimeString } from '$lib/utils/time';
+	import TimeInput from '$lib/components/TimeInput.svelte';
 
 	interface PlotRow {
 		id: string;
@@ -143,15 +145,7 @@
 	}
 
 	function formatTime(timeStr: string | null): string {
-		if (!timeStr) return '';
-		try {
-			const [h, m] = timeStr.split(':').map(Number);
-			const suffix = h >= 12 ? 'PM' : 'AM';
-			const hour12 = h % 12 || 12;
-			return `${hour12}:${String(m).padStart(2, '0')} ${suffix}`;
-		} catch {
-			return timeStr;
-		}
+		return formatTimeMs(timeStringToMs(timeStr));
 	}
 
 	function handleGigRowClick(gigId: number) {
@@ -214,9 +208,10 @@
 					</div>
 					<div>
 						<label class="mb-1 block text-xs font-medium text-text-secondary">Load-in</label>
-						<input
-							bind:value={newGig.time}
-							type="time"
+						<TimeInput
+							time={timeStringToMs(newGig.time)}
+							onsubmit={(ms) => (newGig.time = msToTimeString(ms))}
+							placeholder="Load-in"
 							class="w-full rounded-lg border border-border-primary bg-surface px-3 py-2 text-sm text-text-primary focus:border-stone-500 focus:ring-2 focus:ring-stone-500"
 						/>
 					</div>
@@ -224,9 +219,10 @@
 				<div class="grid grid-cols-2 gap-3">
 					<div>
 						<label class="mb-1 block text-xs font-medium text-text-secondary">Set Time</label>
-						<input
-							bind:value={newGig.set_time}
-							type="time"
+						<TimeInput
+							time={timeStringToMs(newGig.set_time)}
+							onsubmit={(ms) => (newGig.set_time = msToTimeString(ms))}
+							placeholder="Set Time"
 							class="w-full rounded-lg border border-border-primary bg-surface px-3 py-2 text-sm text-text-primary focus:border-stone-500 focus:ring-2 focus:ring-stone-500"
 						/>
 					</div>
@@ -234,11 +230,11 @@
 						<label class="mb-1 block text-xs font-medium text-text-secondary"
 							>Changeover (min)</label
 						>
-						<input
-							bind:value={newGig.changeover_minutes}
-							type="number"
-							min="0"
-							placeholder="e.g. 30"
+						<TimeInput
+							time={newGig.changeover_minutes ? parseInt(newGig.changeover_minutes) * 60000 : null}
+							onsubmit={(ms) => (newGig.changeover_minutes = String(Math.round(ms / 60000)))}
+							placeholder="Duration"
+							isDuration={true}
 							class="w-full rounded-lg border border-border-primary bg-surface px-3 py-2 text-sm text-text-primary focus:border-stone-500 focus:ring-2 focus:ring-stone-500"
 						/>
 					</div>
@@ -474,10 +470,10 @@
 						</div>
 						<div>
 							<label class="mb-1 block text-xs font-medium text-text-secondary">Load-in</label>
-							<input
-								value={gig.time || ''}
-								type="time"
-								onchange={(e) => updateGig(gig.id, 'time', (e.target as HTMLInputElement).value)}
+							<TimeInput
+								time={timeStringToMs(gig.time)}
+								onsubmit={(ms) => updateGig(gig.id, 'time', msToTimeString(ms))}
+								placeholder="Load-in"
 								class="w-full rounded-lg border border-border-primary bg-surface px-2 py-1.5 text-sm text-text-primary focus:border-stone-500 focus:ring-2 focus:ring-stone-500"
 							/>
 						</div>
@@ -485,11 +481,10 @@
 					<div class="grid grid-cols-2 gap-3">
 						<div>
 							<label class="mb-1 block text-xs font-medium text-text-secondary">Set Time</label>
-							<input
-								value={gig.set_time || ''}
-								type="time"
-								onchange={(e) =>
-									updateGig(gig.id, 'set_time', (e.target as HTMLInputElement).value)}
+							<TimeInput
+								time={timeStringToMs(gig.set_time)}
+								onsubmit={(ms) => updateGig(gig.id, 'set_time', msToTimeString(ms))}
+								placeholder="Set Time"
 								class="w-full rounded-lg border border-border-primary bg-surface px-2 py-1.5 text-sm text-text-primary focus:border-stone-500 focus:ring-2 focus:ring-stone-500"
 							/>
 						</div>
@@ -497,12 +492,12 @@
 							<label class="mb-1 block text-xs font-medium text-text-secondary"
 								>Changeover (min)</label
 							>
-							<input
-								value={gig.changeover_minutes ?? ''}
-								type="number"
-								min="0"
-								onchange={(e) =>
-									updateGig(gig.id, 'changeover_minutes', (e.target as HTMLInputElement).value)}
+							<TimeInput
+								time={gig.changeover_minutes ? gig.changeover_minutes * 60000 : null}
+								onsubmit={(ms) =>
+									updateGig(gig.id, 'changeover_minutes', String(Math.round(ms / 60000)))}
+								placeholder="Duration"
+								isDuration={true}
 								class="w-full rounded-lg border border-border-primary bg-surface px-2 py-1.5 text-sm text-text-primary focus:border-stone-500 focus:ring-2 focus:ring-stone-500"
 							/>
 						</div>

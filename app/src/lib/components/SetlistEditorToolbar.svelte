@@ -39,7 +39,6 @@
 			sharing = false;
 		}
 	}
-
 </script>
 
 <div class="toolbar print:hidden">

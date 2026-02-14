@@ -52,6 +52,7 @@
 	function handleKeydown(e: KeyboardEvent) {
 		if (!open) return;
 		if (e.key === 'Escape') {
+			e.preventDefault();
 			open = false;
 			onclose?.();
 		}

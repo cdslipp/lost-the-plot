@@ -31,7 +31,10 @@
 
 <svelte:window
 	onkeydown={(e) => {
-		if (e.key === 'Escape' && editing) oncancel();
+		if (e.key === 'Escape' && editing) {
+			e.preventDefault();
+			oncancel();
+		}
 	}}
 />
 

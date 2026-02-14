@@ -12,6 +12,7 @@
 	import { detectDevice } from '$lib/device';
 	import { onMount } from 'svelte';
 	import JumpBar from '$lib/components/JumpBar.svelte';
+	import EscapeBack from '$lib/components/EscapeBack.svelte';
 
 	let { children } = $props();
 
@@ -224,6 +225,8 @@
 		>
 	</div>
 {/if}
+
+<EscapeBack />
 
 <style>
 	.instrument-spin {

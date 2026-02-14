@@ -72,10 +72,10 @@
 
 	async function addSong() {
 		if (!newSongTitle.trim()) return;
-		const result = await db.run(
-			'INSERT INTO songs (band_id, title) VALUES (?, ?)',
-			[bandId, newSongTitle.trim()]
-		);
+		const result = await db.run('INSERT INTO songs (band_id, title) VALUES (?, ?)', [
+			bandId,
+			newSongTitle.trim()
+		]);
 		const newId = result.lastInsertRowid;
 		songs = [
 			...songs,
@@ -173,86 +173,7 @@
 		</div>
 	{/if}
 
-	{#if showAddSong}
-		<form
-			onsubmit={(e) => {
-				e.preventDefault();
-				addSong();
-			}}
-			class="mb-3 rounded-xl border border-border-primary bg-surface p-4 shadow-sm"
-		>
-			<div class="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
-				<input
-					bind:value={newSong.title}
-					placeholder="Song title"
-					class="rounded-lg border border-border-primary bg-surface px-3 py-2 text-sm text-text-primary focus:border-stone-500 focus:ring-2 focus:ring-stone-500"
-					required
-				/>
-				<div class="flex gap-2">
-					<input
-						bind:value={newSong.starting_key}
-						placeholder="Key (e.g. Am)"
-						class="w-1/2 rounded-lg border border-border-primary bg-surface px-3 py-2 text-sm text-text-primary focus:border-stone-500 focus:ring-2 focus:ring-stone-500"
-					/>
-					<input
-						bind:value={newSong.starting_tempo}
-						placeholder="BPM"
-						type="number"
-						min="1"
-						max="999"
-						class="w-1/2 rounded-lg border border-border-primary bg-surface px-3 py-2 text-sm text-text-primary focus:border-stone-500 focus:ring-2 focus:ring-stone-500"
-					/>
-				</div>
-				<input
-					bind:value={newSong.instruments}
-					placeholder="Special instruments/gear (comma-separated)"
-					class="rounded-lg border border-border-primary bg-surface px-3 py-2 text-sm text-text-primary focus:border-stone-500 focus:ring-2 focus:ring-stone-500 sm:col-span-2"
-				/>
-				<textarea
-					bind:value={newSong.notes}
-					placeholder="Notes"
-					rows="2"
-					class="rounded-lg border border-border-primary bg-surface px-3 py-2 text-sm text-text-primary focus:border-stone-500 focus:ring-2 focus:ring-stone-500 sm:col-span-2"
-				></textarea>
-			</div>
-			<div class="mt-2.5 flex gap-2">
-				<button
-					type="submit"
-					class="rounded-lg bg-stone-900 px-4 py-2 text-sm text-white hover:bg-stone-800 dark:bg-stone-100 dark:text-stone-900 dark:hover:bg-stone-200"
-				>
-					Add
-				</button>
-				<button
-					type="button"
-					onclick={() => (showAddSong = false)}
-					class="rounded-lg px-4 py-2 text-sm text-text-secondary hover:bg-surface-hover"
-				>
-					Cancel
-				</button>
-			</div>
-		</form>
-	{/if}
-
-	{#if songs.length === 0 && !showAddSong}
-		<button
-			onclick={() => (showAddSong = true)}
-			class="flex w-full items-center gap-2 rounded-xl border border-dashed border-border-primary bg-surface px-3 py-2.5 text-sm text-text-secondary transition hover:border-stone-400 hover:text-text-primary"
-		>
-			<svg
-				xmlns="http://www.w3.org/2000/svg"
-				class="h-4 w-4"
-				viewBox="0 0 20 20"
-				fill="currentColor"
-			>
-				<path
-					fill-rule="evenodd"
-					d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z"
-					clip-rule="evenodd"
-				/>
-			</svg>
-			Add Song
-		</button>
-	{:else}
+	{#if songs.length > 0}
 		<div class="space-y-1">
 			{#each filteredSongs as song (song.id)}
 				<div
@@ -451,13 +372,23 @@
 				</div>
 			{/each}
 		</div>
-		<button
-			onclick={() => (showAddSong = true)}
-			class="mt-1.5 flex w-full items-center gap-2 rounded-xl border border-dashed border-border-primary bg-surface px-3 py-2 text-sm text-text-secondary transition hover:border-stone-400 hover:text-text-primary"
-		>
+	{/if}
+
+	<!-- Always-visible inline add row -->
+	<form
+		onsubmit={(e) => {
+			e.preventDefault();
+			addSong();
+		}}
+		class="{songs.length > 0
+			? 'mt-1'
+			: ''} rounded-xl border border-dashed border-border-primary bg-surface shadow-sm"
+	>
+		<button type="submit" class="hidden"></button>
+		<div class="flex items-center gap-2 p-2">
 			<svg
 				xmlns="http://www.w3.org/2000/svg"
-				class="h-4 w-4"
+				class="h-4 w-4 shrink-0 text-text-tertiary"
 				viewBox="0 0 20 20"
 				fill="currentColor"
 			>
@@ -467,7 +398,21 @@
 					clip-rule="evenodd"
 				/>
 			</svg>
-			Add Song
-		</button>
-	{/if}
+			<input
+				bind:this={songTitleInputEl}
+				bind:value={newSongTitle}
+				placeholder="Song title"
+				class="min-w-0 flex-1 rounded-lg border border-border-primary bg-surface px-2 py-1.5 text-sm text-text-primary placeholder:text-text-tertiary focus:border-stone-500 focus:ring-2 focus:ring-stone-500"
+				onkeydown={(e) => {
+					if (e.key === 'Escape') {
+						newSongTitle = '';
+						(e.target as HTMLElement)?.blur();
+					}
+				}}
+			/>
+			{#if newSongTitle.trim()}
+				<span class="shrink-0 text-xs text-text-tertiary">&#x21B5; to add</span>
+			{/if}
+		</div>
+	</form>
 </div>

@@ -14,7 +14,8 @@ import {
 	migration011,
 	migration012,
 	migration013,
-	migration014
+	migration014,
+	migration015
 } from '@stageplotter/db';
 
 class DatabaseStore {
@@ -71,7 +72,8 @@ class DatabaseStore {
 				{ version: migration011.version, up: migration011.up },
 				{ version: migration012.version, up: migration012.up },
 				{ version: migration013.version, up: migration013.up },
-				{ version: migration014.version, up: migration014.up }
+				{ version: migration014.version, up: migration014.up },
+				{ version: migration015.version, up: migration015.up }
 			]);
 
 			this.status = 'ready';

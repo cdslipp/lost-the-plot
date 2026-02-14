@@ -378,7 +378,7 @@
 		color: #666;
 	}
 
-.add-prompt kbd {
+	.add-prompt kbd {
 		display: inline-block;
 		padding: 1px 6px;
 		margin: 0 2px;

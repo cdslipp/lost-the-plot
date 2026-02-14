@@ -24,3 +24,4 @@ export * as migration011 from './migrations/011_add_festivals.js';
 export * as migration012 from './migrations/012_add_festival_schedule.js';
 export * as migration013 from './migrations/013_add_festival_bands.js';
 export * as migration014 from './migrations/014_add_headliner_and_backline.js';
+export * as migration015 from './migrations/015_add_gear.js';
