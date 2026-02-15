@@ -21,7 +21,7 @@
 					title: 'Lost the Plot — Tablet',
 					description:
 						'Lost the Plot works best on a desktop or laptop browser. Tablet support with touch-friendly controls is on our roadmap.',
-					hint: "You can try the desktop version on your tablet — it works, but the experience is optimised for mouse and keyboard.",
+					hint: 'You can try the desktop version on your tablet — it works, but the experience is optimised for mouse and keyboard.',
 					buttonLabel: 'Continue to Desktop Version'
 				}
 	);

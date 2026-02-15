@@ -106,6 +106,33 @@ function buildItemsFromPlaced(
 	});
 }
 
+async function importTours(bandId: string, tours: any[]): Promise<void> {
+	for (const tour of tours) {
+		const tourId = generateId();
+		await db.run(
+			'INSERT INTO tours (id, band_id, name, start_date, end_date, notes) VALUES (?, ?, ?, ?, ?, ?)',
+			[
+				tourId,
+				bandId,
+				tour.name ?? 'Untitled Tour',
+				tour.start_date ?? null,
+				tour.end_date ?? null,
+				tour.notes ?? null
+			]
+		);
+
+		// Re-assign gigs to tour by matching gig names
+		if (Array.isArray(tour.gig_names)) {
+			for (const gigName of tour.gig_names) {
+				await db.run(
+					"UPDATE gigs SET tour_id = ?, updated_at = datetime('now') WHERE band_id = ? AND name = ? AND tour_id IS NULL",
+					[tourId, bandId, gigName]
+				);
+			}
+		}
+	}
+}
+
 export async function importBandProject(project: any, existingIds: Set<string>): Promise<void> {
 	if (!project || project.type !== 'band_project') return;
 	const sourceBand = project.band ?? {};
@@ -187,6 +214,12 @@ export async function importBandProject(project: any, existingIds: Set<string>):
 			]
 		);
 	}
+
+	// Import tours
+	const tours = Array.isArray(project.tours) ? project.tours : [];
+	if (tours.length > 0) {
+		await importTours(bandId, tours);
+	}
 }
 
 // --- Export ---
@@ -217,10 +250,20 @@ interface ExportPlot {
 	venue: string | null;
 }
 
+interface ExportTour {
+	id: string;
+	band_id: string;
+	name: string;
+	start_date: string | null;
+	end_date: string | null;
+	notes: string | null;
+}
+
 export function buildBandProject(
 	band: { id: string; name: string },
 	bandPersons: ExportPerson[],
-	bandPlots: ExportPlot[]
+	bandPlots: ExportPlot[],
+	bandTours: ExportTour[] = []
 ) {
 	const bandPeople = bandPersons.filter((p) => p.status !== 'inactive');
 	const players = bandPeople
@@ -342,7 +385,13 @@ export function buildBandProject(
 			outputs: [],
 			monitor_mixes: []
 		},
-		plots
+		plots,
+		tours: bandTours.map((t) => ({
+			name: t.name,
+			start_date: t.start_date,
+			end_date: t.end_date,
+			notes: t.notes
+		}))
 	};
 }
 
@@ -374,7 +423,12 @@ export async function exportBand(bandId: string): Promise<void> {
 		[bandId]
 	);
 
-	const project = buildBandProject(band, bandPersons, bandPlots);
+	const bandTours = await db.query<ExportTour>(
+		'SELECT id, band_id, name, start_date, end_date, notes FROM tours WHERE band_id = ?',
+		[bandId]
+	);
+
+	const project = buildBandProject(band, bandPersons, bandPlots, bandTours);
 	const timestamp = new Date().toISOString().split('T')[0];
 	downloadJson(project, `${safeSlug(band.name)}-${timestamp}.json`);
 }
@@ -416,8 +470,26 @@ export async function exportAllBands(): Promise<void> {
 		arr.push(plot);
 	}
 
+	const allTours = await db.query<ExportTour>(
+		'SELECT id, band_id, name, start_date, end_date, notes FROM tours'
+	);
+	const toursByBand = new Map<string, ExportTour[]>();
+	for (const tour of allTours) {
+		let arr = toursByBand.get(tour.band_id);
+		if (!arr) {
+			arr = [];
+			toursByBand.set(tour.band_id, arr);
+		}
+		arr.push(tour);
+	}
+
 	const projects = allBands.map((band) => {
-		return buildBandProject(band, personsByBand.get(band.id) ?? [], plotsByBand.get(band.id) ?? []);
+		return buildBandProject(
+			band,
+			personsByBand.get(band.id) ?? [],
+			plotsByBand.get(band.id) ?? [],
+			toursByBand.get(band.id) ?? []
+		);
 	});
 
 	const bundle = {

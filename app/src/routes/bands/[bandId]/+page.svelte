@@ -16,6 +16,7 @@
 		getTemplates,
 		createPlotFromTemplate
 	} from '$lib/db/repositories/plots';
+	import { getToursByBandId } from '$lib/db/repositories/tours';
 
 	let bandId = $derived($page.params.bandId as string);
 
@@ -60,8 +61,11 @@
 			changeover_minutes: number | null;
 			plot_id: string | null;
 			notes: string | null;
+			venue_id: number | null;
+			tour_id: string | null;
 		}[]
 	>([]);
+	let tours = $state<{ id: string; name: string }[]>([]);
 	let loading = $state(true);
 	let editingBandName = $state(false);
 	let bandNameInput = $state('');
@@ -131,10 +135,15 @@
 			changeover_minutes: number | null;
 			plot_id: string | null;
 			notes: string | null;
+			venue_id: number | null;
+			tour_id: string | null;
 		}>(
-			'SELECT id, name, venue, date, time, set_time, changeover_minutes, plot_id, notes FROM gigs WHERE band_id = ? ORDER BY date DESC',
+			'SELECT id, name, venue, date, time, set_time, changeover_minutes, plot_id, notes, venue_id, tour_id FROM gigs WHERE band_id = ? ORDER BY date DESC',
 			[bandId]
 		);
+
+		const tourRows = await getToursByBandId(bandId);
+		tours = tourRows.map((t) => ({ id: t.id, name: t.name }));
 
 		loading = false;
 
@@ -338,7 +347,12 @@
 		<hr class="border-border-primary" />
 
 		<!-- Gigs Section -->
-		<GigsSection {bandId} bind:gigs plots={plots.map((p) => ({ id: p.id, name: p.name }))} />
+		<GigsSection
+			{bandId}
+			bind:gigs
+			plots={plots.map((p) => ({ id: p.id, name: p.name }))}
+			{tours}
+		/>
 
 		<hr class="border-border-primary" />
 

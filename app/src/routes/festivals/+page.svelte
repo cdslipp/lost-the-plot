@@ -45,9 +45,7 @@
 >
 	{#snippet cardContent(festival)}
 		<a href="/festivals/{festival.id}" class="flex-1">
-			<h2
-				class="font-serif text-xl font-semibold text-text-primary group-hover:text-stone-600"
-			>
+			<h2 class="font-serif text-xl font-semibold text-text-primary group-hover:text-stone-600">
 				{festival.name}
 			</h2>
 			{#if festival.created_at}

@@ -129,9 +129,7 @@
 >
 	{#snippet cardContent(band)}
 		<a href="/bands/{band.id}" class="flex-1">
-			<h2
-				class="font-serif text-xl font-semibold text-text-primary group-hover:text-stone-600"
-			>
+			<h2 class="font-serif text-xl font-semibold text-text-primary group-hover:text-stone-600">
 				{band.name}
 			</h2>
 			<div class="mt-2 flex items-center gap-4 text-sm text-text-secondary">

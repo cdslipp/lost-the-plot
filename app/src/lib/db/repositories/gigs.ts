@@ -12,11 +12,13 @@ export interface GigRow {
 	changeover_minutes: number | null;
 	plot_id: string | null;
 	notes: string | null;
+	venue_id: number | null;
+	tour_id: string | null;
 }
 
 export async function getGigsByBandId(bandId: string): Promise<GigRow[]> {
 	return db.query<GigRow>(
-		'SELECT id, name, venue, date, time, set_time, changeover_minutes, plot_id, notes FROM gigs WHERE band_id = ? ORDER BY date DESC',
+		'SELECT id, name, venue, date, time, set_time, changeover_minutes, plot_id, notes, venue_id, tour_id FROM gigs WHERE band_id = ? ORDER BY date DESC',
 		[bandId]
 	);
 }
@@ -32,10 +34,12 @@ export async function createGig(
 		changeover_minutes?: number | null;
 		plot_id?: string | null;
 		notes?: string | null;
+		venue_id?: number | null;
+		tour_id?: string | null;
 	} = {}
 ): Promise<number> {
 	const result = await db.run(
-		'INSERT INTO gigs (band_id, name, venue, date, time, set_time, changeover_minutes, plot_id, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+		'INSERT INTO gigs (band_id, name, venue, date, time, set_time, changeover_minutes, plot_id, notes, venue_id, tour_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
 		[
 			bandId,
 			name,
@@ -45,7 +49,9 @@ export async function createGig(
 			opts.set_time ?? null,
 			opts.changeover_minutes ?? null,
 			opts.plot_id ?? null,
-			opts.notes ?? null
+			opts.notes ?? null,
+			opts.venue_id ?? null,
+			opts.tour_id ?? null
 		]
 	);
 	return result.lastInsertRowid;

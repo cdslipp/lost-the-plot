@@ -10,6 +10,11 @@
 		name: string;
 	}
 
+	interface TourRow {
+		id: string;
+		name: string;
+	}
+
 	interface GigRow {
 		id: number;
 		name: string;
@@ -20,16 +25,20 @@
 		changeover_minutes: number | null;
 		plot_id: string | null;
 		notes: string | null;
+		venue_id: number | null;
+		tour_id: string | null;
 	}
 
 	let {
 		bandId,
 		gigs = $bindable([]),
-		plots
+		plots,
+		tours = []
 	}: {
 		bandId: string;
 		gigs: GigRow[];
 		plots: PlotRow[];
+		tours: TourRow[];
 	} = $props();
 
 	let editingGigId = $state<number | null>(null);
@@ -43,7 +52,8 @@
 		set_time: '',
 		changeover_minutes: '' as string,
 		plot_id: '',
-		notes: ''
+		notes: '',
+		tour_id: ''
 	});
 
 	const now = new Date().toISOString().slice(0, 10);
@@ -61,7 +71,7 @@
 		if (!newGig.name.trim()) return;
 		const changeover = newGig.changeover_minutes ? parseInt(newGig.changeover_minutes) : null;
 		const result = await db.run(
-			'INSERT INTO gigs (band_id, name, venue, date, time, set_time, changeover_minutes, plot_id, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+			'INSERT INTO gigs (band_id, name, venue, date, time, set_time, changeover_minutes, plot_id, notes, tour_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
 			[
 				bandId,
 				newGig.name.trim(),
@@ -71,7 +81,8 @@
 				newGig.set_time || null,
 				changeover,
 				newGig.plot_id || null,
-				newGig.notes.trim() || null
+				newGig.notes.trim() || null,
+				newGig.tour_id || null
 			]
 		);
 		const gigId = result.lastInsertRowid;
@@ -90,7 +101,9 @@
 			set_time: newGig.set_time || null,
 			changeover_minutes: changeover,
 			plot_id: newGig.plot_id || null,
-			notes: newGig.notes.trim() || null
+			notes: newGig.notes.trim() || null,
+			venue_id: null,
+			tour_id: newGig.tour_id || null
 		};
 		gigs = [...gigs, newGigRow];
 
@@ -105,7 +118,8 @@
 			set_time: '',
 			changeover_minutes: '',
 			plot_id: '',
-			notes: ''
+			notes: '',
+			tour_id: ''
 		};
 		showAddGig = false;
 	}
@@ -253,6 +267,20 @@
 							<option value="">None</option>
 							{#each plots as plot}
 								<option value={plot.id}>{plot.name}</option>
+							{/each}
+						</select>
+					</div>
+				{/if}
+				{#if tours.length > 0}
+					<div>
+						<label class="mb-1 block text-xs font-medium text-text-secondary">Tour</label>
+						<select
+							bind:value={newGig.tour_id}
+							class="w-full rounded-lg border border-border-primary bg-surface px-3 py-2 text-sm text-text-primary focus:border-stone-500 focus:ring-2 focus:ring-stone-500"
+						>
+							<option value="">None</option>
+							{#each tours as tour}
+								<option value={tour.id}>{tour.name}</option>
 							{/each}
 						</select>
 					</div>
@@ -521,6 +549,22 @@
 								<option value="">None</option>
 								{#each plots as plot}
 									<option value={plot.id}>{plot.name}</option>
+								{/each}
+							</select>
+						</div>
+					{/if}
+					{#if tours.length > 0}
+						<div>
+							<label class="mb-1 block text-xs font-medium text-text-secondary">Tour</label>
+							<select
+								value={gig.tour_id || ''}
+								onchange={(e) =>
+									updateGig(gig.id, 'tour_id', (e.target as HTMLSelectElement).value)}
+								class="w-full rounded-lg border border-border-primary bg-surface px-2 py-1.5 text-sm text-text-primary focus:border-stone-500 focus:ring-2 focus:ring-stone-500"
+							>
+								<option value="">None</option>
+								{#each tours as tour}
+									<option value={tour.id}>{tour.name}</option>
 								{/each}
 							</select>
 						</div>
