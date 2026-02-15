@@ -1163,11 +1163,11 @@
 				class="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden"
 				bind:this={stagePlotContainer}
 			>
-				<div class="flex min-h-0 flex-[2] flex-col overflow-hidden">
+				<div class="flex min-h-0 flex-[3] flex-col overflow-hidden">
 					{@render canvasContent()}
 				</div>
 
-				<div class="max-h-[500px] min-h-0 flex-1 overflow-hidden">
+				<div class="min-h-0 flex-[2] overflow-auto">
 					{@render patchContent(6)}
 				</div>
 			</div>

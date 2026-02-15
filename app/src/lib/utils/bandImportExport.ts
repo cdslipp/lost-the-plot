@@ -2,8 +2,8 @@
 
 import { db } from '$lib/db';
 import { insertPersonsForBand } from '$lib/db/repositories/persons';
-import { getStageArea, type CanvasConfig } from '$lib/utils/canvas';
-import { isTauri } from '$lib/platform';
+import { getStageArea, type CanvasConfig } from '$lib/utils/paperConfig';
+import { isTauri } from '$lib/utils/platform';
 import { generateId } from '@stageplotter/shared';
 
 declare const __APP_VERSION__: string;

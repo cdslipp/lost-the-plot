@@ -1,6 +1,5 @@
 <script lang="ts">
 	// SPDX-License-Identifier: AGPL-3.0-only
-	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { db } from '$lib/db';
 	import { generateId } from '@stageplotter/shared';
@@ -13,22 +12,14 @@
 		updateBandName
 	} from '$lib/db/repositories/bands';
 	import { PlusIcon } from '$lib/components/icons';
-	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
 	import NotificationDialog from '$lib/components/NotificationDialog.svelte';
-	import ListPageLayout from '$lib/components/ListPageLayout.svelte';
+	import EntityListPage from '$lib/components/EntityListPage.svelte';
 	import type { BandWithPlotCount } from '$lib/db/repositories/bands';
 
-	let bands = $state<BandWithPlotCount[]>([]);
-	let loading = $state(true);
 	let exporting = $state(false);
 	let importing = $state(false);
-	let openMenuBandId = $state<string | null>(null);
-	let editingBandId = $state<string | null>(null);
-	let bandNameInput = $state('');
 	let fileInput: HTMLInputElement;
 
-	// Dialog state
-	let deleteBandTarget = $state<{ id: string; name: string } | null>(null);
 	let notification = $state<{
 		open: boolean;
 		title: string;
@@ -36,62 +27,41 @@
 		variant: 'success' | 'error';
 	}>({ open: false, title: '', description: '', variant: 'success' });
 
-	async function loadBands() {
+	async function load(): Promise<BandWithPlotCount[]> {
 		await db.init();
-		bands = await listBands();
-		loading = false;
+		return listBands();
 	}
 
-	async function createBand() {
+	async function create() {
 		await db.init();
 		const id = generateId();
 		await createBandDb(id, 'Untitled Band');
 		goto(`/bands/${id}?new=1`);
 	}
 
-	function handleDeleteBand(bandId: string, bandName: string) {
-		openMenuBandId = null;
-		deleteBandTarget = { id: bandId, name: bandName };
-	}
-
-	async function confirmDeleteBand() {
-		if (!deleteBandTarget) return;
+	async function handleDelete(id: string) {
 		await db.init();
-		await deleteBandCascade(deleteBandTarget.id);
-		deleteBandTarget = null;
-		await loadBands();
+		await deleteBandCascade(id);
 	}
 
-	function startRenameBand(band: { id: string; name: string }) {
-		editingBandId = band.id;
-		bandNameInput = band.name;
-		openMenuBandId = null;
-	}
-
-	function cancelRenameBand() {
-		editingBandId = null;
-		bandNameInput = '';
-	}
-
-	async function saveBandName(bandId: string) {
-		const nextName = bandNameInput.trim();
-		if (!nextName) return;
+	async function handleRename(id: string, newName: string) {
 		await db.init();
-		await updateBandName(bandId, nextName);
-		editingBandId = null;
-		bandNameInput = '';
-		await loadBands();
+		await updateBandName(id, newName);
 	}
 
-	async function handleDuplicateBand(bandId: string) {
-		openMenuBandId = null;
+	function deleteDescription(band: BandWithPlotCount): string {
+		return `Delete "${band.name}"? This removes all plots, people, songs, gigs, and setlists.`;
+	}
+
+	async function handleDuplicateBand(bandId: string, closeMenu: () => void) {
+		closeMenu();
 		await db.init();
 		await duplicateBand(bandId);
-		await loadBands();
+		window.location.reload();
 	}
 
-	async function handleExportBand(bandId: string) {
-		openMenuBandId = null;
+	async function handleExportBand(bandId: string, closeMenu: () => void) {
+		closeMenu();
 		await db.init();
 		await exportBand(bandId);
 	}
@@ -126,13 +96,13 @@
 		importing = true;
 		try {
 			await handleImportFile(file);
-			await loadBands();
 			notification = {
 				open: true,
 				title: 'Import Successful',
 				description: 'Bands imported successfully.',
 				variant: 'success'
 			};
+			window.location.reload();
 		} catch (error) {
 			console.error('Import error:', error);
 			notification = {
@@ -146,158 +116,64 @@
 			target.value = '';
 		}
 	}
-
-	onMount(() => {
-		loadBands();
-	});
 </script>
 
-<svelte:window
-	onclick={() => (openMenuBandId = null)}
-	onkeydown={(event) => {
-		if ((event as KeyboardEvent).key === 'Escape') {
-			openMenuBandId = null;
-			cancelRenameBand();
-		}
-	}}
-/>
-
-<ListPageLayout title="Your Bands">
-	{#if loading}
-		<div class="flex flex-1 items-center justify-center">
-			<p class="text-text-secondary">Loading...</p>
-		</div>
-	{:else if bands.length === 0}
-		<div class="flex flex-1 items-center justify-center">
-			<div class="rounded-xl border border-border-primary bg-surface p-8 text-center shadow-sm">
-				<p class="text-lg text-text-secondary">Create your first band to get started</p>
-				<button
-					onclick={createBand}
-					class="mt-4 rounded-lg bg-stone-900 px-6 py-3 text-white transition hover:bg-stone-800 dark:bg-stone-100 dark:text-stone-900 dark:hover:bg-stone-200"
-				>
-					Create Band
-				</button>
-			</div>
-		</div>
-	{:else}
-		<div class="band-list-scroll flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto">
-			{#each bands as band (band.id)}
-				<div
-					class="group relative flex items-start justify-between gap-3 rounded-xl border border-border-primary bg-surface p-6 shadow-sm transition hover:border-stone-400 hover:shadow-md"
-				>
-					{#if editingBandId === band.id}
-						<form
-							onsubmit={(event) => {
-								event.preventDefault();
-								saveBandName(band.id);
-							}}
-							class="flex flex-1 items-center gap-2"
-						>
-							<input
-								bind:value={bandNameInput}
-								class="w-full border-b border-dashed border-border-secondary bg-transparent px-1 py-1 font-serif text-xl font-semibold text-text-primary focus:border-stone-500 focus:outline-none"
-								autofocus
-							/>
-							<button
-								type="submit"
-								class="rounded-lg bg-stone-900 px-3 py-1.5 text-sm text-white hover:bg-stone-800 dark:bg-stone-100 dark:text-stone-900 dark:hover:bg-stone-200"
-							>
-								Save
-							</button>
-							<button
-								type="button"
-								onclick={cancelRenameBand}
-								class="rounded-lg px-3 py-1.5 text-sm text-text-secondary hover:bg-surface-hover"
-							>
-								Cancel
-							</button>
-						</form>
-					{:else}
-						<a href="/bands/{band.id}" class="flex-1">
-							<h2
-								class="font-serif text-xl font-semibold text-text-primary group-hover:text-stone-600"
-							>
-								{band.name}
-							</h2>
-							<div class="mt-2 flex items-center gap-4 text-sm text-text-secondary">
-								<span>{band.plot_count} {band.plot_count === 1 ? 'plot' : 'plots'}</span>
-								{#if band.created_at}
-									<span>Created {new Date(band.created_at).toISOString().split('T')[0]}</span>
-								{/if}
-							</div>
-						</a>
-						<button
-							onclick={(event) => {
-								event.stopPropagation();
-								openMenuBandId = openMenuBandId === band.id ? null : band.id;
-							}}
-							class="rounded p-1.5 text-text-tertiary opacity-0 transition group-hover:opacity-100 hover:bg-surface-hover hover:text-text-primary"
-							aria-label="Open band menu"
-						>
-							<svg
-								xmlns="http://www.w3.org/2000/svg"
-								class="h-5 w-5"
-								viewBox="0 0 20 20"
-								fill="currentColor"
-							>
-								<path
-									d="M6 10a2 2 0 11-4 0 2 2 0 014 0zm6 0a2 2 0 11-4 0 2 2 0 014 0zm6 0a2 2 0 11-4 0 2 2 0 014 0z"
-								/>
-							</svg>
-						</button>
-						{#if openMenuBandId === band.id}
-							<div
-								onclick={(event) => event.stopPropagation()}
-								class="absolute top-12 right-4 z-10 w-44 rounded-lg border border-border-primary bg-surface p-1 shadow-lg"
-							>
-								<button
-									onclick={() => handleDuplicateBand(band.id)}
-									class="flex w-full items-center rounded-md px-3 py-2 text-left text-sm text-text-primary hover:bg-surface-hover"
-								>
-									Duplicate
-								</button>
-								<button
-									onclick={() => handleExportBand(band.id)}
-									class="flex w-full items-center rounded-md px-3 py-2 text-left text-sm text-text-primary hover:bg-surface-hover"
-								>
-									Export band
-								</button>
-								<button
-									onclick={() => startRenameBand(band)}
-									class="flex w-full items-center rounded-md px-3 py-2 text-left text-sm text-text-primary hover:bg-surface-hover"
-								>
-									Rename band
-								</button>
-								<button
-									onclick={() => handleDeleteBand(band.id, band.name)}
-									class="flex w-full items-center rounded-md px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
-								>
-									Delete band
-								</button>
-							</div>
-						{/if}
-					{/if}
-				</div>
-			{/each}
-		</div>
-	{/if}
-
-	<div
-		class="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 dark:border-blue-800 dark:bg-blue-950/40"
-	>
-		<p class="text-center text-sm text-blue-800 dark:text-blue-300">
-			We do not run a cloud service. Your data is stored on THIS device alone. If you want to move
-			to another device, export your data here.
-			<a
-				href="https://plot.slipp.cam/how-it-works"
-				target="_blank"
-				rel="noopener noreferrer"
-				class="underline hover:text-blue-600 dark:hover:text-blue-200">Learn more</a
+<EntityListPage
+	title="Your Bands"
+	entityName="Band"
+	loadItems={load}
+	onCreate={create}
+	onDelete={handleDelete}
+	onRename={handleRename}
+	{deleteDescription}
+>
+	{#snippet cardContent(band)}
+		<a href="/bands/{band.id}" class="flex-1">
+			<h2
+				class="font-serif text-xl font-semibold text-text-primary group-hover:text-stone-600"
 			>
-		</p>
-	</div>
+				{band.name}
+			</h2>
+			<div class="mt-2 flex items-center gap-4 text-sm text-text-secondary">
+				<span>{band.plot_count} {band.plot_count === 1 ? 'plot' : 'plots'}</span>
+				{#if band.created_at}
+					<span>Created {new Date(band.created_at).toISOString().split('T')[0]}</span>
+				{/if}
+			</div>
+		</a>
+	{/snippet}
+
+	{#snippet menuItems(band, closeMenu)}
+		<button
+			onclick={() => handleDuplicateBand(band.id, closeMenu)}
+			class="flex w-full items-center rounded-md px-3 py-2 text-left text-sm text-text-primary hover:bg-surface-hover"
+		>
+			Duplicate
+		</button>
+		<button
+			onclick={() => handleExportBand(band.id, closeMenu)}
+			class="flex w-full items-center rounded-md px-3 py-2 text-left text-sm text-text-primary hover:bg-surface-hover"
+		>
+			Export band
+		</button>
+	{/snippet}
 
 	{#snippet footer()}
+		<div
+			class="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 dark:border-blue-800 dark:bg-blue-950/40"
+		>
+			<p class="text-center text-sm text-blue-800 dark:text-blue-300">
+				We do not run a cloud service. Your data is stored on THIS device alone. If you want to move
+				to another device, export your data here.
+				<a
+					href="https://plot.slipp.cam/how-it-works"
+					target="_blank"
+					rel="noopener noreferrer"
+					class="underline hover:text-blue-600 dark:hover:text-blue-200">Learn more</a
+				>
+			</p>
+		</div>
+
 		<div class="mt-auto flex flex-wrap items-center justify-between gap-3 pt-4">
 			<input
 				bind:this={fileInput}
@@ -309,7 +185,7 @@
 			<div class="flex flex-wrap items-center gap-2">
 				<button
 					onclick={triggerImport}
-					disabled={loading || importing}
+					disabled={importing}
 					class="flex items-center gap-2 rounded-lg border border-border-primary px-4 py-2 text-sm text-text-primary transition hover:bg-surface-hover disabled:cursor-not-allowed disabled:opacity-60"
 					title="Import bands and plots"
 				>
@@ -329,7 +205,7 @@
 				</button>
 				<button
 					onclick={handleExportAllBands}
-					disabled={loading || bands.length === 0 || exporting}
+					disabled={exporting}
 					class="flex items-center gap-2 rounded-lg border border-border-primary px-4 py-2 text-sm text-text-primary transition hover:bg-surface-hover disabled:cursor-not-allowed disabled:opacity-60"
 					title="Export all bands and plots"
 				>
@@ -349,7 +225,7 @@
 				</button>
 			</div>
 			<button
-				onclick={createBand}
+				onclick={create}
 				class="flex items-center gap-2 rounded-lg bg-stone-900 px-4 py-2 text-sm text-white transition hover:bg-stone-800 dark:bg-stone-100 dark:text-stone-900 dark:hover:bg-stone-200"
 			>
 				<PlusIcon />
@@ -357,23 +233,7 @@
 			</button>
 		</div>
 	{/snippet}
-</ListPageLayout>
-
-<ConfirmDialog
-	bind:open={
-		() => deleteBandTarget !== null,
-		(v) => {
-			if (!v) deleteBandTarget = null;
-		}
-	}
-	title="Delete Band"
-	description={deleteBandTarget
-		? `Delete "${deleteBandTarget.name}"? This removes all plots, people, songs, gigs, and setlists.`
-		: ''}
-	confirmLabel="Delete"
-	variant="destructive"
-	onconfirm={confirmDeleteBand}
-/>
+</EntityListPage>
 
 <NotificationDialog
 	bind:open={notification.open}
@@ -381,35 +241,3 @@
 	description={notification.description}
 	variant={notification.variant}
 />
-
-<style>
-	/* Slim scrollbar */
-	.band-list-scroll {
-		scrollbar-width: thin;
-		scrollbar-color: rgb(168 162 158 / 0.4) transparent;
-	}
-	.band-list-scroll::-webkit-scrollbar {
-		width: 6px;
-	}
-	.band-list-scroll::-webkit-scrollbar-track {
-		background: transparent;
-	}
-	.band-list-scroll::-webkit-scrollbar-thumb {
-		background: rgb(168 162 158 / 0.4);
-		border-radius: 3px;
-	}
-	.band-list-scroll::-webkit-scrollbar-thumb:hover {
-		background: rgb(168 162 158 / 0.6);
-	}
-
-	/* Feathered fade at bottom edge */
-	.band-list-scroll {
-		mask-image: linear-gradient(to bottom, black 0%, black calc(100% - 32px), transparent 100%);
-		-webkit-mask-image: linear-gradient(
-			to bottom,
-			black 0%,
-			black calc(100% - 32px),
-			transparent 100%
-		);
-	}
-</style>

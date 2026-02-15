@@ -60,13 +60,6 @@ function formatMeasurement(inches: number): string {
 }
 
 /**
- * Get formatted dimensions string from pixel values
- */
-export function formatDimensions(widthPx: number, heightPx: number): string {
-	return `${formatMeasurement(pixelsToInches(widthPx))} × ${formatMeasurement(pixelsToInches(heightPx))}`;
-}
-
-/**
  * Get formatted dimensions string from feet values
  */
 export function formatFeetDimensions(widthFt: number, heightFt: number): string {

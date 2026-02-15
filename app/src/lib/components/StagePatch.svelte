@@ -211,9 +211,7 @@
 					<ContextMenu.Root>
 						<ContextMenu.Trigger>
 							<div
-								class="flex h-10 items-center {chLinkedTop
-									? ''
-									: 'border-b border-border-primary'} {isRowSelected
+								class="flex h-10 items-center border-b border-border-primary {isRowSelected
 									? 'bg-blue-50 dark:bg-blue-900/20'
 									: ''}"
 							>
@@ -254,7 +252,7 @@
 								</div>
 
 								<!-- Name cell -->
-								<div class="flex-1 px-1 {chLinkedTop ? 'border-b border-border-primary' : ''}">
+								<div class="flex-1 px-1">
 									{#if mode === 'input' && !readonlyMode}
 										<input
 											type="text"
