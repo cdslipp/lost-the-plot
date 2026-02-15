@@ -12,6 +12,7 @@
 	import { insertPersonsForBand } from '$lib/db/repositories/persons';
 	import { exportToPdf } from '$lib/utils/pdf';
 	import { getCurrentImageSrc } from '$lib/utils/canvasUtils';
+	import { APP_NAME } from '$lib/config';
 
 	const MARKETING_URL = 'https://plot.slipp.cam';
 	const APP_URL = 'https://ltp.slipp.cam';
@@ -210,7 +211,7 @@
 </script>
 
 <svelte:head>
-	<title>{plotName} - {bandName} | Lost the Plot</title>
+	<title>{plotName} - {bandName} | {APP_NAME}</title>
 </svelte:head>
 
 <div class="flex h-[calc(100dvh-4.25rem)] flex-col gap-3 overflow-hidden py-3">

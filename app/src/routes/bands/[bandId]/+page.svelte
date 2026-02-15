@@ -17,6 +17,7 @@
 		createPlotFromTemplate
 	} from '$lib/db/repositories/plots';
 	import { getToursByBandId } from '$lib/db/repositories/tours';
+	import { APP_NAME } from '$lib/config';
 
 	let bandId = $derived($page.params.bandId as string);
 
@@ -213,6 +214,10 @@
 		load();
 	});
 </script>
+
+<svelte:head>
+	<title>{band?.name ?? 'Band'} | {APP_NAME}</title>
+</svelte:head>
 
 <DetailPageLayout
 	backHref="/bands"

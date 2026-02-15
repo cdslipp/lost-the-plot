@@ -1,5 +1,6 @@
 <script lang="ts">
 	// SPDX-License-Identifier: AGPL-3.0-only
+	import { APP_NAME } from '$lib/config';
 	import { db } from '$lib/db';
 	import { generateId } from '@stageplotter/shared';
 	import {
@@ -46,6 +47,10 @@
 		return category.charAt(0).toUpperCase() + category.slice(1);
 	}
 </script>
+
+<svelte:head>
+	<title>Gear | {APP_NAME}</title>
+</svelte:head>
 
 <EntityListPage
 	title="Your Gear"

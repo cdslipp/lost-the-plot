@@ -1,5 +1,6 @@
 <script lang="ts">
 	// SPDX-License-Identifier: AGPL-3.0-only
+	import { APP_NAME } from '$lib/config';
 	import { goto } from '$app/navigation';
 	import { db } from '$lib/db';
 	import { generateId } from '@stageplotter/shared';
@@ -60,6 +61,10 @@
 		await updateTourName(id, newName);
 	}
 </script>
+
+<svelte:head>
+	<title>Tours | {APP_NAME}</title>
+</svelte:head>
 
 {#if showBandPicker}
 	<!-- svelte-ignore a11y_no_static_element_interactions -->

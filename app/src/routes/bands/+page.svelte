@@ -1,5 +1,6 @@
 <script lang="ts">
 	// SPDX-License-Identifier: AGPL-3.0-only
+	import { APP_NAME } from '$lib/config';
 	import { goto } from '$app/navigation';
 	import { db } from '$lib/db';
 	import { generateId } from '@stageplotter/shared';
@@ -117,6 +118,10 @@
 		}
 	}
 </script>
+
+<svelte:head>
+	<title>Bands | {APP_NAME}</title>
+</svelte:head>
 
 <EntityListPage
 	title="Your Bands"

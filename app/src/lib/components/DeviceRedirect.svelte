@@ -1,6 +1,7 @@
 <script lang="ts">
 	// SPDX-License-Identifier: AGPL-3.0-only
 	import { goto } from '$app/navigation';
+	import { APP_NAME } from '$lib/config';
 
 	type Props = {
 		deviceType: 'mobile' | 'tablet';
@@ -11,14 +12,14 @@
 	const config = $derived(
 		deviceType === 'mobile'
 			? {
-					title: 'Lost the Plot — Mobile',
+					title: `${APP_NAME} — Mobile`,
 					description:
 						'Lost the Plot is designed for larger screens. The stage plot editor needs a desktop or laptop browser for the best experience.',
 					hint: 'A mobile companion app for viewing and sharing stage plots is coming soon.',
 					buttonLabel: 'Continue to Desktop Version Anyway'
 				}
 			: {
-					title: 'Lost the Plot — Tablet',
+					title: `${APP_NAME} — Tablet`,
 					description:
 						'Lost the Plot works best on a desktop or laptop browser. Tablet support with touch-friendly controls is on our roadmap.',
 					hint: 'You can try the desktop version on your tablet — it works, but the experience is optimised for mouse and keyboard.',

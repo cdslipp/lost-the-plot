@@ -25,6 +25,7 @@
 	import { getAllPlotsWithBandName, type PlotWithBand } from '$lib/db/repositories/plots';
 	import { saveFile } from '$lib/utils/opfsStorage';
 	import { downloadOpfsFile } from '$lib/utils/downloadFile';
+	import { APP_NAME } from '$lib/config';
 
 	let festivalId = $derived($page.params.festivalId as string);
 	let bandId = $derived($page.params.bandId as string);
@@ -111,6 +112,10 @@
 		load();
 	});
 </script>
+
+<svelte:head>
+	<title>{band?.name ?? 'Band'} | {APP_NAME}</title>
+</svelte:head>
 
 <DetailPageLayout
 	backHref="/festivals/{festivalId}"

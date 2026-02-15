@@ -6,6 +6,7 @@
 	import CircleBackButton from '$lib/components/CircleBackButton.svelte';
 	import { exportSetlistToPdf } from '$lib/utils/pdf';
 	import type { SetlistShareData } from '@stageplotter/shared';
+	import { APP_NAME } from '$lib/config';
 
 	let data = $state<SetlistShareData | null>(null);
 	let errorMsg = $state<string | null>(null);
@@ -108,7 +109,7 @@
 </script>
 
 <svelte:head>
-	<title>{gigName} Setlists - {bandName}</title>
+	<title>{gigName} Setlists - {bandName} | {APP_NAME}</title>
 </svelte:head>
 
 <div class="container">

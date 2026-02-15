@@ -1,5 +1,6 @@
 <script lang="ts">
 	// SPDX-License-Identifier: AGPL-3.0-only
+	import { APP_NAME } from '$lib/config';
 	import ListPageLayout from '$lib/components/ListPageLayout.svelte';
 	import { AlertDialog, Switch } from 'bits-ui';
 	import { mode, setMode } from 'mode-watcher';
@@ -55,6 +56,10 @@
 		}
 	}
 </script>
+
+<svelte:head>
+	<title>Settings | {APP_NAME}</title>
+</svelte:head>
 
 <ListPageLayout title="Settings">
 	<div class="flex flex-col gap-6">

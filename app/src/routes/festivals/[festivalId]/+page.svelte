@@ -26,6 +26,7 @@
 	import DayTabs from './components/DayTabs.svelte';
 	import SlotList from './components/SlotList.svelte';
 	import BandsPanel from './components/BandsPanel.svelte';
+	import { APP_NAME } from '$lib/config';
 
 	let bandsPanelOpen = $state(true);
 
@@ -198,6 +199,10 @@
 		load();
 	});
 </script>
+
+<svelte:head>
+	<title>{festival?.name ?? 'Festival'} | {APP_NAME}</title>
+</svelte:head>
 
 <DetailPageLayout
 	backHref="/festivals"

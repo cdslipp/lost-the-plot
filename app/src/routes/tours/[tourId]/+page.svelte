@@ -15,6 +15,7 @@
 	import type { GigRow } from '$lib/db/repositories/gigs';
 	import { formatTimeMs, timeStringToMs } from '$lib/utils/time';
 	import { preferences } from '$lib/state/preferences.svelte';
+	import { APP_NAME } from '$lib/config';
 
 	let tourId = $derived($page.params.tourId as string);
 
@@ -102,6 +103,10 @@
 		load();
 	});
 </script>
+
+<svelte:head>
+	<title>{tour?.name ?? 'Tour'} | {APP_NAME}</title>
+</svelte:head>
 
 <DetailPageLayout
 	backHref="/tours"

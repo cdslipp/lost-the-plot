@@ -1,5 +1,6 @@
 <script lang="ts">
 	// SPDX-License-Identifier: AGPL-3.0-only
+	import { APP_NAME } from '$lib/config';
 
 	const links: { label: string; href: string; external?: boolean }[] = [
 		{ label: 'Bands', href: '/bands' },
@@ -9,6 +10,10 @@
 		{ label: 'Settings', href: '/settings' }
 	];
 </script>
+
+<svelte:head>
+	<title>{APP_NAME}</title>
+</svelte:head>
 
 <div class="flex h-[calc(100dvh-1.25rem)] flex-col items-center justify-center gap-12">
 	<nav class="flex flex-col items-center gap-6">

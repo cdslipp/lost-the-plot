@@ -17,6 +17,7 @@
 	import { browser } from '$app/environment';
 	import { getVariantKeys, getCurrentImageSrc } from '$lib/utils/canvasUtils';
 	import { StagePlotState, setPlotState } from '$lib/state/stagePlotState.svelte';
+	import { APP_NAME } from '$lib/config';
 
 	// --- Route params ---
 	let plotId = $derived($page.params.plotId);
@@ -776,6 +777,10 @@
 		}
 	}
 </script>
+
+<svelte:head>
+	<title>{ps.plotName || 'Plot'} | {APP_NAME}</title>
+</svelte:head>
 
 <svelte:window onkeydown={handleGlobalKeydown} />
 

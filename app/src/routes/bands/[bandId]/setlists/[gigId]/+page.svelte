@@ -11,6 +11,7 @@
 	import SongCommandPalette from '$lib/components/SongCommandPalette.svelte';
 	import { exportSetlistToPdf } from '$lib/utils/pdf';
 	import type { SetlistSongRow } from '$lib/db/repositories/setlists';
+	import { APP_NAME } from '$lib/config';
 
 	let bandId = $derived($page.params.bandId);
 
@@ -89,6 +90,10 @@
 			: new Set<number>()
 	);
 </script>
+
+<svelte:head>
+	<title>{editor.gigName || 'Setlist'} | {APP_NAME}</title>
+</svelte:head>
 
 <svelte:window onkeydown={handleKeydown} />
 
