@@ -47,6 +47,10 @@ export interface SharePayload {
 	m: ShareMusician[];
 	/** Items array (compact numeric tuples) */
 	i: ShareItem[];
+	/** Channel groups: [channelNum, groupIndex][] (v3+) */
+	cg?: [number, number][];
+	/** Category zone defaults: [groupIndex, zoneIndex][] (v3+) */
+	cz?: [number, number][];
 }
 
 // ─── Enums for compact encoding ──────────────────────────────────────────────
@@ -113,6 +117,22 @@ const VARIANT_MAP = [
 	'quad'
 ] as const;
 
+/** Color category enum for compact group encoding */
+const GROUP_MAP = [
+	'vocals',
+	'drums',
+	'guitars',
+	'bass',
+	'keys',
+	'strings',
+	'winds',
+	'percussion',
+	'monitors'
+] as const;
+
+/** Zone key enum for compact zone encoding */
+const ZONE_MAP = ['DSR', 'DSC', 'DSL', 'USR', 'USC', 'USL'] as const;
+
 // ─── Catalog Index ───────────────────────────────────────────────────────────
 
 /** Build a map from catalog item path -> index for compact encoding */
@@ -160,6 +180,10 @@ export interface EncodeInput {
 		member_type?: string;
 		status?: string;
 	}>;
+	/** Channel groups: map of channelNum → group name (v3+) */
+	channelGroups?: Record<number, string>;
+	/** Category zone defaults: map of category → zone key (v3+) */
+	categoryZoneDefaults?: Record<string, string>;
 }
 
 /**
@@ -177,8 +201,13 @@ export async function encodePayload(
 	const musicianLookup = new Map<string, number>();
 	input.musicians.forEach((m, i) => musicianLookup.set(m.name, i));
 
+	// Encode channel groups (v3 feature)
+	const hasGroups = input.channelGroups && Object.keys(input.channelGroups).length > 0;
+	const hasZones = input.categoryZoneDefaults && Object.keys(input.categoryZoneDefaults).length > 0;
+	const version = hasGroups || hasZones ? 3 : 2;
+
 	const payload: SharePayload = {
-		v: 2,
+		v: version,
 		sw: input.stageWidth,
 		sd: input.stageDepth,
 		p: (input.persons ?? []).map((person) => [
@@ -228,6 +257,24 @@ export async function encodePayload(
 			return tuple;
 		})
 	};
+
+	// Add v3 fields if present
+	if (hasGroups && input.channelGroups) {
+		payload.cg = Object.entries(input.channelGroups)
+			.filter(([, group]) => group)
+			.map(([ch, group]) => [
+				parseInt(ch),
+				Math.max(0, GROUP_MAP.indexOf(group as (typeof GROUP_MAP)[number]))
+			]);
+	}
+	if (hasZones && input.categoryZoneDefaults) {
+		payload.cz = Object.entries(input.categoryZoneDefaults)
+			.filter(([, zone]) => zone)
+			.map(([cat, zone]) => [
+				Math.max(0, GROUP_MAP.indexOf(cat as (typeof GROUP_MAP)[number])),
+				Math.max(0, ZONE_MAP.indexOf(zone as (typeof ZONE_MAP)[number]))
+			]);
+	}
 
 	const json = JSON.stringify(payload);
 	return compress(json);
@@ -285,6 +332,10 @@ export interface DecodedPlot {
 		channel: string;
 		musician: string;
 	}>;
+	/** Channel groups: map of channelNum → group name (v3+) */
+	channelGroups?: Record<number, string>;
+	/** Category zone defaults: map of category → zone key (v3+) */
+	categoryZoneDefaults?: Record<string, string>;
 }
 
 /**
@@ -306,7 +357,7 @@ export async function decodePayload(
 	const json = await decompress(payloadStr);
 	const payload: SharePayload = JSON.parse(json);
 
-	if (payload.v !== 1 && payload.v !== 2) {
+	if (payload.v !== 1 && payload.v !== 2 && payload.v !== 3) {
 		throw new Error(`Unsupported share format version: ${payload.v}`);
 	}
 
@@ -400,12 +451,35 @@ export async function decodePayload(
 		};
 	});
 
+	// Decode v3 channel groups
+	let channelGroups: Record<number, string> | undefined;
+	if (payload.cg && Array.isArray(payload.cg)) {
+		channelGroups = {};
+		for (const [ch, groupIdx] of payload.cg) {
+			const groupName = GROUP_MAP[groupIdx];
+			if (groupName) channelGroups[ch] = groupName;
+		}
+	}
+
+	// Decode v3 category zone defaults
+	let categoryZoneDefaults: Record<string, string> | undefined;
+	if (payload.cz && Array.isArray(payload.cz)) {
+		categoryZoneDefaults = {};
+		for (const [groupIdx, zoneIdx] of payload.cz) {
+			const groupName = GROUP_MAP[groupIdx];
+			const zoneName = ZONE_MAP[zoneIdx];
+			if (groupName && zoneName) categoryZoneDefaults[groupName] = zoneName;
+		}
+	}
+
 	return {
 		stageWidth: payload.sw,
 		stageDepth: payload.sd,
 		persons,
 		musicians,
-		items
+		items,
+		channelGroups,
+		categoryZoneDefaults
 	};
 }
 

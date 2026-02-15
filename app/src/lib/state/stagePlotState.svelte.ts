@@ -10,7 +10,9 @@ import { imagePxToFeet, type UnitSystem } from '$lib/utils/scale';
 import {
 	getItemZone as _getItemZone,
 	getItemPosition as _getItemPosition,
+	getZones as _getZones,
 	snapToGrid as _snapToGrid,
+	findOpenPositionInZone,
 	getItemVariants,
 	getVariantKeys,
 	buildImagePath
@@ -84,6 +86,7 @@ export class StagePlotState {
 	stereoLinks = $state<number[]>([]);
 	outputStereoLinks = $state<number[]>([]);
 	categoryColorDefaults = $state<Record<string, string>>({});
+	categoryZoneDefaults = $state<Record<string, string>>({});
 
 	// People
 	plotPersonIds = $state<Set<number>>(new Set());
@@ -116,6 +119,17 @@ export class StagePlotState {
 			if (ch.color) colors[ch.channelNum] = ch.color;
 		}
 		return colors;
+	});
+
+	channelsByGroup = $derived.by(() => {
+		const map = new Map<string, number[]>();
+		for (const ch of this.inputChannels) {
+			if (ch.group) {
+				if (!map.has(ch.group)) map.set(ch.group, []);
+				map.get(ch.group)!.push(ch.channelNum);
+			}
+		}
+		return map;
 	});
 
 	itemByChannel = $derived.by(() => {
@@ -265,6 +279,7 @@ export class StagePlotState {
 					inputChannels: this.inputChannels,
 					outputChannels: this.outputChannels,
 					outputStereoLinks: this.outputStereoLinks,
+					categoryZoneDefaults: this.categoryZoneDefaults,
 					undoLog: this.history.log,
 					redoStack: this.history.redoStack
 				}),
@@ -308,7 +323,8 @@ export class StagePlotState {
 		return Array.from({ length: count }, (_, i) => ({
 			channelNum: i + 1,
 			itemId: null,
-			color: null
+			color: null,
+			group: null
 		}));
 	}
 
@@ -324,7 +340,12 @@ export class StagePlotState {
 		for (const ch of this.inputChannels) {
 			if (ch.itemId === itemId) {
 				ch.itemId = null;
-				ch.color = null;
+				// Preserve group color, only clear if no group
+				if (ch.group && this.categoryColorDefaults[ch.group]) {
+					ch.color = this.categoryColorDefaults[ch.group];
+				} else {
+					ch.color = null;
+				}
 			}
 		}
 		// Assign to new channel
@@ -338,7 +359,13 @@ export class StagePlotState {
 		const idx = channelNum - 1;
 		if (idx >= 0 && idx < this.inputChannels.length) {
 			this.inputChannels[idx].itemId = null;
-			this.inputChannels[idx].color = null;
+			// Preserve group color, only clear color if no group
+			const group = this.inputChannels[idx].group;
+			if (group && this.categoryColorDefaults[group]) {
+				this.inputChannels[idx].color = this.categoryColorDefaults[group];
+			} else {
+				this.inputChannels[idx].color = null;
+			}
 		}
 	}
 
@@ -347,7 +374,7 @@ export class StagePlotState {
 		if (newMode === current) return;
 		if (newMode > current) {
 			for (let i = current + 1; i <= newMode; i++) {
-				this.inputChannels.push({ channelNum: i, itemId: null, color: null });
+				this.inputChannels.push({ channelNum: i, itemId: null, color: null, group: null });
 			}
 		} else {
 			this.inputChannels = this.inputChannels.slice(0, newMode);
@@ -410,6 +437,10 @@ export class StagePlotState {
 		this.items = Array.isArray(meta.items) ? meta.items : [];
 		this.outputs = Array.isArray(meta.outputs) ? meta.outputs : [];
 		this.outputStereoLinks = Array.isArray(meta.outputStereoLinks) ? meta.outputStereoLinks : [];
+		this.categoryZoneDefaults =
+			meta.categoryZoneDefaults && typeof meta.categoryZoneDefaults === 'object'
+				? meta.categoryZoneDefaults
+				: {};
 
 		// --- Channel migration ---
 		if (Array.isArray(meta.inputChannels)) {
@@ -506,11 +537,15 @@ export class StagePlotState {
 	deleteItem(id: number) {
 		const idx = this.items.findIndex((i) => i.id === id);
 		if (idx >= 0) {
-			// Clear channel assignment for this item
+			// Clear channel assignment for this item (preserve group color)
 			for (const ch of this.inputChannels) {
 				if (ch.itemId === id) {
 					ch.itemId = null;
-					ch.color = null;
+					if (ch.group && this.categoryColorDefaults[ch.group]) {
+						ch.color = this.categoryColorDefaults[ch.group];
+					} else {
+						ch.color = null;
+					}
 				}
 			}
 			this.items.splice(idx, 1);
@@ -520,11 +555,15 @@ export class StagePlotState {
 
 	deleteItems(ids: Set<string>) {
 		const numericIds = new Set([...ids].map(Number));
-		// Clear channel assignments for deleted items
+		// Clear channel assignments for deleted items (preserve group color)
 		for (const ch of this.inputChannels) {
 			if (ch.itemId != null && numericIds.has(ch.itemId)) {
 				ch.itemId = null;
-				ch.color = null;
+				if (ch.group && this.categoryColorDefaults[ch.group]) {
+					ch.color = this.categoryColorDefaults[ch.group];
+				} else {
+					ch.color = null;
+				}
 			}
 		}
 		this.items = this.items.filter((i) => !ids.has(String(i.id)));
@@ -686,7 +725,12 @@ export class StagePlotState {
 	clearAllPatch() {
 		for (const ch of this.inputChannels) {
 			ch.itemId = null;
-			ch.color = null;
+			// Preserve group color
+			if (ch.group && this.categoryColorDefaults[ch.group]) {
+				ch.color = this.categoryColorDefaults[ch.group];
+			} else {
+				ch.color = null;
+			}
 		}
 		for (const item of this.items) {
 			item.person_id = null;
@@ -697,13 +741,19 @@ export class StagePlotState {
 	/** Clear channel assignment and auto-apply category color when console is set */
 	preparePatchChannel(channel: number, itemData: any) {
 		this.unassignChannel(channel);
+		const idx = channel - 1;
+		if (idx < 0 || idx >= this.inputChannels.length) return;
+		// If channel already has a group, use the group's color
+		const existingGroup = this.inputChannels[idx].group;
+		if (existingGroup && this.categoryColorDefaults[existingGroup]) {
+			this.inputChannels[idx].color = this.categoryColorDefaults[existingGroup];
+			return;
+		}
+		// Otherwise auto-apply from item catalog category
 		if (this.consoleType && itemData?.category) {
 			const colorCat = CATALOG_TO_COLOR_CATEGORY[itemData.category] as ColorCategory | undefined;
 			if (colorCat && this.categoryColorDefaults[colorCat]) {
-				const idx = channel - 1;
-				if (idx >= 0 && idx < this.inputChannels.length) {
-					this.inputChannels[idx].color = this.categoryColorDefaults[colorCat];
-				}
+				this.inputChannels[idx].color = this.categoryColorDefaults[colorCat];
 			}
 		}
 	}
@@ -855,6 +905,30 @@ export class StagePlotState {
 		this.debouncedWrite();
 	}
 
+	setChannelGroup(channelNum: number, group: string | null) {
+		const idx = channelNum - 1;
+		if (idx < 0 || idx >= this.inputChannels.length) return;
+		this.inputChannels[idx].group = group;
+		// Auto-apply color from category defaults
+		if (group && this.categoryColorDefaults[group]) {
+			this.inputChannels[idx].color = this.categoryColorDefaults[group];
+		} else if (!group) {
+			// Clear color when removing group (only if no item assigned)
+			if (this.inputChannels[idx].itemId == null) {
+				this.inputChannels[idx].color = null;
+			}
+		}
+		this.debouncedWrite();
+	}
+
+	setChannelRangeGroup(from: number, to: number, group: string | null) {
+		const lo = Math.min(from, to);
+		const hi = Math.max(from, to);
+		for (let ch = lo; ch <= hi; ch++) {
+			this.setChannelGroup(ch, group);
+		}
+	}
+
 	setStereoLinks(links: number[]) {
 		this.stereoLinks = links;
 		this.debouncedWrite();
@@ -868,6 +942,25 @@ export class StagePlotState {
 	setCategoryColorDefaults(defaults: Record<string, string>) {
 		this.categoryColorDefaults = defaults;
 		this.debouncedWrite();
+	}
+
+	setCategoryZoneDefault(category: string, zone: string | null) {
+		if (zone) {
+			this.categoryZoneDefaults[category] = zone;
+		} else {
+			delete this.categoryZoneDefaults[category];
+			// Force reactivity by reassigning
+			this.categoryZoneDefaults = { ...this.categoryZoneDefaults };
+		}
+		this.debouncedWrite();
+	}
+
+	getZoneForGroup(group: string | null): { x: number; y: number; w: number; h: number } | null {
+		if (!group) return null;
+		const zoneKey = this.categoryZoneDefaults[group];
+		if (!zoneKey) return null;
+		const zones = _getZones(this.stageWidth, this.stageDepth);
+		return zones.find((z) => z.key === zoneKey) ?? null;
 	}
 
 	// --- People management ---

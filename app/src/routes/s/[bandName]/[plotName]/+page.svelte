@@ -29,6 +29,18 @@
 	let copied = $state(false);
 	let exportingPdf = $state(false);
 
+	const GROUP_COLORS: Record<string, string> = {
+		vocals: '#ff0000',
+		drums: '#0064ff',
+		guitars: '#00c800',
+		bass: '#d000d0',
+		keys: '#e8e800',
+		strings: '#00c8c8',
+		winds: '#e0e0e0',
+		percussion: '#ff8800',
+		monitors: '#1a1a1a'
+	};
+
 	// Contain-fit canvas sizing
 	let canvasWrapperEl = $state<HTMLElement | null>(null);
 	let canvasEl = $state<HTMLElement | null>(null);
@@ -178,14 +190,33 @@
 		if (!canvasEl || !plot || exportingPdf) return;
 		exportingPdf = true;
 		try {
+			// Build full channel list including empty channels
+			const maxCh = Math.max(
+				0,
+				...plot.items
+					.filter((i) => i.channel && parseInt(i.channel) > 0)
+					.map((i) => parseInt(i.channel))
+			);
+			const channelCount = Math.max(maxCh, 8);
+			const itemsByChannel = new Map(
+				plot.items
+					.filter((i) => i.channel && parseInt(i.channel) > 0)
+					.map((i) => [parseInt(i.channel), i])
+			);
+			const pdfItems = Array.from({ length: channelCount }, (_, idx) => {
+				const ch = idx + 1;
+				const item = itemsByChannel.get(ch);
+				return {
+					name: item ? item.name || item.itemData?.name || '' : '',
+					channel: String(ch),
+					person_name: item?.musician || '',
+					isEmpty: !item
+				};
+			});
 			await exportToPdf({
 				plotName,
 				canvasEl,
-				items: plot.items.map((i) => ({
-					name: i.name || i.itemData?.name || '',
-					channel: i.channel || '',
-					person_name: i.musician || ''
-				})),
+				items: pdfItems,
 				persons: plot.musicians.map((m) => ({
 					name: m.name,
 					role: m.instrument || ''
@@ -386,11 +417,20 @@
 						</button>
 					</div>
 
-					<!-- Input List -->
-					{#if plot.items.filter((i) => i.channel && parseInt(i.channel) > 0).length > 0}
-						{@const inputs = plot.items
-							.filter((i) => i.channel && parseInt(i.channel) > 0)
-							.sort((a, b) => parseInt(a.channel) - parseInt(b.channel))}
+					<!-- Input List (all channels, including empty) -->
+					{#if plot && plot.items.length > 0}
+						{@const maxChannel = Math.max(
+							0,
+							...plot.items
+								.filter((i) => i.channel && parseInt(i.channel) > 0)
+								.map((i) => parseInt(i.channel))
+						)}
+						{@const channelCount = Math.max(maxChannel, 8)}
+						{@const itemsByChannel = new Map(
+							plot.items
+								.filter((i) => i.channel && parseInt(i.channel) > 0)
+								.map((i) => [parseInt(i.channel), i])
+						)}
 						<div>
 							<h3 class="mb-2 text-xs font-medium tracking-wider text-text-tertiary uppercase">
 								Input List
@@ -403,15 +443,36 @@
 									<span>Source</span>
 									<span>Musician</span>
 								</div>
-								{#each inputs as item}
+								{#each Array.from({ length: channelCount }, (_, i) => i + 1) as ch}
+									{@const item = itemsByChannel.get(ch)}
+									{@const groupName = plot?.channelGroups?.[ch]}
 									<div
-										class="grid grid-cols-[2rem_1fr_1fr] gap-1.5 rounded-md bg-muted/30 px-1.5 py-1 text-xs"
+										class="grid grid-cols-[2rem_1fr_1fr] gap-1.5 rounded-md px-1.5 py-1 text-xs {item
+											? 'bg-muted/30'
+											: 'bg-muted/10'}"
 									>
-										<span class="font-mono font-bold text-text-primary">{item.channel}</span>
-										<span class="truncate text-text-primary"
-											>{item.name || item.itemData?.name || '-'}</span
-										>
-										<span class="truncate text-text-secondary">{item.musician || '-'}</span>
+										<span class="flex items-center gap-0.5">
+											{#if groupName}
+												<span
+													class="inline-block h-2 w-2 flex-shrink-0 rounded-full"
+													style="background-color: {GROUP_COLORS[groupName] ?? '#888'};"
+												></span>
+											{/if}
+											<span
+												class="font-mono font-bold {item
+													? 'text-text-primary'
+													: 'text-text-tertiary'}">{ch}</span
+											>
+										</span>
+										{#if item}
+											<span class="truncate text-text-primary"
+												>{item.name || item.itemData?.name || '-'}</span
+											>
+											<span class="truncate text-text-secondary">{item.musician || '-'}</span>
+										{:else}
+											<span class="truncate text-text-tertiary">---</span>
+											<span class="truncate text-text-tertiary">---</span>
+										{/if}
 									</div>
 								{/each}
 							</div>

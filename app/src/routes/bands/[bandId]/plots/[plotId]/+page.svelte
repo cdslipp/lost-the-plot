@@ -15,7 +15,11 @@
 	import { exportToPdf } from '$lib/utils/pdf';
 	import { imagePxToFeet } from '$lib/utils/scale';
 	import { browser } from '$app/environment';
-	import { getVariantKeys, getCurrentImageSrc } from '$lib/utils/canvasUtils';
+	import {
+		getVariantKeys,
+		getCurrentImageSrc,
+		findOpenPositionInZone
+	} from '$lib/utils/canvasUtils';
 	import { StagePlotState, setPlotState } from '$lib/state/stagePlotState.svelte';
 
 	// --- Route params ---
@@ -660,9 +664,60 @@
 	}
 
 	// --- Patch handlers (thin wrappers) ---
-	function handlePatchAddItem(item: any, channel: number) {
+	async function handlePatchAddItem(item: any, channel: number) {
 		ps.preparePatchChannel(channel, item);
-		preparePlacingItem(item, channel);
+
+		// Auto-place on canvas (patch-first flow)
+		const img = new Image();
+		img.src = item.image;
+		await new Promise((resolve) => {
+			img.onload = resolve;
+			img.onerror = () => resolve(undefined);
+		});
+		const itemWidth = imagePxToFeet(img.naturalWidth || 80);
+		const itemHeight = imagePxToFeet(img.naturalHeight || 60);
+
+		// Determine position: use zone if channel has a group with a zone mapping
+		const ch = ps.inputChannels[channel - 1];
+		const zone = ch?.group ? ps.getZoneForGroup(ch.group) : null;
+		let pos: { x: number; y: number };
+		if (zone) {
+			pos = findOpenPositionInZone(zone, ps.items, itemWidth, itemHeight);
+		} else {
+			// Center stage fallback
+			pos = findOpenPositionInZone(
+				{ x: 0, y: 0, w: ps.stageWidth, h: ps.stageDepth },
+				ps.items,
+				itemWidth,
+				itemHeight
+			);
+		}
+
+		const newItem: any = {
+			id: Date.now(),
+			type: item.type ?? item.item_type ?? 'input',
+			itemData: item,
+			currentVariant: 'default',
+			position: {
+				width: itemWidth,
+				height: itemHeight,
+				x: Math.max(0, Math.min(pos.x, ps.stageWidth - itemWidth)),
+				y: Math.max(0, Math.min(pos.y, ps.stageDepth - itemHeight))
+			},
+			name: item.name || '',
+			person_id: null
+		};
+
+		ps.items.push(newItem);
+		ps.assignItemToChannel(newItem.id, channel);
+
+		// Handle monitor/output auto-assignment
+		const isMonitor = ps.isMonitorItem(item);
+		if (isMonitor) {
+			ps.addDefaultOutputs(item);
+		}
+
+		ps.commitChange();
 	}
 
 	function handlePatchOutputSelect(item: any, channel: number) {
@@ -696,19 +751,42 @@
 	}
 
 	// --- PDF export ---
+	const GROUP_FALLBACK_COLORS: Record<string, string> = {
+		vocals: '#ff0000',
+		drums: '#0064ff',
+		guitars: '#00c800',
+		bass: '#d000d0',
+		keys: '#e8e800',
+		strings: '#00c8c8',
+		winds: '#e0e0e0',
+		percussion: '#ff8800',
+		monitors: '#1a1a1a'
+	};
+
+	function getGroupHexColor(group: string | null | undefined): string | null {
+		if (!group) return null;
+		// Try console color first
+		const colorId = ps.categoryColorDefaults[group];
+		if (colorId && ps.consoleDef) {
+			const color = ps.consoleDef.colors.find((c: any) => c.id === colorId);
+			if (color) return color.hex;
+		}
+		return GROUP_FALLBACK_COLORS[group] ?? null;
+	}
+
 	async function handleExportPdf() {
 		if (!canvasEl) return;
-		// Build items list from inputChannels with assigned items
-		const pdfItems = ps.inputChannels
-			.filter((ch) => ch.itemId != null)
-			.map((ch) => {
-				const item = ps.itemByChannel.get(ch.channelNum);
-				return {
-					name: item?.name ?? '',
-					channel: String(ch.channelNum),
-					person_name: item?.person_id ? ps.personsById[item.person_id]?.name || '' : ''
-				};
-			});
+		// Build items list from ALL inputChannels (including empty ones)
+		const pdfItems = ps.inputChannels.map((ch) => {
+			const item = ps.itemByChannel.get(ch.channelNum);
+			return {
+				name: item?.name ?? '',
+				channel: String(ch.channelNum),
+				person_name: item?.person_id ? ps.personsById[item.person_id]?.name || '' : '',
+				isEmpty: ch.itemId == null,
+				groupColor: getGroupHexColor(ch.group)
+			};
+		});
 		await exportToPdf({
 			plotName: ps.plotName,
 			canvasEl,
@@ -771,6 +849,10 @@
 	}
 </script>
 
+<svelte:head>
+	<title>{ps.plotName}{ps.bandName ? ` — ${ps.bandName}` : ''} | Lost the Plot</title>
+</svelte:head>
+
 <svelte:window onkeydown={handleGlobalKeydown} />
 
 <div class="flex h-[calc(100dvh-4.25rem)] flex-col gap-3 overflow-hidden">
@@ -812,6 +894,8 @@
 			onStereoLinksChange={(links) => ps.setStereoLinks(links)}
 			outputStereoLinks={ps.outputStereoLinks}
 			onOutputStereoLinksChange={(links) => ps.setOutputStereoLinks(links)}
+			categoryColorDefaults={ps.categoryColorDefaults}
+			onSetChannelGroup={(ch, group) => ps.setChannelGroup(ch, group)}
 		/>
 	{/snippet}
 
@@ -834,6 +918,9 @@
 							stageDepth={ps.stageDepth}
 							{pxPerFoot}
 							itemCount={ps.items.length}
+							categoryZoneDefaults={ps.categoryZoneDefaults}
+							categoryColorDefaults={ps.categoryColorDefaults}
+							consoleColors={ps.consoleDef?.colors ?? []}
 						/>
 
 						{#each ps.items as item (item.id)}

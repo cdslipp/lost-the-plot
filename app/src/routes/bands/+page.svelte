@@ -123,6 +123,10 @@
 	});
 </script>
 
+<svelte:head>
+	<title>Bands | Lost the Plot</title>
+</svelte:head>
+
 <svelte:window
 	onclick={() => (openMenuBandId = null)}
 	onkeydown={(event) => {

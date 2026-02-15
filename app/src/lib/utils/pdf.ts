@@ -4,7 +4,13 @@ import html2canvas from 'html2canvas';
 interface PdfExportOptions {
 	plotName: string;
 	canvasEl: HTMLElement;
-	items: Array<{ name: string; channel: string; person_name: string }>;
+	items: Array<{
+		name: string;
+		channel: string;
+		person_name: string;
+		isEmpty?: boolean;
+		groupColor?: string | null;
+	}>;
 	persons: Array<{ name: string; role: string }>;
 	pageFormat?: 'letter' | 'a4';
 }
@@ -76,9 +82,8 @@ export async function exportToPdf({
 	doc.setDrawColor(200);
 	doc.line(margin, margin + headerHeight - 6, pageWidth - margin, margin + headerHeight - 6);
 
-	// Determine if there's input list content to show below the plot
-	const inputItems = items.filter((i) => i.channel);
-	const hasInputContent = inputItems.length > 0 || persons.length > 0;
+	// Show all channels (including empty) — engineers need to see the full channel list
+	const hasInputContent = items.length > 0 || persons.length > 0;
 
 	// Scale canvas image to fit available width, reserving space for input list
 	const imgData = canvas.toDataURL('image/png');
@@ -109,7 +114,7 @@ export async function exportToPdf({
 			y = margin + 16;
 		}
 
-		if (inputItems.length > 0) {
+		if (items.length > 0) {
 			// Input List header
 			doc.setFontSize(14);
 			doc.setFont('helvetica', 'bold');
@@ -131,20 +136,35 @@ export async function exportToPdf({
 			doc.line(margin, y, pageWidth - margin, y);
 			y += 10;
 
-			// Table rows
+			// Table rows — already sorted by channel number from caller
 			doc.setFont('helvetica', 'normal');
 			doc.setFontSize(9);
-			const sortedItems = [...inputItems].sort(
-				(a, b) => parseInt(a.channel || '0') - parseInt(b.channel || '0')
-			);
-			for (const item of sortedItems) {
+			for (const item of items) {
 				if (y > pageHeight - margin) {
 					doc.addPage(pageFormat, 'portrait');
 					y = margin + 16;
 				}
-				doc.text(item.channel, colCh, y);
-				doc.text(item.name || '', colName, y);
-				doc.text(item.person_name || '', colPerson, y);
+				// Group color dot next to channel number
+				if (item.groupColor) {
+					const hex = item.groupColor;
+					const r = parseInt(hex.slice(1, 3), 16);
+					const g = parseInt(hex.slice(3, 5), 16);
+					const b = parseInt(hex.slice(5, 7), 16);
+					doc.setFillColor(r, g, b);
+					doc.circle(colCh - 5, y - 2.5, 2.5, 'F');
+				}
+				// Empty channels shown in lighter gray
+				if (item.isEmpty) {
+					doc.setTextColor(180, 180, 180);
+					doc.text(item.channel, colCh, y);
+					doc.text('---', colName, y);
+					doc.text('---', colPerson, y);
+					doc.setTextColor(0, 0, 0);
+				} else {
+					doc.text(item.channel, colCh, y);
+					doc.text(item.name || '', colName, y);
+					doc.text(item.person_name || '', colPerson, y);
+				}
 				y += 13;
 			}
 		}

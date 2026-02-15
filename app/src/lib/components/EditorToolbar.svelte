@@ -99,6 +99,12 @@
 				instrument: p.role || ''
 			}));
 
+			// Build channel groups map from inputChannels
+			const channelGroups: Record<number, string> = {};
+			for (const ch of ps.inputChannels) {
+				if (ch.group) channelGroups[ch.channelNum] = ch.group;
+			}
+
 			const payload = await encodePayload(
 				{
 					stageWidth: ps.stageWidth,
@@ -116,7 +122,9 @@
 						email: p.email ?? undefined,
 						member_type: p.member_type ?? undefined,
 						status: p.status ?? undefined
-					}))
+					})),
+					channelGroups,
+					categoryZoneDefaults: ps.categoryZoneDefaults
 				},
 				catalogIndex
 			);

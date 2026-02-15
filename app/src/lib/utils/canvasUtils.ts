@@ -121,3 +121,70 @@ export function getCurrentImageSrc(item: any) {
 	const imagePath = variants[variant] || variants.default || Object.values(variants)[0];
 	return buildImagePath(item, imagePath as string);
 }
+
+/**
+ * Find a non-overlapping position within a zone for a new item.
+ * Scans from zone center outward in a grid pattern.
+ * Returns { x, y } in feet, or zone center if no gap found.
+ */
+export function findOpenPositionInZone(
+	zone: { x: number; y: number; w: number; h: number },
+	existingItems: Array<{ position: { x: number; y: number; width: number; height: number } }>,
+	itemWidth: number,
+	itemHeight: number
+): { x: number; y: number } {
+	const step = 1.0; // 1-foot grid scan
+	const centerX = zone.x + zone.w / 2 - itemWidth / 2;
+	const centerY = zone.y + zone.h / 2 - itemHeight / 2;
+
+	// Try center first
+	if (!hasOverlap(centerX, centerY, itemWidth, itemHeight, existingItems)) {
+		return { x: +centerX.toFixed(4), y: +centerY.toFixed(4) };
+	}
+
+	// Spiral outward from center
+	for (let radius = 1; radius <= Math.max(zone.w, zone.h); radius++) {
+		for (let dx = -radius; dx <= radius; dx++) {
+			for (let dy = -radius; dy <= radius; dy++) {
+				if (Math.abs(dx) !== radius && Math.abs(dy) !== radius) continue; // Only perimeter
+				const x = centerX + dx * step;
+				const y = centerY + dy * step;
+				// Stay within zone bounds
+				if (x < zone.x || x + itemWidth > zone.x + zone.w) continue;
+				if (y < zone.y || y + itemHeight > zone.y + zone.h) continue;
+				if (!hasOverlap(x, y, itemWidth, itemHeight, existingItems)) {
+					return { x: +x.toFixed(4), y: +y.toFixed(4) };
+				}
+			}
+		}
+	}
+
+	// Fallback: zone center (will overlap)
+	return { x: +centerX.toFixed(4), y: +centerY.toFixed(4) };
+}
+
+function hasOverlap(
+	x: number,
+	y: number,
+	w: number,
+	h: number,
+	items: Array<{ position: { x: number; y: number; width: number; height: number } }>
+): boolean {
+	for (const item of items) {
+		if (
+			rectIntersectionArea(
+				x,
+				y,
+				w,
+				h,
+				item.position.x,
+				item.position.y,
+				item.position.width,
+				item.position.height
+			) > 0
+		) {
+			return true;
+		}
+	}
+	return false;
+}

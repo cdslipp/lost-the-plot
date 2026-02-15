@@ -152,7 +152,7 @@
 						href={APP_URL}
 						class="inline-flex items-center rounded-lg bg-stone-900 px-6 py-3 font-sans text-sm font-medium text-white transition hover:bg-stone-800 dark:bg-stone-100 dark:text-stone-900 dark:hover:bg-stone-200"
 					>
-						Start plotting
+						Start a stage plot
 					</a>
 					<a
 						href="#features"

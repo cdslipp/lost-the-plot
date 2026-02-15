@@ -121,6 +121,7 @@ export interface InputChannel {
 	channelNum: number; // 1-based
 	itemId: number | null; // → StagePlotItem.id
 	color: string | null; // console scribble-strip color ID
+	group?: string | null; // ColorCategory — persisted in metadata JSON
 }
 
 /** An output channel assignment (channels own outputs, not the reverse). */

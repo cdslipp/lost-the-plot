@@ -164,6 +164,10 @@
 	});
 </script>
 
+<svelte:head>
+	<title>{band?.name ?? 'Band'} | Lost the Plot</title>
+</svelte:head>
+
 {#if loading}
 	<div class="flex flex-1 items-center justify-center">
 		<p class="text-text-secondary">Loading...</p>

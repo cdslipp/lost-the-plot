@@ -4,6 +4,8 @@
 	import { onMount } from 'svelte';
 	import {
 		CONSOLES,
+		COLOR_CATEGORIES,
+		type ColorCategory,
 		type StagePlotItem,
 		type PlotOutputItem,
 		type InputChannel,
@@ -29,6 +31,8 @@
 		onOutputStereoLinksChange?: (links: number[]) => void;
 		columnCount?: number;
 		readonly?: boolean;
+		categoryColorDefaults?: Record<string, string>;
+		onSetChannelGroup?: (channelNum: number, group: string | null) => void;
 	};
 
 	let {
@@ -49,7 +53,9 @@
 		outputStereoLinks = [],
 		onOutputStereoLinksChange,
 		columnCount = 6,
-		readonly: readonlyMode = false
+		readonly: readonlyMode = false,
+		categoryColorDefaults = {},
+		onSetChannelGroup
 	}: Props = $props();
 
 	// Derive set from prop for quick row highlight checks
@@ -74,6 +80,29 @@
 		for (const c of availableColors) map.set(c.id, c);
 		return map;
 	});
+
+	// Hardcoded fallback colors for groups when no console is set
+	const GROUP_FALLBACK_COLORS: Record<string, string> = {
+		vocals: '#ff0000',
+		drums: '#0064ff',
+		guitars: '#00c800',
+		bass: '#d000d0',
+		keys: '#e8e800',
+		strings: '#00c8c8',
+		winds: '#e0e0e0',
+		percussion: '#ff8800',
+		monitors: '#1a1a1a'
+	};
+
+	function getGroupColor(group: string): string {
+		// Use console color if available, otherwise fallback
+		const colorId = categoryColorDefaults[group];
+		if (colorId && consoleDef) {
+			const color = colorById.get(colorId);
+			if (color) return color.hex;
+		}
+		return GROUP_FALLBACK_COLORS[group] ?? '#888888';
+	}
 
 	// State for loaded items
 	let allAvailableItems: ProcessedItem[] = $state([]);
@@ -242,11 +271,19 @@
 		if (ch?.color && consoleDef) {
 			const color = colorById.get(ch.color);
 			if (color) {
-				return `background-color: ${color.hex}; color: ${getContrastColor(color.hex)};`;
+				// Grouped but empty → reduced opacity
+				const opacity = ch.group && ch.itemId == null ? '0.5' : '1';
+				return `background-color: ${color.hex}; color: ${getContrastColor(color.hex)}; opacity: ${opacity};`;
 			}
 		}
 		if (itemByChannel.get(channelNum)) {
 			return 'background-color: rgb(37, 99, 235); color: white;';
+		}
+		// Group color without console
+		if (ch?.group) {
+			const hex = getGroupColor(ch.group);
+			const opacity = ch.itemId == null ? '0.5' : '1';
+			return `background-color: ${hex}; color: ${getContrastColor(hex)}; opacity: ${opacity};`;
 		}
 		return '';
 	}
@@ -314,7 +351,7 @@
 										? 'h-10 border-b border-border-primary'
 										: 'h-10'} {isRowSelected ? 'bg-blue-50 dark:bg-blue-900/20' : ''}"
 							>
-								<!-- Channel number cell (click to select on canvas) -->
+								<!-- Channel number cell -->
 								<div
 									class="flex h-full w-10 flex-shrink-0 items-center justify-center border-r border-border-primary"
 								>
@@ -486,6 +523,53 @@
 									>
 										Select on Canvas
 									</ContextMenu.Item>
+									{#if onSetChannelGroup && !readonlyMode}
+										<ContextMenu.Sub>
+											<ContextMenu.SubTrigger
+												class="flex cursor-pointer items-center rounded px-2 py-1.5 text-xs outline-none hover:bg-muted"
+											>
+												Set Group...
+												<svg
+													class="ml-auto h-3 w-3"
+													viewBox="0 0 24 24"
+													fill="none"
+													stroke="currentColor"
+													stroke-width="2"
+												>
+													<path d="M9 18l6-6-6-6" />
+												</svg>
+											</ContextMenu.SubTrigger>
+											<ContextMenu.SubContent
+												class="z-50 min-w-[160px] rounded-md border border-border-primary bg-surface p-1 shadow-lg"
+											>
+												{#each COLOR_CATEGORIES as cat (cat)}
+													{@const hex = getGroupColor(cat)}
+													{@const isActive = inputChannels[channelNum - 1]?.group === cat}
+													<ContextMenu.Item
+														class="flex cursor-pointer items-center gap-2 rounded px-2 py-1.5 text-xs outline-none hover:bg-muted {isActive
+															? 'font-semibold'
+															: ''}"
+														onSelect={() => onSetChannelGroup(channelNum, isActive ? null : cat)}
+													>
+														<span
+															class="h-3 w-3 flex-shrink-0 rounded-full"
+															style="background-color: {hex};"
+														></span>
+														<span class="capitalize">{cat}</span>
+													</ContextMenu.Item>
+												{/each}
+												{#if inputChannels[channelNum - 1]?.group}
+													<ContextMenu.Separator class="my-1 h-px bg-border-primary" />
+													<ContextMenu.Item
+														class="flex cursor-pointer items-center rounded px-2 py-1.5 text-xs text-text-secondary outline-none hover:bg-muted"
+														onSelect={() => onSetChannelGroup(channelNum, null)}
+													>
+														Remove Group
+													</ContextMenu.Item>
+												{/if}
+											</ContextMenu.SubContent>
+										</ContextMenu.Sub>
+									{/if}
 								{/if}
 								{#if itemMap[channelNum] && !readonlyMode}
 									<ContextMenu.Item

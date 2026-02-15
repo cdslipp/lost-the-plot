@@ -9,7 +9,7 @@
 		buildImagePath
 	} from '$lib/utils/canvasUtils';
 	import { getPlotState } from '$lib/state/stagePlotState.svelte';
-	import type { StagePlotItem } from '@stageplotter/shared';
+	import { COLOR_CATEGORIES, type StagePlotItem } from '@stageplotter/shared';
 
 	type Props = {
 		selectedItemIds?: number[];
@@ -52,6 +52,35 @@
 		{ w: 4, d: 8, label: "4'×8'" },
 		{ w: 8, d: 8, label: "8'×8'" }
 	];
+
+	// Group color helpers
+	const GROUP_FALLBACK_COLORS: Record<string, string> = {
+		vocals: '#ff0000',
+		drums: '#0064ff',
+		guitars: '#00c800',
+		bass: '#d000d0',
+		keys: '#e8e800',
+		strings: '#00c8c8',
+		winds: '#e0e0e0',
+		percussion: '#ff8800',
+		monitors: '#1a1a1a'
+	};
+
+	const colorById = $derived.by(() => {
+		const colors = ps.consoleDef?.colors ?? [];
+		const map = new Map<string, (typeof colors)[number]>();
+		for (const c of colors) map.set(c.id, c);
+		return map;
+	});
+
+	function getGroupColor(group: string): string {
+		const colorId = ps.categoryColorDefaults[group];
+		if (colorId && ps.consoleDef) {
+			const color = colorById.get(colorId);
+			if (color) return color.hex;
+		}
+		return GROUP_FALLBACK_COLORS[group] ?? '#888888';
+	}
 
 	// Handle bulk updates
 	function applyBulkPerson() {
@@ -445,6 +474,42 @@
 											></button>
 										{/each}
 									</div>
+								{/if}
+							</div>
+						{/if}
+						{#if _inspChNum}
+							{@const channelIdx = _inspChNum - 1}
+							{@const currentGroup = ps.inputChannels[channelIdx]?.group ?? null}
+							<div>
+								<label class="mb-1 block text-xs text-text-secondary">Channel Group</label>
+								<div class="grid grid-cols-3 gap-1.5">
+									{#each COLOR_CATEGORIES as cat (cat)}
+										{@const hex = getGroupColor(cat)}
+										<button
+											type="button"
+											onclick={() =>
+												ps.setChannelGroup(_inspChNum, currentGroup === cat ? null : cat)}
+											class="flex items-center gap-1.5 rounded-md px-2 py-1.5 text-xs transition-colors hover:bg-muted {currentGroup ===
+											cat
+												? 'ring-2 ring-blue-500'
+												: ''}"
+										>
+											<span
+												class="h-3 w-3 flex-shrink-0 rounded-full"
+												style="background-color: {hex};"
+											></span>
+											<span class="capitalize">{cat}</span>
+										</button>
+									{/each}
+								</div>
+								{#if currentGroup}
+									<button
+										type="button"
+										onclick={() => ps.setChannelGroup(_inspChNum, null)}
+										class="mt-2 w-full rounded-md border border-border-primary px-2 py-1 text-xs text-text-secondary hover:bg-muted"
+									>
+										Remove Group
+									</button>
 								{/if}
 							</div>
 						{/if}

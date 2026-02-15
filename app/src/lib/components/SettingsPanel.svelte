@@ -116,4 +116,37 @@
 			</div>
 		</div>
 	{/if}
+
+	<!-- Category Zone Defaults -->
+	<div>
+		<h3 class="mb-2 text-sm font-medium text-text-primary">Auto-Placement Zones</h3>
+		<p class="mb-2 text-xs text-text-secondary">
+			When adding items from the patch list, they auto-place in the mapped zone.
+		</p>
+		<div class="space-y-1.5">
+			{#each COLOR_CATEGORIES as cat (cat)}
+				<div class="flex items-center gap-2">
+					<span class="w-20 shrink-0 text-xs text-text-primary"
+						>{COLOR_CATEGORY_LABELS[cat] ?? cat}</span
+					>
+					<select
+						value={ps.categoryZoneDefaults[cat] ?? ''}
+						onchange={(e) => {
+							const val = (e.target as HTMLSelectElement).value;
+							ps.setCategoryZoneDefault(cat, val || null);
+						}}
+						class="flex-1 rounded border border-border-primary bg-surface px-2 py-1 text-xs text-text-primary focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none"
+					>
+						<option value="">None</option>
+						<option value="DSR">DS Right</option>
+						<option value="DSC">DS Center</option>
+						<option value="DSL">DS Left</option>
+						<option value="USR">US Right</option>
+						<option value="USC">US Center</option>
+						<option value="USL">US Left</option>
+					</select>
+				</div>
+			{/each}
+		</div>
+	</div>
 </div>
