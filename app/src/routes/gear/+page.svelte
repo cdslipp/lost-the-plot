@@ -138,14 +138,14 @@
 			<p class="text-text-tertiary">No items match your filters.</p>
 		</div>
 	{:else}
-		<div class="custom-scrollbar flex-1 overflow-y-auto">
+		<div class="gear-scroll flex-1 overflow-y-auto">
 			<div class="grid grid-cols-2 gap-3 pb-4 md:grid-cols-3 lg:grid-cols-4">
 				{#each filteredItems as item (item.id)}
 					<div
-						class="group bg-surface-primary relative flex flex-col overflow-hidden rounded-xl border border-stone-200 transition hover:shadow-md dark:border-stone-700"
+						class="group relative flex flex-col overflow-hidden rounded-xl border border-stone-200 bg-white transition hover:shadow-md dark:border-stone-700 dark:bg-stone-800"
 					>
 						<!-- Thumbnail -->
-						<div class="flex h-32 items-center justify-center bg-stone-100 p-3 dark:bg-stone-800">
+						<div class="flex h-32 items-center justify-center p-3">
 							<img
 								src={item.image}
 								alt={item.name}
@@ -185,3 +185,20 @@
 		</div>
 	{/if}
 </div>
+
+<style>
+	.gear-scroll {
+		scrollbar-width: thin;
+		scrollbar-color: #a8a29e transparent;
+	}
+	.gear-scroll::-webkit-scrollbar {
+		width: 6px;
+	}
+	.gear-scroll::-webkit-scrollbar-track {
+		background: transparent;
+	}
+	.gear-scroll::-webkit-scrollbar-thumb {
+		background-color: #a8a29e;
+		border-radius: 3px;
+	}
+</style>
