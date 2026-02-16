@@ -20,26 +20,28 @@ export interface GearItemRow {
 	name: string;
 	category: GearCategory;
 	notes: string | null;
+	catalog_item_id?: string | null;
+	image_path?: string | null;
 	created_at?: string;
 	updated_at?: string;
 }
 
 export async function listGearItems(): Promise<GearItemRow[]> {
 	return db.query<GearItemRow>(
-		'SELECT id, name, category, notes, created_at FROM gear_items ORDER BY updated_at DESC'
+		'SELECT id, name, category, notes, catalog_item_id, image_path, created_at FROM gear_items ORDER BY updated_at DESC'
 	);
 }
 
 export async function createGearItem(
 	id: string,
 	name: string,
-	category: GearCategory = 'other'
+	category: GearCategory = 'other',
+	opts?: { catalog_item_id?: string; image_path?: string }
 ): Promise<void> {
-	await db.run('INSERT INTO gear_items (id, name, category) VALUES (?, ?, ?)', [
-		id,
-		name,
-		category
-	]);
+	await db.run(
+		'INSERT INTO gear_items (id, name, category, catalog_item_id, image_path) VALUES (?, ?, ?, ?, ?)',
+		[id, name, category, opts?.catalog_item_id ?? null, opts?.image_path ?? null]
+	);
 }
 
 export async function updateGearItemName(id: string, name: string): Promise<void> {

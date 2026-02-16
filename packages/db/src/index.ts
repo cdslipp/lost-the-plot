@@ -30,3 +30,5 @@ export * as migration017 from './migrations/017_add_setlist_type.js';
 export * as migration018 from './migrations/018_add_plot_templates.js';
 export * as migration019 from './migrations/019_add_venues.js';
 export * as migration020 from './migrations/020_add_tours.js';
+export * as migration021 from './migrations/021_gear_catalog_fields.js';
+export * as migration022 from './migrations/022_normalize_plot_data.js';

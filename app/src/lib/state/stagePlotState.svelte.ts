@@ -28,7 +28,18 @@ import {
 	type OutputChannel,
 	type ChannelMode
 } from '@stageplotter/shared';
-import { upsertPlot } from '$lib/db/repositories/plots';
+import {
+	upsertPlot,
+	savePlotEntities,
+	getPlotItems,
+	getPlotOutputs,
+	getPlotInputChannels,
+	getPlotOutputChannels,
+	type PlotItemRow,
+	type PlotOutputRow,
+	type PlotInputChannelRow,
+	type PlotOutputChannelRow
+} from '$lib/db/repositories/plots';
 import {
 	getPersonsForPlot,
 	getActivePersonsByBandId,
@@ -250,21 +261,66 @@ export class StagePlotState {
 
 	// --- Persistence ---
 
+	private itemsToRows(): PlotItemRow[] {
+		return this.items.map((item, i) => ({
+			id: item.id,
+			plot_id: this.plotId,
+			name: item.name,
+			type: item.type,
+			category: item.itemData?.category ?? item.category ?? null,
+			current_variant: item.currentVariant ?? 'default',
+			pos_x: item.position.x,
+			pos_y: item.position.y,
+			width: item.position.width,
+			height: item.position.height,
+			rotation: item.position.rotation ?? 0,
+			person_id: item.person_id ?? null,
+			item_data: item.itemData ? JSON.stringify(item.itemData) : null,
+			sort_order: i,
+			size: item.size ?? null
+		}));
+	}
+
+	private outputsToRows(): PlotOutputRow[] {
+		return this.outputs.map((o) => ({
+			id: o.id,
+			plot_id: this.plotId,
+			name: o.name,
+			link_mode: o.link_mode ?? 'mono',
+			item_data: o.itemData ? JSON.stringify(o.itemData) : null
+		}));
+	}
+
+	private inputChannelsToRows(): PlotInputChannelRow[] {
+		return this.inputChannels.map((ch) => ({
+			plot_id: this.plotId,
+			channel_num: ch.channelNum,
+			item_id: ch.itemId ?? null,
+			color: ch.color ?? null,
+			name: ch.name ?? null,
+			short_name: ch.shortName ?? null,
+			phantom: ch.phantom ? 1 : 0
+		}));
+	}
+
+	private outputChannelsToRows(): PlotOutputChannelRow[] {
+		return this.outputChannels.map((ch) => ({
+			plot_id: this.plotId,
+			channel_num: ch.channelNum,
+			output_id: ch.outputId ?? null
+		}));
+	}
+
 	async write() {
 		if (!db.isReady) return;
 		try {
 			await upsertPlot(this.plotId, this.bandId, {
 				name: this.plotName,
 				revision_date: this.revisionDate,
-				canvas_width: 1100, // kept for backward compat / migration reference
+				canvas_width: 1100,
 				canvas_height: Math.round((1100 * this.stageDepth) / this.stageWidth),
 				metadata: JSON.stringify({
 					coordVersion: 2,
-					items: this.items,
-					outputs: this.outputs,
-					inputChannels: this.inputChannels,
-					outputChannels: this.outputChannels,
-					outputStereoLinks: this.outputStereoLinks,
 					undoLog: this.history.log,
 					redoStack: this.history.redoStack
 				}),
@@ -273,7 +329,15 @@ export class StagePlotState {
 				console_type: this.consoleType,
 				channel_colors: JSON.stringify(this.channelColors),
 				stereo_links: JSON.stringify(this.stereoLinks),
-				category_color_defaults: JSON.stringify(this.categoryColorDefaults)
+				category_color_defaults: JSON.stringify(this.categoryColorDefaults),
+				output_stereo_links: JSON.stringify(this.outputStereoLinks)
+			});
+
+			await savePlotEntities(this.plotId, {
+				items: this.itemsToRows(),
+				outputs: this.outputsToRows(),
+				inputChannels: this.inputChannelsToRows(),
+				outputChannels: this.outputChannelsToRows()
 			});
 		} catch (e) {
 			console.error('Failed to persist state:', e);
@@ -408,7 +472,6 @@ export class StagePlotState {
 		} catch {
 			this.categoryColorDefaults = {};
 		}
-		// Initialize category defaults from console if not yet set
 		if (this.consoleType && Object.keys(this.categoryColorDefaults).length === 0) {
 			this.categoryColorDefaults = getDefaultCategoryColors(this.consoleType) as Record<
 				string,
@@ -416,102 +479,79 @@ export class StagePlotState {
 			>;
 		}
 
+		// Load output stereo links from column
+		try {
+			this.outputStereoLinks = JSON.parse(row.output_stereo_links || '[]');
+		} catch {
+			this.outputStereoLinks = [];
+		}
+
+		// Load entities from normalized tables
+		const [itemRows, outputRows, inputChRows, outputChRows] = await Promise.all([
+			getPlotItems(this.plotId),
+			getPlotOutputs(this.plotId),
+			getPlotInputChannels(this.plotId),
+			getPlotOutputChannels(this.plotId)
+		]);
+
+		// Map DB rows → runtime types
+		this.items = itemRows.map((r) => ({
+			id: r.id,
+			name: r.name,
+			type: r.type,
+			category: r.category ?? undefined,
+			currentVariant: r.current_variant,
+			position: {
+				x: r.pos_x,
+				y: r.pos_y,
+				width: r.width,
+				height: r.height,
+				rotation: r.rotation || undefined
+			},
+			person_id: r.person_id,
+			itemData: r.item_data ? JSON.parse(r.item_data) : undefined,
+			size: r.size ?? undefined
+		}));
+
+		this.outputs = outputRows.map((r) => ({
+			id: r.id,
+			name: r.name,
+			link_mode: (r.link_mode as 'mono' | 'stereo_pair') ?? 'mono',
+			itemData: r.item_data ? JSON.parse(r.item_data) : undefined
+		}));
+
+		this.inputChannels = inputChRows.map((r) => ({
+			channelNum: r.channel_num,
+			itemId: r.item_id,
+			color: r.color,
+			name: r.name,
+			shortName: r.short_name,
+			phantom: !!r.phantom
+		}));
+
+		this.outputChannels = outputChRows.map((r) => ({
+			channelNum: r.channel_num,
+			outputId: r.output_id
+		}));
+
+		// If no channels loaded (fresh plot or pre-migration), build defaults
+		if (this.inputChannels.length === 0) {
+			this.inputChannels = this.buildInputChannels(48);
+		}
+		if (this.outputChannels.length === 0) {
+			this.outputChannels = this.buildOutputChannels(16);
+		}
+
+		// Restore undo/redo history from metadata
 		let meta: any = {};
 		try {
 			meta = JSON.parse(row.metadata || '{}');
 		} catch {
 			meta = {};
 		}
-		this.items = Array.isArray(meta.items) ? meta.items : [];
-		this.outputs = Array.isArray(meta.outputs) ? meta.outputs : [];
-		this.outputStereoLinks = Array.isArray(meta.outputStereoLinks) ? meta.outputStereoLinks : [];
-
-		// --- Channel migration ---
-		if (Array.isArray(meta.inputChannels)) {
-			// New format: load channel arrays directly
-			this.inputChannels = meta.inputChannels;
-			this.outputChannels = Array.isArray(meta.outputChannels)
-				? meta.outputChannels
-				: this.buildOutputChannels(16);
-
-			// Backfill name/shortName for channels from before this field existed
-			const itemMap = new Map<number, (typeof this.items)[number]>();
-			for (const item of this.items) itemMap.set(item.id, item);
-			for (const ch of this.inputChannels) {
-				if (ch.name === undefined) {
-					ch.name = ch.itemId != null ? (itemMap.get(ch.itemId)?.name ?? null) : null;
-				}
-				if (ch.shortName === undefined) {
-					ch.shortName = null;
-				}
-				if ((ch as any).phantom === undefined) {
-					ch.phantom = false;
-				}
-			}
-		} else {
-			// Old format: build channel arrays from item.channel values
-			let oldChannelColors: Record<string, string> = {};
-			try {
-				oldChannelColors = JSON.parse(row.channel_colors || '{}');
-			} catch {
-				oldChannelColors = {};
-			}
-
-			this.inputChannels = this.buildInputChannels(48);
-			this.outputChannels = this.buildOutputChannels(16);
-
-			// Migrate items' channel assignments into inputChannels
-			for (const item of this.items) {
-				if (item.channel) {
-					const chNum = parseInt(item.channel);
-					if (chNum >= 1 && chNum <= this.inputChannels.length) {
-						this.inputChannels[chNum - 1].itemId = item.id;
-						this.inputChannels[chNum - 1].name = item.name || null;
-						const colorId = oldChannelColors[String(chNum)];
-						if (colorId) {
-							this.inputChannels[chNum - 1].color = colorId;
-						}
-					}
-					delete item.channel;
-				}
-			}
-
-			// Migrate outputs' channel assignments into outputChannels
-			for (const output of this.outputs) {
-				if (output.channel) {
-					const chNum = parseInt(output.channel);
-					if (chNum >= 1 && chNum <= this.outputChannels.length) {
-						this.outputChannels[chNum - 1].outputId = output.id;
-					}
-					delete output.channel;
-				}
-			}
-		}
-
-		// --- V1→V2 migration: convert pixel positions to feet ---
-		if (!meta.coordVersion || meta.coordVersion < 2) {
-			const oldCanvasW = row.canvas_width ?? 1100;
-			const oldCanvasH = Math.round((oldCanvasW * this.stageDepth) / this.stageWidth);
-			const pxPerFtX = oldCanvasW / this.stageWidth;
-			const pxPerFtY = oldCanvasH / this.stageDepth;
-
-			for (const item of this.items) {
-				item.position.x = +(item.position.x / pxPerFtX).toFixed(4);
-				item.position.y = +(item.position.y / pxPerFtY).toFixed(4);
-				item.position.width = +(item.position.width / pxPerFtX).toFixed(4);
-				item.position.height = +(item.position.height / pxPerFtY).toFixed(4);
-			}
-
-			// Pixel-based undo history is meaningless after migration — clear it
-			this.history.startRecording(undefined, undefined);
-			// Write back immediately with coordVersion: 2
-			this.debouncedWrite(0);
-		} else {
-			// Restore history
-			const savedLog = Array.isArray(meta.undoLog) ? meta.undoLog : undefined;
-			const savedRedoStack = Array.isArray(meta.redoStack) ? meta.redoStack : undefined;
-			this.history.startRecording(savedLog, savedRedoStack);
-		}
+		const savedLog = Array.isArray(meta.undoLog) ? meta.undoLog : undefined;
+		const savedRedoStack = Array.isArray(meta.redoStack) ? meta.redoStack : undefined;
+		this.history.startRecording(savedLog, savedRedoStack);
 
 		// Load people + band in parallel
 		const [personIds, plotPersons, bandPersons, bandPersonsFull, band] = await Promise.all([
@@ -525,8 +565,6 @@ export class StagePlotState {
 		this.plotPersons = plotPersons;
 		this.bandPersons = bandPersons;
 		this.bandPersonsFull = bandPersonsFull;
-
-		// Band name
 		this.bandName = band?.name ?? '';
 
 		return true;

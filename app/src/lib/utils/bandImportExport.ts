@@ -2,6 +2,13 @@
 
 import { db } from '$lib/db';
 import { insertPersonsForBand } from '$lib/db/repositories/persons';
+import {
+	savePlotEntities,
+	type PlotItemRow,
+	type PlotOutputRow,
+	type PlotInputChannelRow,
+	type PlotOutputChannelRow
+} from '$lib/db/repositories/plots';
 import { getStageArea, type CanvasConfig } from '$lib/utils/paperConfig';
 import { isTauri } from '$lib/utils/platform';
 import { generateId } from '@stageplotter/shared';
@@ -183,13 +190,11 @@ export async function importBandProject(project: any, existingIds: Set<string>):
 		}
 	}
 
-	const musicians = buildMusicians(players);
 	const plots = Array.isArray(project.plots) ? project.plots : [];
 	for (const plot of plots) {
 		const plotId = generateId();
 		const placedItems = Array.isArray(plot.placed_items) ? plot.placed_items : [];
 		const items = buildItemsFromPlaced(placedItems, itemCatalog, playerById);
-		const metadata = { items, musicians };
 
 		const canvasWidth = plot.canvas?.width ?? 1100;
 		const canvasHeight = plot.canvas?.height ?? 850;
@@ -203,7 +208,7 @@ export async function importBandProject(project: any, existingIds: Set<string>):
 				plot.revision_date ?? new Date().toISOString().split('T')[0],
 				canvasWidth,
 				canvasHeight,
-				JSON.stringify(metadata),
+				JSON.stringify({ coordVersion: 2 }),
 				bandId,
 				24,
 				16,
@@ -213,6 +218,32 @@ export async function importBandProject(project: any, existingIds: Set<string>):
 				plot.event?.venue ?? null
 			]
 		);
+
+		// Insert items into normalized tables
+		const itemRows: PlotItemRow[] = items.map((item: any, i: number) => ({
+			id: item.id,
+			plot_id: plotId,
+			name: item.name ?? '',
+			type: item.type ?? 'input',
+			category: item.itemData?.category ?? null,
+			current_variant: item.currentVariant ?? 'default',
+			pos_x: item.position?.x ?? 0,
+			pos_y: item.position?.y ?? 0,
+			width: item.position?.width ?? 0,
+			height: item.position?.height ?? 0,
+			rotation: 0,
+			person_id: null,
+			item_data: item.itemData ? JSON.stringify(item.itemData) : null,
+			sort_order: i,
+			size: null
+		}));
+
+		await savePlotEntities(plotId, {
+			items: itemRows,
+			outputs: [],
+			inputChannels: [],
+			outputChannels: []
+		});
 	}
 
 	// Import tours
@@ -234,6 +265,24 @@ interface ExportPerson {
 	email: string | null;
 	member_type: string | null;
 	status: string | null;
+}
+
+interface ExportPlotItem {
+	id: number;
+	plot_id: string;
+	name: string;
+	type: string;
+	category: string | null;
+	current_variant: string;
+	pos_x: number;
+	pos_y: number;
+	width: number;
+	height: number;
+	rotation: number;
+	person_id: number | null;
+	item_data: string | null;
+	sort_order: number;
+	size: string | null;
 }
 
 interface ExportPlot {
@@ -263,7 +312,8 @@ export function buildBandProject(
 	band: { id: string; name: string },
 	bandPersons: ExportPerson[],
 	bandPlots: ExportPlot[],
-	bandTours: ExportTour[] = []
+	bandTours: ExportTour[] = [],
+	plotItemsByPlotId: Map<string, ExportPlotItem[]> = new Map()
 ) {
 	const bandPeople = bandPersons.filter((p) => p.status !== 'inactive');
 	const players = bandPeople
@@ -314,37 +364,32 @@ export function buildBandProject(
 	}
 
 	const plots = bandPlots.map((plot, plotIndex) => {
-		let meta: any = {};
-		if (plot.metadata) {
-			try {
-				meta = JSON.parse(plot.metadata);
-			} catch {
-				meta = {};
-			}
-		}
-
-		const items = Array.isArray(meta.items) ? meta.items : [];
+		const itemRows = plotItemsByPlotId.get(plot.id) ?? [];
 		const canvasConfig = buildCanvasConfig(plot.canvas_width, plot.canvas_height);
 		const stage = getStageArea({ width: canvasConfig.width, height: canvasConfig.height });
 
-		const placed_items = items.map((item: any, index: number) => {
-			registerItem(item);
-			const player = item.musician ? playerByName.get(item.musician) : undefined;
+		const placed_items = itemRows.map((row, index) => {
+			const itemData = row.item_data ? JSON.parse(row.item_data) : undefined;
+			const runtimeItem = {
+				id: row.id,
+				name: row.name,
+				type: row.type,
+				itemData,
+				currentVariant: row.current_variant
+			};
+			registerItem(runtimeItem);
 			return {
-				item_id: itemIdMap.get(item.id) ?? `item-${item.id}`,
-				current_variant: item.currentVariant ?? 'default',
+				item_id: itemIdMap.get(row.id) ?? `item-${row.id}`,
+				current_variant: row.current_variant ?? 'default',
 				position: {
-					x: item.position?.x ?? item.x ?? 0,
-					y: item.position?.y ?? item.y ?? 0,
-					width: item.position?.width ?? item.width ?? 0,
-					height: item.position?.height ?? item.height ?? 0,
-					zone: item.position?.zone,
-					relativeX: item.position?.relativeX,
-					relativeY: item.position?.relativeY
+					x: row.pos_x,
+					y: row.pos_y,
+					width: row.width,
+					height: row.height
 				},
-				rotation: 0,
-				sort_order: index,
-				player_id: player?.id
+				rotation: row.rotation,
+				sort_order: row.sort_order ?? index,
+				player_id: undefined
 			};
 		});
 
@@ -395,6 +440,40 @@ export function buildBandProject(
 	};
 }
 
+async function queryPlotItemsByBand(bandId: string): Promise<Map<string, ExportPlotItem[]>> {
+	const allItems = await db.query<ExportPlotItem>(
+		`SELECT pi.* FROM plot_items pi
+		 JOIN stage_plots sp ON pi.plot_id = sp.id
+		 WHERE sp.band_id = ?
+		 ORDER BY pi.sort_order`,
+		[bandId]
+	);
+	const map = new Map<string, ExportPlotItem[]>();
+	for (const item of allItems) {
+		let arr = map.get(item.plot_id);
+		if (!arr) {
+			arr = [];
+			map.set(item.plot_id, arr);
+		}
+		arr.push(item);
+	}
+	return map;
+}
+
+async function queryAllPlotItems(): Promise<Map<string, ExportPlotItem[]>> {
+	const allItems = await db.query<ExportPlotItem>('SELECT * FROM plot_items ORDER BY sort_order');
+	const map = new Map<string, ExportPlotItem[]>();
+	for (const item of allItems) {
+		let arr = map.get(item.plot_id);
+		if (!arr) {
+			arr = [];
+			map.set(item.plot_id, arr);
+		}
+		arr.push(item);
+	}
+	return map;
+}
+
 function downloadJson(data: any, filename: string) {
 	const dataStr = JSON.stringify(data, null, 2);
 	const dataBlob = new Blob([dataStr], { type: 'application/json' });
@@ -428,7 +507,10 @@ export async function exportBand(bandId: string): Promise<void> {
 		[bandId]
 	);
 
-	const project = buildBandProject(band, bandPersons, bandPlots, bandTours);
+	// Query all plot items for this band's plots
+	const plotItemsByPlotId = await queryPlotItemsByBand(bandId);
+
+	const project = buildBandProject(band, bandPersons, bandPlots, bandTours, plotItemsByPlotId);
 	const timestamp = new Date().toISOString().split('T')[0];
 	downloadJson(project, `${safeSlug(band.name)}-${timestamp}.json`);
 }
@@ -483,12 +565,23 @@ export async function exportAllBands(): Promise<void> {
 		arr.push(tour);
 	}
 
+	const allPlotItems = await queryAllPlotItems();
+
 	const projects = allBands.map((band) => {
+		// Filter plot items to just this band's plots
+		const bandPlotIds = new Set((plotsByBand.get(band.id) ?? []).map((p) => p.id));
+		const bandItemMap = new Map<string, ExportPlotItem[]>();
+		for (const [plotId, items] of allPlotItems) {
+			if (bandPlotIds.has(plotId)) {
+				bandItemMap.set(plotId, items);
+			}
+		}
 		return buildBandProject(
 			band,
 			personsByBand.get(band.id) ?? [],
 			plotsByBand.get(band.id) ?? [],
-			toursByBand.get(band.id) ?? []
+			toursByBand.get(band.id) ?? [],
+			bandItemMap
 		);
 	});
 
