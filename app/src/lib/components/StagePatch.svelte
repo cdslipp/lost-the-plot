@@ -211,6 +211,7 @@
 					<ContextMenu.Root>
 						<ContextMenu.Trigger>
 							<div
+								id="channel-row-{channelNum}"
 								class="flex h-10 items-center border-b border-border-primary {isRowSelected
 									? 'bg-blue-50 dark:bg-blue-900/20'
 									: ''}"

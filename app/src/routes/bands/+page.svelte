@@ -132,20 +132,19 @@
 	onRename={handleRename}
 	{deleteDescription}
 >
-	{#snippet cardContent(band)}
-		<a href="/bands/{band.id}" class="flex-1">
-			<h2 class="font-serif text-xl font-semibold text-text-primary group-hover:text-stone-600">
-				{band.name}
-			</h2>
-			<div class="mt-2 flex items-center gap-4 text-sm text-text-secondary">
-				<span>{band.plot_count} {band.plot_count === 1 ? 'plot' : 'plots'}</span>
-				{#if band.created_at}
-					<span>Created {new Date(band.created_at).toISOString().split('T')[0]}</span>
-				{/if}
-			</div>
-		</a>
-	{/snippet}
-
+		{#snippet cardContent(band)}
+			<a href="/bands/{band.id}" class="flex-1">
+				<h2 class="font-serif text-xl font-semibold text-text-primary transition-colors group-hover:text-text-secondary">
+					{band.name}
+				</h2>
+				<div class="mt-2 flex items-center gap-4 text-sm text-text-secondary">
+					<span>{band.plot_count} {band.plot_count === 1 ? 'plot' : 'plots'}</span>
+					{#if band.created_at}
+						<span>Created {new Date(band.created_at).toISOString().split('T')[0]}</span>
+					{/if}
+				</div>
+			</a>
+		{/snippet}
 	{#snippet menuItems(band, closeMenu)}
 		<button
 			onclick={() => handleDuplicateBand(band.id, closeMenu)}

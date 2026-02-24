@@ -53,6 +53,21 @@
 	const selectedIdSet = $derived(new Set(selectedItemIds));
 	let isAddingItem = $state(false);
 	let replacingItemId = $state<number | null>(null);
+
+	// --- Scroll to patched channel when selected on stage ---
+	$effect(() => {
+		if (selectedItemIds.length === 1 && !selectedChannelNum) {
+			const itemId = selectedItemIds[0];
+			const channelNum = ps.channelByItemId.get(itemId);
+			if (channelNum) {
+				const el = document.getElementById(`channel-row-${channelNum}`);
+				if (el) {
+					el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+				}
+			}
+		}
+	});
+
 	let placingItem = $state<any>(null);
 	let pendingChannelLink = $state<number | null>(null);
 	let selecto: any;

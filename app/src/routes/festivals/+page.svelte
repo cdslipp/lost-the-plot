@@ -48,16 +48,15 @@
 	onDelete={handleDelete}
 	onRename={handleRename}
 >
-	{#snippet cardContent(festival)}
-		<a href="/festivals/{festival.id}" class="flex-1">
-			<h2 class="font-serif text-xl font-semibold text-text-primary group-hover:text-stone-600">
-				{festival.name}
-			</h2>
-			{#if festival.created_at}
-				<div class="mt-2 text-sm text-text-secondary">
-					Created {new Date(festival.created_at).toISOString().split('T')[0]}
-				</div>
-			{/if}
-		</a>
-	{/snippet}
-</EntityListPage>
+		{#snippet cardContent(festival)}
+			<a href="/festivals/{festival.id}" class="flex-1">
+				<h2 class="font-serif text-xl font-semibold text-text-primary transition-colors group-hover:text-text-secondary">
+					{festival.name}
+				</h2>
+				{#if festival.created_at}
+					<div class="mt-2 text-sm text-text-secondary">
+						Created {new Date(festival.created_at).toISOString().split('T')[0]}
+					</div>
+				{/if}
+			</a>
+		{/snippet}</EntityListPage>

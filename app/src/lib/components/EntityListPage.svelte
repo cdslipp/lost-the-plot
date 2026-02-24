@@ -120,23 +120,22 @@
 	{:else}
 		<div class="entity-list-scroll flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto">
 			{#each items as item (item.id)}
-				<div
-					class="group relative flex items-start justify-between gap-3 rounded-xl border border-border-primary bg-surface p-6 shadow-sm transition hover:border-stone-400 hover:shadow-md"
-				>
-					{#if editingId === item.id}
-						<form
-							onsubmit={(event) => {
-								event.preventDefault();
-								saveRename(item.id);
-							}}
-							class="flex flex-1 items-center gap-2"
-						>
-							<input
-								bind:value={nameInput}
-								class="w-full border-b border-dashed border-border-secondary bg-transparent px-1 py-1 font-serif text-xl font-semibold text-text-primary focus:border-stone-500 focus:outline-none"
-								autofocus
-							/>
-							<button
+												<div
+													class="group relative flex items-start justify-between gap-3 rounded-xl border border-border-primary bg-surface p-6 shadow-sm transition hover:border-border-secondary hover:shadow-md"
+												>
+													{#if editingId === item.id}
+														<form
+															onsubmit={(event) => {
+																event.preventDefault();
+																saveRename(item.id);
+															}}
+															class="flex flex-1 items-center gap-2"
+														>
+															<input
+																bind:value={nameInput}
+																class="w-full border-b border-dashed border-border-secondary bg-transparent px-1 py-1 font-serif text-xl font-semibold text-text-primary focus:border-border-secondary focus:outline-none"
+																autofocus
+															/>							<button
 								type="submit"
 								class="rounded-lg bg-stone-900 px-3 py-1.5 text-sm text-white hover:bg-stone-800 dark:bg-stone-100 dark:text-stone-900 dark:hover:bg-stone-200"
 							>

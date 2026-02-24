@@ -95,34 +95,33 @@
 		<a href="/" class="text-sm text-text-tertiary transition hover:text-text-primary">Home</a>
 	</div>
 
-	<!-- Search & Filters -->
-	<div class="flex flex-col gap-3 sm:flex-row sm:items-center">
-		<input
-			type="search"
-			placeholder="Search gear..."
-			bind:value={searchQuery}
-			class="bg-surface-primary flex-1 rounded-lg border border-stone-300 px-3 py-2 text-sm text-text-primary placeholder:text-text-tertiary focus:border-stone-500 focus:outline-none dark:border-stone-600"
-		/>
-		<select
-			bind:value={categoryFilter}
-			class="bg-surface-primary rounded-lg border border-stone-300 px-3 py-2 text-sm text-text-primary focus:border-stone-500 focus:outline-none dark:border-stone-600"
-		>
-			<option value="all">All Categories</option>
-			{#each categories as cat (cat)}
-				<option value={cat}>{formatLabel(cat)}</option>
-			{/each}
-		</select>
-		<select
-			bind:value={typeFilter}
-			class="bg-surface-primary rounded-lg border border-stone-300 px-3 py-2 text-sm text-text-primary focus:border-stone-500 focus:outline-none dark:border-stone-600"
-		>
-			<option value="all">All Types</option>
-			{#each types as t (t)}
-				<option value={t}>{formatLabel(t)}</option>
-			{/each}
-		</select>
-	</div>
-
+		<!-- Search & Filters -->
+		<div class="flex flex-col gap-3 sm:flex-row sm:items-center">
+			<input
+				type="search"
+				placeholder="Search gear..."
+				bind:value={searchQuery}
+				class="flex-1 rounded-lg border border-border-primary bg-surface px-3 py-2 text-sm text-text-primary placeholder:text-text-tertiary focus:border-border-secondary focus:outline-none"
+			/>
+			<select
+				bind:value={categoryFilter}
+				class="rounded-lg border border-border-primary bg-surface px-3 py-2 text-sm text-text-primary focus:border-border-secondary focus:outline-none"
+			>
+				<option value="all">All Categories</option>
+				{#each categories as cat (cat)}
+					<option value={cat}>{formatLabel(cat)}</option>
+				{/each}
+			</select>
+			<select
+				bind:value={typeFilter}
+				class="rounded-lg border border-border-primary bg-surface px-3 py-2 text-sm text-text-primary focus:border-border-secondary focus:outline-none"
+			>
+				<option value="all">All Types</option>
+				{#each types as t (t)}
+					<option value={t}>{formatLabel(t)}</option>
+				{/each}
+			</select>
+		</div>
 	<!-- Results count -->
 	<p class="text-xs text-text-tertiary">
 		{filteredItems.length} of {catalogItems.length} items
@@ -141,36 +140,35 @@
 		<div class="gear-scroll flex-1 overflow-y-auto">
 			<div class="grid grid-cols-2 gap-3 pb-4 md:grid-cols-3 lg:grid-cols-4">
 				{#each filteredItems as item (item.id)}
-					<div
-						class="group relative flex flex-col overflow-hidden rounded-xl border border-stone-200 bg-white transition hover:shadow-md dark:border-stone-700 dark:bg-stone-800"
-					>
-						<!-- Thumbnail -->
-						<div class="flex h-32 items-center justify-center p-3">
-							<img
-								src={item.image}
-								alt={item.name}
-								class="max-h-full max-w-full object-contain"
-								loading="lazy"
-							/>
-						</div>
-
-						<!-- Info -->
-						<div class="flex flex-1 flex-col gap-1 p-3">
-							<h2 class="font-serif text-sm leading-tight font-semibold text-text-primary">
-								{item.name}
-							</h2>
-							<div class="flex flex-wrap items-center gap-1.5">
-								<span
-									class="inline-block rounded-full bg-stone-200 px-2 py-0.5 text-[10px] font-medium text-stone-700 dark:bg-stone-700 dark:text-stone-300"
-								>
-									{formatLabel(item.category)}
-								</span>
-								<span class="text-[10px] text-text-tertiary">
-									{formatLabel(item.type)}
-								</span>
-							</div>
-						</div>
-
+										<div
+											class="group relative flex flex-col overflow-hidden rounded-xl border border-border-primary bg-surface transition hover:shadow-md"
+										>
+											<!-- Thumbnail -->
+											<div class="flex h-32 items-center justify-center p-3">
+												<img
+													src={item.image}
+													alt={item.name}
+													class="max-h-full max-w-full object-contain"
+													loading="lazy"
+												/>
+											</div>
+					
+											<!-- Info -->
+											<div class="flex flex-1 flex-col gap-1 p-3">
+												<h2 class="font-serif text-sm leading-tight font-semibold text-text-primary">
+													{item.name}
+												</h2>
+												<div class="flex flex-wrap items-center gap-1.5">
+													<span
+														class="inline-block rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-text-secondary"
+													>
+														{formatLabel(item.category)}
+													</span>
+													<span class="text-[10px] text-text-tertiary">
+														{formatLabel(item.type)}
+													</span>
+												</div>
+											</div>
 						<!-- Duplicate button (visible on hover / always on mobile) -->
 						<button
 							onclick={() => duplicateToGear(item)}

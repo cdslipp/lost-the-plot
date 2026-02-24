@@ -55,35 +55,34 @@
 					}}
 					class="flex flex-1 items-center gap-2"
 				>
-					<input
-						bind:value={nameInput}
-						onfocus={(e) => (e.target as HTMLInputElement).select()}
-						class="w-full border-b-2 border-dashed border-border-secondary bg-transparent px-2 py-1 font-serif text-3xl font-bold text-text-primary focus:border-stone-500 focus:outline-none"
-						autofocus
-					/>
-					<button
-						type="submit"
-						class="rounded-lg bg-stone-900 px-3 py-1.5 text-sm text-white hover:bg-stone-800 dark:bg-stone-100 dark:text-stone-900 dark:hover:bg-stone-200"
-					>
-						Save
-					</button>
-					<button
-						type="button"
-						onclick={oncancel}
-						class="rounded-lg px-3 py-1.5 text-sm text-text-secondary hover:bg-surface-hover"
-					>
-						Cancel
-					</button>
-				</form>
-			{:else}
-				<button
-					onclick={onedit}
-					class="group/name flex items-center gap-2 text-left font-serif text-3xl font-bold text-text-primary transition hover:text-stone-600"
-				>
-					<span class="border-b border-dashed border-transparent group-hover/name:border-stone-400"
-						>{name}</span
-					>
-					<svg
+										<input
+											bind:value={nameInput}
+											onfocus={(e) => (e.target as HTMLInputElement).select()}
+											class="w-full border-b-2 border-dashed border-border-secondary bg-transparent px-2 py-1 font-serif text-3xl font-bold text-text-primary focus:border-border-secondary focus:outline-none"
+											autofocus
+										/>
+										<button
+											type="submit"
+											class="rounded-lg bg-stone-900 px-3 py-1.5 text-sm text-white hover:bg-stone-800 dark:bg-stone-100 dark:text-stone-900 dark:hover:bg-stone-200"
+										>
+											Save
+										</button>
+										<button
+											type="button"
+											onclick={oncancel}
+											class="rounded-lg px-3 py-1.5 text-sm text-text-secondary hover:bg-surface-hover"
+										>
+											Cancel
+										</button>
+									</form>
+								{:else}
+									<button
+										onclick={onedit}
+										class="group/name flex items-center gap-2 text-left font-serif text-3xl font-bold text-text-primary transition hover:text-text-secondary"
+									>
+										<span class="border-b border-dashed border-transparent group-hover/name:border-border-secondary"
+											>{name}</span
+										>					<svg
 						xmlns="http://www.w3.org/2000/svg"
 						class="h-5 w-5 text-text-tertiary opacity-0 transition group-hover/name:opacity-100"
 						viewBox="0 0 20 20"
