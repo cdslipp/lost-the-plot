@@ -235,9 +235,9 @@
 											if (mode === 'input') {
 												onChannelSelect?.(channelNum, e);
 											} else {
-												// Output channels: select linked output on canvas if present
+												// Output channels: select the source canvas item (monitor/speaker) if known
 												const out = outputByChannel.get(channelNum);
-												if (out) onSelectionChange?.([out.id], e);
+												if (out?.item_id != null) onSelectionChange?.([out.item_id], e);
 											}
 										}}
 									>

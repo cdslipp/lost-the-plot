@@ -287,7 +287,12 @@ export class StagePlotState {
 			plot_id: this.plotId,
 			name: o.name,
 			link_mode: o.link_mode ?? 'mono',
-			item_data: o.itemData ? JSON.stringify(o.itemData) : null
+			item_data: (() => {
+				const hasItemData = o.itemData != null;
+				const hasItemId = o.item_id != null;
+				if (!hasItemData && !hasItemId) return null;
+				return JSON.stringify({ ...(o.itemData || {}), ...(hasItemId ? { _item_id: o.item_id } : {}) });
+			})()
 		}));
 	}
 
@@ -442,6 +447,16 @@ export class StagePlotState {
 				this.outputChannels.push({ channelNum: i, outputId: null });
 			}
 		} else {
+			// Collect output IDs assigned to channels being removed so we can clean them up
+			const removedOutputIds = new Set(
+				this.outputChannels
+					.slice(newMode)
+					.filter((ch) => ch.outputId != null)
+					.map((ch) => ch.outputId as number)
+			);
+			if (removedOutputIds.size > 0) {
+				this.outputs = this.outputs.filter((o) => !removedOutputIds.has(o.id));
+			}
 			this.outputStereoLinks = this.outputStereoLinks.filter((ch) => ch < newMode);
 			this.outputChannels = this.outputChannels.slice(0, newMode);
 		}
@@ -513,12 +528,23 @@ export class StagePlotState {
 			size: r.size ?? undefined
 		}));
 
-		this.outputs = outputRows.map((r) => ({
-			id: r.id,
-			name: r.name,
-			link_mode: (r.link_mode as 'mono' | 'stereo_pair') ?? 'mono',
-			itemData: r.item_data ? JSON.parse(r.item_data) : undefined
-		}));
+		this.outputs = outputRows.map((r) => {
+			let itemData: SharedPlotOutputItem['itemData'];
+			let item_id: number | undefined;
+			if (r.item_data) {
+				const parsed = JSON.parse(r.item_data);
+				const { _item_id, ...rest } = parsed;
+				item_id = _item_id != null ? Number(_item_id) : undefined;
+				itemData = Object.keys(rest).length > 0 ? (rest as SharedPlotOutputItem['itemData']) : undefined;
+			}
+			return {
+				id: r.id,
+				name: r.name,
+				link_mode: (r.link_mode as 'mono' | 'stereo_pair') ?? 'mono',
+				itemData,
+				item_id
+			};
+		});
 
 		this.inputChannels = inputChRows.map((r) => ({
 			channelNum: r.channel_num,
@@ -774,6 +800,10 @@ export class StagePlotState {
 			ch.name = null;
 			ch.shortName = null;
 		}
+		for (const ch of this.outputChannels) {
+			ch.outputId = null;
+		}
+		this.outputs = [];
 		for (const item of this.items) {
 			item.person_id = null;
 		}
@@ -854,7 +884,7 @@ export class StagePlotState {
 		return 'mono';
 	}
 
-	addDefaultOutputs(itemData: any) {
+	addDefaultOutputs(itemData: any, sourceItemId?: number) {
 		const defaults = itemData?.default_outputs;
 		const derivedDefaults = this.isMonitorItem(itemData)
 			? [
@@ -868,26 +898,34 @@ export class StagePlotState {
 		const outputDefs = Array.isArray(defaults) && defaults.length > 0 ? defaults : derivedDefaults;
 		if (!outputDefs.length) return;
 
-		outputDefs.forEach((outputDef: any, idx: number) => {
+		// Compute a safe starting ID that won't collide with existing item or output IDs.
+		// Both items and outputs use numeric IDs so we need a single non-overlapping space.
+		const maxItemId = this.items.reduce((max, i) => Math.max(max, i.id), 0);
+		const maxOutputId = this.outputs.reduce((max, o) => Math.max(max, o.id), 0);
+		let nextId = Math.max(maxItemId, maxOutputId, Date.now()) + 1;
+
+		outputDefs.forEach((outputDef: any) => {
 			const linkMode = outputDef?.link_mode ?? this.inferOutputLinkMode(itemData);
 			const baseName = outputDef?.name || itemData?.name || 'Output';
 			if (linkMode === 'stereo_pair') {
 				const start = this.getNextAvailableOutputStereoStart();
 				if (start == null) return;
-				const leftId = Date.now() + idx * 2;
-				const rightId = Date.now() + idx * 2 + 1;
+				const leftId = nextId++;
+				const rightId = nextId++;
 				this.outputs.push(
 					{
 						id: leftId,
 						name: `${baseName} L`,
 						itemData,
-						link_mode: 'stereo_pair'
+						link_mode: 'stereo_pair',
+						item_id: sourceItemId
 					},
 					{
 						id: rightId,
 						name: `${baseName} R`,
 						itemData,
-						link_mode: 'stereo_pair'
+						link_mode: 'stereo_pair',
+						item_id: sourceItemId
 					}
 				);
 				this.outputChannels[start - 1].outputId = leftId;
@@ -898,12 +936,13 @@ export class StagePlotState {
 			} else {
 				const ch = this.getNextAvailableOutputChannel();
 				if (ch == null) return;
-				const id = Date.now() + idx;
+				const id = nextId++;
 				this.outputs.push({
 					id,
 					name: baseName,
 					itemData,
-					link_mode: linkMode
+					link_mode: linkMode,
+					item_id: sourceItemId
 				});
 				this.outputChannels[ch - 1].outputId = id;
 			}

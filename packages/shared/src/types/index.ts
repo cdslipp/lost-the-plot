@@ -114,6 +114,8 @@ export interface PlotOutputItem {
 	channel?: string;
 	itemData?: ItemData;
 	link_mode?: 'mono' | 'stereo_pair';
+	/** References the canvas StagePlotItem that generated this output (not persisted to DB schema, stored in item_data JSON). */
+	item_id?: number;
 }
 
 /** An input channel assignment (channels own items, not the reverse). */

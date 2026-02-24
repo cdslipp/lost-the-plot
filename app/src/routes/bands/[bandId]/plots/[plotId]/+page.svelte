@@ -548,7 +548,7 @@
 				});
 			}
 
-			ps.addDefaultOutputs(placingItem.itemData);
+			ps.addDefaultOutputs(placingItem.itemData, newItem.id);
 			ps.autoNumberItems();
 			placingItem = null;
 			ps.commitChange();
