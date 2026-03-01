@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { COLOR_CATEGORIES, type ChannelMode } from '@stageplotter/shared';
-	import { getPlotState } from '$lib/state/stagePlotState.svelte';
+	import { getPlotState, StagePlotState } from '$lib/state/stagePlotState.svelte';
 
 	const COLOR_CATEGORY_LABELS: Record<string, string> = {
 		vocals: 'Vocals / Mics',
@@ -19,7 +19,6 @@
 	const channelOptions = $derived(ps.consoleDef?.channelOptions ?? StagePlotState.CHANNEL_OPTIONS);
 	const outputOptions = $derived(ps.consoleDef?.outputOptions ?? StagePlotState.CHANNEL_OPTIONS);
 
-	import { StagePlotState } from '$lib/state/stagePlotState.svelte';
 </script>
 
 <div class="space-y-6">

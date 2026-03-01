@@ -1,6 +1,7 @@
 <script lang="ts">
 	import PersonCombobox from './PersonCombobox.svelte';
 	import SegmentedToggle from './SegmentedToggle.svelte';
+	import ToggleSwitch from './ToggleSwitch.svelte';
 	import { displayValue, toFeet, unitLabel } from '$lib/utils/scale';
 	import { toggleMode } from 'mode-watcher';
 	import {
@@ -91,8 +92,8 @@
 <div class="flex h-full flex-col overflow-y-auto">
 	{#snippet channelFields(ch: import('@stageplotter/shared').InputChannel, chNum: number)}
 		<div class="space-y-4">
-			<div>
-				<label class="mb-1 block text-xs text-text-secondary">Name</label>
+			<label class="block">
+				<span class="mb-1 block text-xs text-text-secondary">Name</span>
 				<input
 					type="text"
 					value={ch.name ?? ''}
@@ -101,17 +102,18 @@
 					class="w-full rounded-lg border border-border-primary bg-surface px-2 py-1.5 text-sm text-text-primary focus:border-stone-500 focus:ring-2 focus:ring-stone-500"
 					placeholder="Channel name"
 				/>
-			</div>
+			</label>
 			<div>
-				<label class="mb-1 block text-xs text-text-secondary">Short Name</label>
-				<input
-					type="text"
-					value={ch.shortName ?? ''}
-					maxlength={ps.consoleDef?.scribbleStripLength ?? undefined}
-					oninput={(e) => ps.setChannelShortName(chNum, e.currentTarget.value)}
-					class="w-full rounded-lg border border-border-primary bg-surface px-2 py-1.5 text-sm text-text-primary focus:border-stone-500 focus:ring-2 focus:ring-stone-500"
-					placeholder="Short name"
-				/>
+				<label class="mb-1 block text-xs text-text-secondary">Short Name
+					<input
+						type="text"
+						value={ch.shortName ?? ''}
+						maxlength={ps.consoleDef?.scribbleStripLength ?? undefined}
+						oninput={(e) => ps.setChannelShortName(chNum, e.currentTarget.value)}
+						class="w-full rounded-lg border border-border-primary bg-surface px-2 py-1.5 text-sm text-text-primary focus:border-stone-500 focus:ring-2 focus:ring-stone-500"
+						placeholder="Short name"
+					/>
+				</label>
 				{#if ps.consoleDef?.scribbleStripLength}
 					<span class="text-xs text-text-tertiary">
 						{(ch.shortName ?? '').length}/{ps.consoleDef.scribbleStripLength}
@@ -125,7 +127,7 @@
 				{@const normalColors = ps.consoleDef.colors.filter((c) => !c.inverted)}
 				{@const invertedColors = ps.consoleDef.colors.filter((c) => c.inverted)}
 				<div>
-					<label class="mb-1 block text-xs text-text-secondary">Channel Color</label>
+					<span class="mb-1 block text-xs text-text-secondary">Channel Color</span>
 					<div class="grid grid-cols-8 gap-1.5">
 						{#each normalColors as color (color.id)}
 							<button
@@ -163,46 +165,26 @@
 			<!-- +48V Phantom Power -->
 			<div class="flex items-center justify-between">
 				<span class="text-xs text-text-secondary">+48V</span>
-				<button
-					onclick={() => ps.setChannelPhantom(chNum, !ch.phantom)}
-					class="relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full transition-colors duration-200 {ch.phantom
-						? 'bg-red-600 dark:bg-red-500'
-						: 'bg-gray-300 dark:bg-gray-600'}"
-					role="switch"
-					aria-checked={ch.phantom}
-				>
-					<span
-						class="pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-sm ring-0 transition-transform duration-200 dark:bg-gray-900 {ch.phantom
-							? 'translate-x-4'
-							: 'translate-x-0.5'}"
-						style="margin-top: 2px;"
-					></span>
-				</button>
+				<ToggleSwitch
+					checked={ch.phantom}
+					onchange={(v) => ps.setChannelPhantom(chNum, v)}
+					label="+48V Phantom Power"
+					activeColor="bg-red-600 dark:bg-red-500"
+				/>
 			</div>
 
 			<!-- Stereo Link -->
 			{#if true}
 				{@const linkStartCh = chNum % 2 === 0 ? chNum - 1 : chNum}
-				{@const isStereoLinked = ps.stereoLinks.includes(linkStartCh)}
 				<div class="flex items-center justify-between">
 					<span class="text-xs text-text-secondary"
 						>Stereo Link ({linkStartCh}/{linkStartCh + 1})</span
 					>
-					<button
-						onclick={() => ps.toggleStereoLink(chNum)}
-						class="relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full transition-colors duration-200 {isStereoLinked
-							? 'bg-stone-900 dark:bg-stone-100'
-							: 'bg-gray-300 dark:bg-gray-600'}"
-						role="switch"
-						aria-checked={isStereoLinked}
-					>
-						<span
-							class="pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-sm ring-0 transition-transform duration-200 dark:bg-gray-900 {isStereoLinked
-								? 'translate-x-4'
-								: 'translate-x-0.5'}"
-							style="margin-top: 2px;"
-						></span>
-					</button>
+					<ToggleSwitch
+						checked={ps.stereoLinks.includes(linkStartCh)}
+						onchange={() => ps.toggleStereoLink(chNum)}
+						label="Stereo Link {linkStartCh}/{linkStartCh + 1}"
+					/>
 				</div>
 			{/if}
 
@@ -210,7 +192,7 @@
 			{#if ch.itemId != null}
 				{@const chLinkedItem = ps.items.find((i) => i.id === ch.itemId)}
 				<div>
-					<label class="mb-1 block text-xs text-text-secondary">Linked Item</label>
+					<span class="mb-1 block text-xs text-text-secondary">Linked Item</span>
 					{#if chLinkedItem}
 						<div
 							class="flex items-center justify-between rounded-lg border border-border-primary bg-muted/50 px-3 py-2"
@@ -230,7 +212,7 @@
 				</div>
 			{:else}
 				<div>
-					<label class="mb-1 block text-xs text-text-secondary">Linked Item</label>
+					<span class="mb-1 block text-xs text-text-secondary">Linked Item</span>
 					<button
 						type="button"
 						onclick={() => onPlaceItemForChannel?.(chNum)}
@@ -343,42 +325,48 @@
 					/>
 				</div>
 
-				<div>
-					<label class="mb-1 block text-xs text-text-secondary"
-						>Stage Size ({unitLabel(ps.unit)})</label
+				<fieldset>
+					<legend class="mb-1 text-xs text-text-secondary"
+						>Stage Size ({unitLabel(ps.unit)})</legend
 					>
 					<div class="flex gap-2">
-						<input
-							type="number"
-							value={Math.round(displayValue(ps.stageWidth, ps.unit) * 100) / 100}
-							onchange={(e) => {
-								const target = e.target as HTMLInputElement;
-								const val = parseFloat(target.value);
-								if (!isNaN(val) && val > 0)
-									ps.stageWidth = Math.round(toFeet(val, ps.unit) * 100) / 100;
-							}}
-							min="1"
-							step={ps.unit === 'metric' ? '0.5' : '1'}
-							placeholder="Width"
-							class="w-full rounded-lg border border-border-primary bg-surface px-2 py-1.5 text-sm text-text-primary focus:border-stone-500 focus:ring-2 focus:ring-stone-500"
-						/>
+						<label class="w-full">
+							<span class="sr-only">Width</span>
+							<input
+								type="number"
+								value={Math.round(displayValue(ps.stageWidth, ps.unit) * 100) / 100}
+								onchange={(e) => {
+									const target = e.target as HTMLInputElement;
+									const val = parseFloat(target.value);
+									if (!isNaN(val) && val > 0)
+										ps.stageWidth = Math.round(toFeet(val, ps.unit) * 100) / 100;
+								}}
+								min="1"
+								step={ps.unit === 'metric' ? '0.5' : '1'}
+								placeholder="Width"
+								class="w-full rounded-lg border border-border-primary bg-surface px-2 py-1.5 text-sm text-text-primary focus:border-stone-500 focus:ring-2 focus:ring-stone-500"
+							/>
+						</label>
 						<span class="self-center text-xs text-text-tertiary">x</span>
-						<input
-							type="number"
-							value={Math.round(displayValue(ps.stageDepth, ps.unit) * 100) / 100}
-							onchange={(e) => {
-								const target = e.target as HTMLInputElement;
-								const val = parseFloat(target.value);
-								if (!isNaN(val) && val > 0)
-									ps.stageDepth = Math.round(toFeet(val, ps.unit) * 100) / 100;
-							}}
-							min="1"
-							step={ps.unit === 'metric' ? '0.5' : '1'}
-							placeholder="Depth"
-							class="w-full rounded-lg border border-border-primary bg-surface px-2 py-1.5 text-sm text-text-primary focus:border-stone-500 focus:ring-2 focus:ring-stone-500"
-						/>
+						<label class="w-full">
+							<span class="sr-only">Depth</span>
+							<input
+								type="number"
+								value={Math.round(displayValue(ps.stageDepth, ps.unit) * 100) / 100}
+								onchange={(e) => {
+									const target = e.target as HTMLInputElement;
+									const val = parseFloat(target.value);
+									if (!isNaN(val) && val > 0)
+										ps.stageDepth = Math.round(toFeet(val, ps.unit) * 100) / 100;
+								}}
+								min="1"
+								step={ps.unit === 'metric' ? '0.5' : '1'}
+								placeholder="Depth"
+								class="w-full rounded-lg border border-border-primary bg-surface px-2 py-1.5 text-sm text-text-primary focus:border-stone-500 focus:ring-2 focus:ring-stone-500"
+							/>
+						</label>
 					</div>
-				</div>
+				</fieldset>
 
 				<!-- Add Riser -->
 				{#if showRiserForm}
@@ -406,8 +394,8 @@
 						</div>
 						<div class="mt-1 text-xs text-text-secondary">Custom ({unitLabel(ps.unit)}):</div>
 						<div class="flex items-end gap-1.5">
-							<div class="flex-1">
-								<label class="block text-[10px] text-text-tertiary">W</label>
+							<label class="flex-1">
+								<span class="block text-[10px] text-text-tertiary">W</span>
 								<input
 									type="number"
 									bind:value={customRiserW}
@@ -415,9 +403,9 @@
 									step={ps.unit === 'metric' ? '0.5' : '1'}
 									class="w-full rounded border border-border-primary bg-surface px-1.5 py-1 text-xs text-text-primary"
 								/>
-							</div>
-							<div class="flex-1">
-								<label class="block text-[10px] text-text-tertiary">D</label>
+							</label>
+							<label class="flex-1">
+								<span class="block text-[10px] text-text-tertiary">D</span>
 								<input
 									type="number"
 									bind:value={customRiserD}
@@ -425,9 +413,9 @@
 									step={ps.unit === 'metric' ? '0.5' : '1'}
 									class="w-full rounded border border-border-primary bg-surface px-1.5 py-1 text-xs text-text-primary"
 								/>
-							</div>
-							<div class="flex-1">
-								<label class="block text-[10px] text-text-tertiary">H</label>
+							</label>
+							<label class="flex-1">
+								<span class="block text-[10px] text-text-tertiary">H</span>
 								<input
 									type="number"
 									bind:value={customRiserHeight}
@@ -435,7 +423,7 @@
 									step="0.5"
 									class="w-full rounded border border-border-primary bg-surface px-1.5 py-1 text-xs text-text-primary"
 								/>
-							</div>
+							</label>
 						</div>
 						<button
 							onclick={() => {
@@ -461,21 +449,11 @@
 				<!-- Stage Zones toggle switch -->
 				<div class="flex items-center justify-between">
 					<span class="text-xs text-text-secondary">Stage Zones</span>
-					<button
-						onclick={() => (ps.showZones = !ps.showZones)}
-						class="relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full transition-colors duration-200 {ps.showZones
-							? 'bg-stone-900 dark:bg-stone-100'
-							: 'bg-gray-300 dark:bg-gray-600'}"
-						role="switch"
-						aria-checked={ps.showZones}
-					>
-						<span
-							class="pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-sm ring-0 transition-transform duration-200 dark:bg-gray-900 {ps.showZones
-								? 'translate-x-4'
-								: 'translate-x-0.5'}"
-							style="margin-top: 2px;"
-						></span>
-					</button>
+					<ToggleSwitch
+						checked={ps.showZones}
+						onchange={(v) => (ps.showZones = v)}
+						label="Stage Zones"
+					/>
 				</div>
 			</div>
 		</div>
@@ -550,8 +528,8 @@
 				{/if}
 
 				<div class="space-y-3">
-					<div>
-						<label class="mb-1 block text-xs text-text-secondary">Name</label>
+					<label class="block">
+						<span class="mb-1 block text-xs text-text-secondary">Name</span>
 						<input
 							type="text"
 							bind:value={selectedItemsData[0].name}
@@ -562,10 +540,10 @@
 							class="w-full rounded-lg border border-border-primary bg-surface px-2 py-1.5 text-sm text-text-primary focus:border-stone-500 focus:ring-2 focus:ring-stone-500"
 							placeholder="Item name"
 						/>
-					</div>
+					</label>
 					{#if selectedItemsData[0].type !== 'riser'}
-						<div>
-							<label class="mb-1 block text-xs text-text-secondary">Channel</label>
+						<label class="block">
+							<span class="mb-1 block text-xs text-text-secondary">Channel</span>
 							<input
 								type="text"
 								value={ps.channelByItemId.get(selectedItemsData[0].id) ?? ''}
@@ -576,7 +554,7 @@
 								class="w-full rounded-lg border border-border-primary bg-surface px-2 py-1.5 text-sm text-text-primary focus:border-stone-500 focus:ring-2 focus:ring-stone-500"
 								placeholder="Channel"
 							/>
-						</div>
+						</label>
 						{@const _inspChNum = ps.channelByItemId.get(selectedItemsData[0].id)}
 						{#if _inspChNum && ps.consoleDef}
 							{@const channelNum = _inspChNum}
@@ -584,7 +562,7 @@
 							{@const normalColors = ps.consoleDef.colors.filter((c) => !c.inverted)}
 							{@const invertedColors = ps.consoleDef.colors.filter((c) => c.inverted)}
 							<div>
-								<label class="mb-1 block text-xs text-text-secondary">Channel Color</label>
+								<span class="mb-1 block text-xs text-text-secondary">Channel Color</span>
 								<div class="grid grid-cols-8 gap-1.5">
 									{#each normalColors as color (color.id)}
 										<button
@@ -618,8 +596,9 @@
 								{/if}
 							</div>
 						{/if}
-						<div>
-							<label class="mb-1 block text-xs text-text-secondary">Person</label>
+						<!-- svelte-ignore a11y_label_has_associated_control -->
+						<label class="block">
+							<span class="mb-1 block text-xs text-text-secondary">Person</span>
 							<PersonCombobox
 								persons={ps.plotPersons}
 								value={selectedItemsData[0].person_id}
@@ -630,23 +609,23 @@
 										String(newValue ?? '')
 									)}
 							/>
-						</div>
+						</label>
 					{/if}
-					<div>
-						<label class="mb-1 block text-xs text-text-secondary">Zone</label>
+					<label class="block">
+						<span class="mb-1 block text-xs text-text-secondary">Zone</span>
 						<input
 							type="text"
 							value={ps.getItemZone(selectedItemsData[0]) || 'Unknown'}
 							readonly
 							class="w-full rounded-lg border border-border-primary bg-muted/50 px-2 py-1.5 text-sm text-text-primary"
 						/>
-					</div>
+					</label>
 
 					<!-- Position fields -->
 					<div class="grid grid-cols-2 gap-3">
-						<div>
-							<label class="mb-1 block text-xs text-text-secondary"
-								>Position X ({unitLabel(ps.unit)})</label
+						<label class="block">
+							<span class="mb-1 block text-xs text-text-secondary"
+								>Position X ({unitLabel(ps.unit)})</span
 							>
 							<input
 								type="number"
@@ -663,10 +642,10 @@
 								}}
 								class="w-full rounded-lg border border-border-primary bg-surface px-2 py-1.5 text-sm text-text-primary focus:border-stone-500 focus:ring-2 focus:ring-stone-500"
 							/>
-						</div>
-						<div>
-							<label class="mb-1 block text-xs text-text-secondary"
-								>Position Y ({unitLabel(ps.unit)})</label
+						</label>
+						<label class="block">
+							<span class="mb-1 block text-xs text-text-secondary"
+								>Position Y ({unitLabel(ps.unit)})</span
 							>
 							<input
 								type="number"
@@ -683,7 +662,7 @@
 								}}
 								class="w-full rounded-lg border border-border-primary bg-surface px-2 py-1.5 text-sm text-text-primary focus:border-stone-500 focus:ring-2 focus:ring-stone-500"
 							/>
-						</div>
+						</label>
 					</div>
 					<div class="mt-1 text-xs text-text-secondary">
 						<p>X: Stage left (-) to right (+) | Y: Downstage (0) to upstage (+)</p>
@@ -691,8 +670,8 @@
 
 					<!-- Riser dimensions (when a riser is selected) -->
 					{#if selectedItemsData[0].type === 'riser'}
-						<div>
-							<label class="mb-1 block text-xs text-text-secondary">Rotation</label>
+						<label class="block">
+							<span class="mb-1 block text-xs text-text-secondary">Rotation</span>
 							<div class="flex items-center gap-2">
 								<input
 									type="number"
@@ -710,14 +689,14 @@
 								/>
 								<span class="shrink-0 text-xs text-text-tertiary">deg</span>
 							</div>
-						</div>
-						<div>
-							<label class="mb-1 block text-xs text-text-secondary"
-								>Riser Size ({unitLabel(ps.unit)})</label
+						</label>
+						<fieldset>
+							<legend class="mb-1 text-xs text-text-secondary"
+								>Riser Size ({unitLabel(ps.unit)})</legend
 							>
 							<div class="grid grid-cols-3 gap-2">
-								<div>
-									<label class="block text-[10px] text-text-tertiary">Width</label>
+								<label class="block">
+									<span class="block text-[10px] text-text-tertiary">Width</span>
 									<input
 										type="number"
 										value={displayValue(selectedItemsData[0].itemData?.riserWidth ?? 4, ps.unit)}
@@ -735,9 +714,9 @@
 										step={ps.unit === 'metric' ? '0.5' : '1'}
 										class="w-full rounded-lg border border-border-primary bg-surface px-2 py-1.5 text-xs text-text-primary focus:border-stone-500 focus:ring-2 focus:ring-stone-500"
 									/>
-								</div>
-								<div>
-									<label class="block text-[10px] text-text-tertiary">Depth</label>
+								</label>
+								<label class="block">
+									<span class="block text-[10px] text-text-tertiary">Depth</span>
 									<input
 										type="number"
 										value={displayValue(selectedItemsData[0].itemData?.riserDepth ?? 4, ps.unit)}
@@ -755,9 +734,9 @@
 										step={ps.unit === 'metric' ? '0.5' : '1'}
 										class="w-full rounded-lg border border-border-primary bg-surface px-2 py-1.5 text-xs text-text-primary focus:border-stone-500 focus:ring-2 focus:ring-stone-500"
 									/>
-								</div>
-								<div>
-									<label class="block text-[10px] text-text-tertiary">Height</label>
+								</label>
+								<label class="block">
+									<span class="block text-[10px] text-text-tertiary">Height</span>
 									<input
 										type="number"
 										value={displayValue(selectedItemsData[0].itemData?.riserHeight ?? 1, ps.unit)}
@@ -775,9 +754,9 @@
 										step="0.5"
 										class="w-full rounded-lg border border-border-primary bg-surface px-2 py-1.5 text-xs text-text-primary focus:border-stone-500 focus:ring-2 focus:ring-stone-500"
 									/>
-								</div>
+								</label>
 							</div>
-						</div>
+						</fieldset>
 					{/if}
 				</div>
 

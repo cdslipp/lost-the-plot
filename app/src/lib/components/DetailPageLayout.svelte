@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
 	import CircleBackButton from '$lib/components/CircleBackButton.svelte';
+	import { autofocus } from '$lib/actions';
 
 	type Props = {
 		backHref: string;
@@ -59,7 +60,7 @@
 											bind:value={nameInput}
 											onfocus={(e) => (e.target as HTMLInputElement).select()}
 											class="w-full border-b-2 border-dashed border-border-secondary bg-transparent px-2 py-1 font-serif text-3xl font-bold text-text-primary focus:border-border-secondary focus:outline-none"
-											autofocus
+											use:autofocus
 										/>
 										<button
 											type="submit"

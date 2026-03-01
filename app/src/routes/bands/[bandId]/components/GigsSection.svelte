@@ -195,35 +195,36 @@
 			class="mb-3 rounded-xl border border-border-primary bg-surface p-4 shadow-sm"
 		>
 			<div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
-				<div>
-					<label class="mb-1 block text-xs font-medium text-text-secondary">Gig Name</label>
+				<label class="block">
+					<span class="mb-1 block text-xs font-medium text-text-secondary">Gig Name</span>
 					<input
 						bind:value={newGig.name}
 						placeholder="e.g. New Years Eve"
 						class="w-full rounded-lg border border-border-primary bg-surface px-3 py-2 text-sm text-text-primary focus:border-stone-500 focus:ring-2 focus:ring-stone-500"
 						required
 					/>
-				</div>
-				<div>
-					<label class="mb-1 block text-xs font-medium text-text-secondary">Venue</label>
+				</label>
+				<label class="block">
+					<span class="mb-1 block text-xs font-medium text-text-secondary">Venue</span>
 					<input
 						bind:value={newGig.venue}
 						placeholder="e.g. The Horseshoe Tavern"
 						class="w-full rounded-lg border border-border-primary bg-surface px-3 py-2 text-sm text-text-primary focus:border-stone-500 focus:ring-2 focus:ring-stone-500"
 					/>
-				</div>
+				</label>
 				<div class="grid grid-cols-2 gap-3">
-					<div>
-						<label class="mb-1 block text-xs font-medium text-text-secondary">Date</label>
+					<label class="block">
+						<span class="mb-1 block text-xs font-medium text-text-secondary">Date</span>
 						<input
 							bind:value={newGig.date}
 							type="date"
 							class="w-full rounded-lg border border-border-primary bg-surface px-3 py-2 text-sm text-text-primary focus:border-stone-500 focus:ring-2 focus:ring-stone-500"
 						/>
-					</div>
+					</label>
 					<div>
-						<label class="mb-1 block text-xs font-medium text-text-secondary">Load-in</label>
+						<label for="new-gig-loadin" class="mb-1 block text-xs font-medium text-text-secondary">Load-in</label>
 						<TimeInput
+							id="new-gig-loadin"
 							time={timeStringToMs(newGig.time)}
 							onsubmit={(ms) => (newGig.time = msToTimeString(ms))}
 							placeholder="Load-in"
@@ -234,8 +235,9 @@
 				</div>
 				<div class="grid grid-cols-2 gap-3">
 					<div>
-						<label class="mb-1 block text-xs font-medium text-text-secondary">Set Time</label>
+						<label for="new-gig-settime" class="mb-1 block text-xs font-medium text-text-secondary">Set Time</label>
 						<TimeInput
+							id="new-gig-settime"
 							time={timeStringToMs(newGig.set_time)}
 							onsubmit={(ms) => (newGig.set_time = msToTimeString(ms))}
 							placeholder="Set Time"
@@ -244,10 +246,11 @@
 						/>
 					</div>
 					<div>
-						<label class="mb-1 block text-xs font-medium text-text-secondary"
+						<label for="new-gig-changeover" class="mb-1 block text-xs font-medium text-text-secondary"
 							>Changeover (min)</label
 						>
 						<TimeInput
+							id="new-gig-changeover"
 							time={newGig.changeover_minutes ? parseInt(newGig.changeover_minutes) * 60000 : null}
 							onsubmit={(ms) => (newGig.changeover_minutes = String(Math.round(ms / 60000)))}
 							placeholder="Duration"
@@ -258,8 +261,8 @@
 					</div>
 				</div>
 				{#if plots.length > 0}
-					<div>
-						<label class="mb-1 block text-xs font-medium text-text-secondary">Stage Plot</label>
+					<label class="block">
+						<span class="mb-1 block text-xs font-medium text-text-secondary">Stage Plot</span>
 						<select
 							bind:value={newGig.plot_id}
 							class="w-full rounded-lg border border-border-primary bg-surface px-3 py-2 text-sm text-text-primary focus:border-stone-500 focus:ring-2 focus:ring-stone-500"
@@ -269,11 +272,11 @@
 								<option value={plot.id}>{plot.name}</option>
 							{/each}
 						</select>
-					</div>
+					</label>
 				{/if}
 				{#if tours.length > 0}
-					<div>
-						<label class="mb-1 block text-xs font-medium text-text-secondary">Tour</label>
+					<label class="block">
+						<span class="mb-1 block text-xs font-medium text-text-secondary">Tour</span>
 						<select
 							bind:value={newGig.tour_id}
 							class="w-full rounded-lg border border-border-primary bg-surface px-3 py-2 text-sm text-text-primary focus:border-stone-500 focus:ring-2 focus:ring-stone-500"
@@ -283,17 +286,17 @@
 								<option value={tour.id}>{tour.name}</option>
 							{/each}
 						</select>
-					</div>
+					</label>
 				{/if}
-				<div class="sm:col-span-2">
-					<label class="mb-1 block text-xs font-medium text-text-secondary">Notes</label>
+				<label class="block sm:col-span-2">
+					<span class="mb-1 block text-xs font-medium text-text-secondary">Notes</span>
 					<textarea
 						bind:value={newGig.notes}
 						placeholder="Contact info, load-in details, etc."
 						rows="2"
 						class="w-full rounded-lg border border-border-primary bg-surface px-3 py-2 text-sm text-text-primary focus:border-stone-500 focus:ring-2 focus:ring-stone-500"
 					></textarea>
-				</div>
+				</label>
 			</div>
 			<div class="mt-3 flex gap-2">
 				<button
@@ -474,35 +477,36 @@
 				onkeydown={handleEditKeydown}
 			>
 				<div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
-					<div>
-						<label class="mb-1 block text-xs font-medium text-text-secondary">Name</label>
+					<label class="block">
+						<span class="mb-1 block text-xs font-medium text-text-secondary">Name</span>
 						<input
 							value={gig.name}
 							onchange={(e) => updateGig(gig.id, 'name', (e.target as HTMLInputElement).value)}
 							class="w-full rounded-lg border border-border-primary bg-surface px-2 py-1.5 text-sm text-text-primary focus:border-stone-500 focus:ring-2 focus:ring-stone-500"
 						/>
-					</div>
-					<div>
-						<label class="mb-1 block text-xs font-medium text-text-secondary">Venue</label>
+					</label>
+					<label class="block">
+						<span class="mb-1 block text-xs font-medium text-text-secondary">Venue</span>
 						<input
 							value={gig.venue || ''}
 							onchange={(e) => updateGig(gig.id, 'venue', (e.target as HTMLInputElement).value)}
 							class="w-full rounded-lg border border-border-primary bg-surface px-2 py-1.5 text-sm text-text-primary focus:border-stone-500 focus:ring-2 focus:ring-stone-500"
 						/>
-					</div>
+					</label>
 					<div class="grid grid-cols-2 gap-3">
-						<div>
-							<label class="mb-1 block text-xs font-medium text-text-secondary">Date</label>
+						<label class="block">
+							<span class="mb-1 block text-xs font-medium text-text-secondary">Date</span>
 							<input
 								value={gig.date || ''}
 								type="date"
 								onchange={(e) => updateGig(gig.id, 'date', (e.target as HTMLInputElement).value)}
 								class="w-full rounded-lg border border-border-primary bg-surface px-2 py-1.5 text-sm text-text-primary focus:border-stone-500 focus:ring-2 focus:ring-stone-500"
 							/>
-						</div>
+						</label>
 						<div>
-							<label class="mb-1 block text-xs font-medium text-text-secondary">Load-in</label>
+							<label for="edit-gig-{gig.id}-loadin" class="mb-1 block text-xs font-medium text-text-secondary">Load-in</label>
 							<TimeInput
+								id="edit-gig-{gig.id}-loadin"
 								time={timeStringToMs(gig.time)}
 								onsubmit={(ms) => updateGig(gig.id, 'time', msToTimeString(ms))}
 								placeholder="Load-in"
@@ -513,8 +517,9 @@
 					</div>
 					<div class="grid grid-cols-2 gap-3">
 						<div>
-							<label class="mb-1 block text-xs font-medium text-text-secondary">Set Time</label>
+							<label for="edit-gig-{gig.id}-settime" class="mb-1 block text-xs font-medium text-text-secondary">Set Time</label>
 							<TimeInput
+								id="edit-gig-{gig.id}-settime"
 								time={timeStringToMs(gig.set_time)}
 								onsubmit={(ms) => updateGig(gig.id, 'set_time', msToTimeString(ms))}
 								placeholder="Set Time"
@@ -523,10 +528,11 @@
 							/>
 						</div>
 						<div>
-							<label class="mb-1 block text-xs font-medium text-text-secondary"
+							<label for="edit-gig-{gig.id}-changeover" class="mb-1 block text-xs font-medium text-text-secondary"
 								>Changeover (min)</label
 							>
 							<TimeInput
+								id="edit-gig-{gig.id}-changeover"
 								time={gig.changeover_minutes ? gig.changeover_minutes * 60000 : null}
 								onsubmit={(ms) =>
 									updateGig(gig.id, 'changeover_minutes', String(Math.round(ms / 60000)))}
@@ -538,8 +544,8 @@
 						</div>
 					</div>
 					{#if plots.length > 0}
-						<div>
-							<label class="mb-1 block text-xs font-medium text-text-secondary">Stage Plot</label>
+						<label class="block">
+							<span class="mb-1 block text-xs font-medium text-text-secondary">Stage Plot</span>
 							<select
 								value={gig.plot_id || ''}
 								onchange={(e) =>
@@ -551,11 +557,11 @@
 									<option value={plot.id}>{plot.name}</option>
 								{/each}
 							</select>
-						</div>
+						</label>
 					{/if}
 					{#if tours.length > 0}
-						<div>
-							<label class="mb-1 block text-xs font-medium text-text-secondary">Tour</label>
+						<label class="block">
+							<span class="mb-1 block text-xs font-medium text-text-secondary">Tour</span>
 							<select
 								value={gig.tour_id || ''}
 								onchange={(e) =>
@@ -567,7 +573,7 @@
 									<option value={tour.id}>{tour.name}</option>
 								{/each}
 							</select>
-						</div>
+						</label>
 					{/if}
 				</div>
 				<div class="mt-3 flex justify-end">

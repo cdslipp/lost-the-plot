@@ -45,8 +45,6 @@
 	let canvasPixelHeight = $state(533);
 	let pxPerFoot = $derived(canvasPixelWidth / ps.stageWidth);
 	let canvasResizeObserver: ResizeObserver | null = null;
-	let stagePlotContainer = $state<HTMLElement | null>(null);
-
 	// --- Selection & interaction state (ID-based) ---
 	let selectedItemIds = $state<number[]>([]);
 	let selectedChannelNum = $state<number | null>(null);
@@ -583,10 +581,6 @@
 		if (placingItem) {
 			placingItem.person_id = personId;
 		}
-	}
-
-	async function createPerson(name: string): Promise<number> {
-		return ps.createAndAddPerson(name);
 	}
 
 	// --- Drag handlers ---
@@ -1181,8 +1175,7 @@
 		<div class="flex min-h-0 flex-1 gap-5 overflow-hidden">
 			<div
 				class="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden"
-				bind:this={stagePlotContainer}
-			>
+				>
 				<div class="flex min-h-0 flex-[3] flex-col overflow-hidden">
 					{@render canvasContent()}
 				</div>
@@ -1207,8 +1200,7 @@
 		<div class="flex min-h-0 flex-1 gap-5 overflow-hidden">
 			<div
 				class="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden"
-				bind:this={stagePlotContainer}
-			>
+				>
 				<div
 					class="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-border-primary bg-surface shadow-sm"
 				>
