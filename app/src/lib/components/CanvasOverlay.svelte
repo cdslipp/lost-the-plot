@@ -1,6 +1,7 @@
 <script lang="ts">
 	// SPDX-License-Identifier: AGPL-3.0-only
 	import { modKey } from '$lib/utils/platform';
+	import { getZones } from '$lib/utils/canvasUtils';
 
 	let {
 		showZones,
@@ -16,19 +17,7 @@
 		itemCount: number;
 	} = $props();
 
-	// Compute zones once per dimension change (not twice in the template)
-	const zones = $derived.by(() => {
-		const colWidth = stageWidth / 3;
-		const rowHeight = stageDepth / 2;
-		return [
-			{ key: 'DSR', x: 0, y: rowHeight, w: colWidth, h: rowHeight },
-			{ key: 'DSC', x: colWidth, y: rowHeight, w: colWidth, h: rowHeight },
-			{ key: 'DSL', x: colWidth * 2, y: rowHeight, w: colWidth, h: rowHeight },
-			{ key: 'USR', x: 0, y: 0, w: colWidth, h: rowHeight },
-			{ key: 'USC', x: colWidth, y: 0, w: colWidth, h: rowHeight },
-			{ key: 'USL', x: colWidth * 2, y: 0, w: colWidth, h: rowHeight }
-		];
-	});
+	const zones = $derived(getZones(stageWidth, stageDepth));
 </script>
 
 <div

@@ -107,6 +107,16 @@ export function getVariantKeys(item: any) {
 	return [defaultKey, ...order, ...remaining].filter(Boolean);
 }
 
+/** Load an image and resolve with its natural dimensions. */
+export function loadImage(src: string): Promise<{ width: number; height: number }> {
+	return new Promise((resolve) => {
+		const img = new Image();
+		img.src = src;
+		img.onload = () => resolve({ width: img.naturalWidth, height: img.naturalHeight });
+		img.onerror = () => resolve({ width: 0, height: 0 });
+	});
+}
+
 export function buildImagePath(item: any, imagePath: string) {
 	if (item.itemData?.path) {
 		return `/final_assets/${item.itemData.path}/${imagePath}`;

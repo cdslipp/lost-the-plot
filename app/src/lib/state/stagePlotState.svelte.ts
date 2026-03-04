@@ -13,7 +13,8 @@ import {
 	snapToGrid as _snapToGrid,
 	getItemVariants,
 	getVariantKeys,
-	buildImagePath
+	buildImagePath,
+	loadImage
 } from '$lib/utils/canvasUtils';
 import { getContext, setContext } from 'svelte';
 import {
@@ -688,16 +689,6 @@ export class StagePlotState {
 		this.commitChange();
 	}
 
-	nudgeItems(ids: Set<string>, dx: number, dy: number) {
-		for (const item of this.items) {
-			if (ids.has(String(item.id))) {
-				item.position.x += dx;
-				item.position.y += dy;
-			}
-		}
-		this.commitChange();
-	}
-
 	/** Auto-number items with duplicate names (e.g. "Guitar" → "Guitar 1", "Guitar 2") */
 	autoNumberItems() {
 		// Group items by base name (strip trailing " N" suffix)
@@ -1116,18 +1107,15 @@ export class StagePlotState {
 		this.setVariant(item, variantKeys[newIndex]);
 	}
 
-	setVariant(item: any, variantKey: string) {
+	async setVariant(item: any, variantKey: string) {
 		const variants = getItemVariants(item);
 		if (!variants || !variants[variantKey]) return;
 		item.currentVariant = variantKey;
 		const newImagePath = variants[variantKey];
-		const img = new Image();
-		img.src = buildImagePath(item, newImagePath);
-		img.onload = () => {
-			item.position.width = imagePxToFeet(img.naturalWidth);
-			item.position.height = imagePxToFeet(img.naturalHeight);
-			this.commitChange();
-		};
+		const { width, height } = await loadImage(buildImagePath(item, newImagePath));
+		item.position.width = imagePxToFeet(width);
+		item.position.height = imagePxToFeet(height);
+		this.commitChange();
 		this.updateItemProperty(item.id, 'currentVariant', variantKey);
 	}
 }

@@ -205,24 +205,7 @@ export async function getPlotsByBandId(bandId: string): Promise<PlotSummary[]> {
 	);
 }
 
-export async function getFullPlotsByBandId(bandId: string): Promise<PlotRow[]> {
-	return db.query<PlotRow>(
-		`SELECT id, name, revision_date, canvas_width, canvas_height, metadata,
-			stage_width, stage_depth, event_name, event_date, event_time, venue, output_stereo_links
-		 FROM stage_plots WHERE band_id = ?`,
-		[bandId]
-	);
-}
-
-export async function getAllPlotsForExport(): Promise<PlotRow[]> {
-	return db.query<PlotRow>(
-		`SELECT id, name, revision_date, canvas_width, canvas_height, metadata,
-			band_id, event_name, event_date, event_time, venue, output_stereo_links
-		 FROM stage_plots ORDER BY updated_at DESC`
-	);
-}
-
-export async function getPlotById(plotId: string): Promise<PlotRow | null> {
+async function getPlotById(plotId: string): Promise<PlotRow | null> {
 	return db.queryOne<PlotRow>('SELECT * FROM stage_plots WHERE id = ?', [plotId]);
 }
 

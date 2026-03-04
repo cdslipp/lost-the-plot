@@ -15,7 +15,7 @@
 	import { exportToPdf } from '$lib/utils/pdf';
 	import { imagePxToFeet } from '$lib/utils/scale';
 	import { browser } from '$app/environment';
-	import { getVariantKeys, getCurrentImageSrc } from '$lib/utils/canvasUtils';
+	import { getVariantKeys, getCurrentImageSrc, loadImage } from '$lib/utils/canvasUtils';
 	import { StagePlotState, setPlotState } from '$lib/state/stagePlotState.svelte';
 	import { APP_NAME } from '$lib/config';
 
@@ -36,7 +36,7 @@
 	let sidePanelTab = $state<'inspector' | 'people' | 'settings'>('inspector');
 	let mediumMainTab = $state<'canvas' | 'patch'>('canvas');
 	let mobileMainTab = $state<'canvas' | 'patch' | 'panel'>('canvas');
-	let mobilePanelTab = $state<'inspector' | 'people' | 'settings'>('inspector');
+
 
 	// --- Canvas DOM refs & contain-fit sizing ---
 	let canvasEl = $state<HTMLElement | null>(null);
@@ -402,17 +402,12 @@
 	}
 
 	async function preparePlacingItem(item: any, channel: any = null) {
-		const img = new Image();
-		img.src = item.image;
-		await new Promise((resolve) => {
-			img.onload = resolve;
-			img.onerror = () => resolve(undefined);
-		});
+		const { width, height } = await loadImage(item.image);
 		placingItem = {
 			type: item.type ?? item.item_type ?? 'input',
 			itemData: item,
-			width: imagePxToFeet(img.naturalWidth || 80),
-			height: imagePxToFeet(img.naturalHeight || 60),
+			width: imagePxToFeet(width || 80),
+			height: imagePxToFeet(height || 60),
 			x: -1000,
 			y: -1000,
 			channel
@@ -450,14 +445,9 @@
 		if (idx === -1) return;
 
 		const existing = ps.items[idx];
-		const img = new Image();
-		img.src = newItemData.image;
-		await new Promise((resolve) => {
-			img.onload = resolve;
-			img.onerror = () => resolve(undefined);
-		});
-		const newWidth = imagePxToFeet(img.naturalWidth || 80);
-		const newHeight = imagePxToFeet(img.naturalHeight || 60);
+		const { width: imgW, height: imgH } = await loadImage(newItemData.image);
+		const newWidth = imagePxToFeet(imgW || 80);
+		const newHeight = imagePxToFeet(imgH || 60);
 
 		ps.items[idx] = {
 			...existing,
@@ -1190,6 +1180,7 @@
 					bind:activeTab={sidePanelTab}
 					bind:selectedItemIds
 					{selectedChannelNum}
+					{isAltPressed}
 					onPlaceRiser={placeRiser}
 					onAddPersonToPlot={addPersonToPlot}
 					onPlaceItemForChannel={placeItemForChannel}
@@ -1239,6 +1230,7 @@
 					bind:activeTab={sidePanelTab}
 					bind:selectedItemIds
 					{selectedChannelNum}
+					{isAltPressed}
 					onPlaceRiser={placeRiser}
 					onAddPersonToPlot={addPersonToPlot}
 					onPlaceItemForChannel={placeItemForChannel}

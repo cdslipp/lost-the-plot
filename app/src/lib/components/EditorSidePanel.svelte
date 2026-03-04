@@ -9,6 +9,7 @@
 		// Inspector-only props
 		selectedItemIds: number[];
 		selectedChannelNum?: number | null;
+		isAltPressed?: boolean;
 		onPlaceRiser: (w: number, d: number, h: number) => void;
 		onPlaceItemForChannel?: (channelNum: number) => void;
 		// People panel -- needs page-level callback for placement integration
@@ -19,6 +20,7 @@
 		activeTab = $bindable(),
 		selectedItemIds = $bindable<number[]>([]),
 		selectedChannelNum = null,
+		isAltPressed = false,
 		onPlaceRiser,
 		onPlaceItemForChannel,
 		onAddPersonToPlot
@@ -55,7 +57,7 @@
 	</div>
 	{#if activeTab === 'inspector'}
 		<div class="min-h-0 flex-1 overflow-hidden p-4">
-			<Inspector bind:selectedItemIds {selectedChannelNum} {onPlaceRiser} {onPlaceItemForChannel} />
+			<Inspector bind:selectedItemIds {selectedChannelNum} {isAltPressed} {onPlaceRiser} {onPlaceItemForChannel} />
 		</div>
 	{:else if activeTab === 'people'}
 		<div class="min-h-0 flex-1 overflow-auto p-4">

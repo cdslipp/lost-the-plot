@@ -12,14 +12,10 @@
 	} from '$lib/utils/canvasUtils';
 	import { getPlotState } from '$lib/state/stagePlotState.svelte';
 	import type { StagePlotItem } from '@stageplotter/shared';
-	import { PressedKeys } from 'runed';
-
-	const keys = new PressedKeys();
-	const isAltPressed = $derived(keys.has('Alt'));
-
 	type Props = {
 		selectedItemIds?: number[];
 		selectedChannelNum?: number | null;
+		isAltPressed?: boolean;
 		onPlaceRiser?: (riserWidth: number, riserDepth: number, riserHeight: number) => void;
 		onPlaceItemForChannel?: (channelNum: number) => void;
 	};
@@ -27,6 +23,7 @@
 	let {
 		selectedItemIds = $bindable<number[]>([]),
 		selectedChannelNum = null,
+		isAltPressed = false,
 		onPlaceRiser,
 		onPlaceItemForChannel
 	}: Props = $props();

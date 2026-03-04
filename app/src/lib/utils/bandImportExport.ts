@@ -2,13 +2,7 @@
 
 import { db } from '$lib/db';
 import { insertPersonsForBand } from '$lib/db/repositories/persons';
-import {
-	savePlotEntities,
-	type PlotItemRow,
-	type PlotOutputRow,
-	type PlotInputChannelRow,
-	type PlotOutputChannelRow
-} from '$lib/db/repositories/plots';
+import { savePlotEntities, type PlotItemRow } from '$lib/db/repositories/plots';
 import { getStageArea, type CanvasConfig } from '$lib/utils/paperConfig';
 import { isTauri } from '$lib/utils/platform';
 import { generateId } from '@stageplotter/shared';
@@ -18,7 +12,7 @@ const APP_VERSION = __APP_VERSION__;
 
 // --- Helpers ---
 
-export function safeSlug(value: string): string {
+function safeSlug(value: string): string {
 	return (
 		value
 			.trim()
@@ -69,14 +63,6 @@ export function normalizeProjects(data: any): any[] {
 	if (data.type === 'band_project_bundle' && Array.isArray(data.projects)) return data.projects;
 	if (data.type === 'band_project') return [data];
 	return [];
-}
-
-function buildMusicians(players: any[]) {
-	return players.map((player: any, index: number) => ({
-		id: index + 1,
-		name: player.person?.name ?? 'Unknown Musician',
-		instrument: ''
-	}));
 }
 
 function buildItemsFromPlaced(
