@@ -1,14 +1,6 @@
 <script lang="ts">
 	// SPDX-License-Identifier: AGPL-3.0-only
-	import { APP_NAME } from '$lib/config';
-
-	const links: { label: string; href: string; external?: boolean }[] = [
-		{ label: 'Bands', href: '/bands' },
-		{ label: 'Festivals', href: '/festivals' },
-		{ label: 'Tours', href: '/tours' },
-		{ label: 'Gear', href: '/gear' },
-		{ label: 'Settings', href: '/settings' }
-	];
+	import { APP_NAME, NAV_LINKS } from '$lib/config';
 </script>
 
 <svelte:head>
@@ -17,11 +9,9 @@
 
 <div class="flex h-[calc(100dvh-1.25rem)] flex-col items-center justify-center gap-12">
 	<nav class="flex flex-col items-center gap-6">
-		{#each links as link}
+		{#each NAV_LINKS as link}
 			<a
 				href={link.href}
-				target={link.external ? '_blank' : undefined}
-				rel={link.external ? 'noopener noreferrer' : undefined}
 				class="nav-word font-serif text-[clamp(3rem,10vw,6rem)] leading-none font-bold text-text-primary no-underline"
 			>
 				<span class="nav-blob"></span>

@@ -32,3 +32,4 @@ export * as migration019 from './migrations/019_add_venues.js';
 export * as migration020 from './migrations/020_add_tours.js';
 export * as migration021 from './migrations/021_gear_catalog_fields.js';
 export * as migration022 from './migrations/022_normalize_plot_data.js';
+export * as migration023 from './migrations/023_app_meta.js';

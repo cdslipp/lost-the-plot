@@ -31,24 +31,33 @@
 	async function handleDeleteAllData() {
 		deleting = true;
 		try {
-			await db.exec(`
-				DELETE FROM festival_band_backline;
-				DELETE FROM festival_slots;
-				DELETE FROM festival_days;
-				DELETE FROM festival_bands;
-				DELETE FROM festivals;
-				DELETE FROM setlist_songs;
-				DELETE FROM setlists;
-				DELETE FROM gigs;
-				DELETE FROM plot_persons;
-				DELETE FROM items;
-				DELETE FROM musicians;
-				DELETE FROM songs;
-				DELETE FROM persons;
-				DELETE FROM gear_items;
-				DELETE FROM stage_plots;
-				DELETE FROM bands;
-			`);
+			// Delete in dependency order; use individual statements to avoid
+			// failures on tables that may not exist (e.g. dropped in migrations)
+			const tables = [
+				'festival_band_backline',
+				'festival_slots',
+				'festival_days',
+				'festival_bands',
+				'festivals',
+				'setlist_songs',
+				'setlists',
+				'gigs',
+				'plot_persons',
+				'plot_input_channels',
+				'plot_output_channels',
+				'plot_items',
+				'plot_outputs',
+				'songs',
+				'persons',
+				'gear_items',
+				'stage_plots',
+				'bands',
+				'_app_meta'
+			];
+			for (const table of tables) {
+				await db.run(`DELETE FROM ${table}`);
+			}
+			localStorage.removeItem('stageplotter-onboarding-completed');
 			window.location.href = '/';
 		} catch (e) {
 			console.error('Failed to delete all data:', e);

@@ -34,5 +34,8 @@
 		"prettier-plugin-svelte": "^3.5.1",
 		"prettier-plugin-tailwindcss": "^0.7.2",
 		"typescript-eslint": "^8.56.1"
+	},
+	"dependencies": {
+		"shaders": "^2.3.75"
 	}
 }

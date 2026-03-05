@@ -1,0 +1,378 @@
+<script lang="ts">
+	import { goto } from '$app/navigation';
+	import { generateId } from '@stageplotter/shared';
+	import { createBand } from '$lib/db/repositories/bands';
+	import { createPerson } from '$lib/db/repositories/persons';
+	import { createPlot } from '$lib/db/repositories/plots';
+	import { addPersonToPlot } from '$lib/db/repositories/plotPersons';
+	import {
+		onboarding,
+		type UserRole,
+		type BandSize,
+		type BassPosition
+	} from '$lib/state/onboarding.svelte';
+	import { onMount, tick } from 'svelte';
+
+	const TOTAL_STEPS = 6;
+
+	let step = $derived(onboarding.currentStep);
+	let creating = $state(false);
+
+	// Step 2: band name
+	let bandNameInput: HTMLInputElement | undefined = $state();
+
+	// Step 3: members
+	let newMemberName = $state('');
+	let memberInput: HTMLInputElement | undefined = $state();
+
+	// Focus management
+	onMount(() => {
+		focusStep();
+	});
+
+	$effect(() => {
+		// Re-focus when step changes
+		void step;
+		tick().then(focusStep);
+	});
+
+	function focusStep() {
+		const el = document.querySelector<HTMLElement>('[data-onboarding-focus]');
+		el?.focus();
+	}
+
+	async function handleSkip() {
+		await onboarding.markComplete();
+	}
+
+	function nextStep() {
+		onboarding.currentStep = Math.min(step + 1, TOTAL_STEPS - 1);
+	}
+
+	function prevStep() {
+		onboarding.currentStep = Math.max(step - 1, 0);
+	}
+
+	function selectRole(role: UserRole) {
+		onboarding.userRole = role;
+		nextStep();
+	}
+
+	function selectBandSize(size: BandSize) {
+		onboarding.bandSize = size;
+		nextStep();
+	}
+
+	function selectBassPosition(pos: BassPosition) {
+		onboarding.bassPosition = pos;
+		handleFinish();
+	}
+
+	function addMember() {
+		const name = newMemberName.trim();
+		if (!name) return;
+		onboarding.memberNames = [...onboarding.memberNames, name];
+		newMemberName = '';
+		tick().then(() => memberInput?.focus());
+	}
+
+	function removeMember(index: number) {
+		onboarding.memberNames = onboarding.memberNames.filter((_, i) => i !== index);
+	}
+
+	function handleMemberKeydown(e: KeyboardEvent) {
+		if (e.key === 'Enter') {
+			e.preventDefault();
+			addMember();
+		}
+	}
+
+	function handleBandNameKeydown(e: KeyboardEvent) {
+		if (e.key === 'Enter' && onboarding.bandName.trim()) {
+			nextStep();
+		}
+	}
+
+	async function handleFinish() {
+		if (creating) return;
+		creating = true;
+		try {
+			const bandId = generateId();
+			const bandName = onboarding.bandName.trim() || 'My Band';
+			await createBand(bandId, bandName);
+
+			// Create members
+			const personIds: number[] = [];
+			for (const name of onboarding.memberNames) {
+				const personId = await createPerson(bandId, name);
+				personIds.push(personId);
+			}
+
+			// Create default plot
+			const plotId = generateId();
+			await createPlot(plotId, 'Main Plot', bandId);
+
+			// Add all members to the plot
+			for (const personId of personIds) {
+				await addPersonToPlot(plotId, personId);
+			}
+
+			await onboarding.markComplete();
+			goto(`/bands/${bandId}?new=1`);
+		} catch (e) {
+			console.error('Failed to create band:', e);
+			creating = false;
+		}
+	}
+
+	const roles: { id: UserRole; label: string; description: string }[] = [
+		{ id: 'musician', label: 'Musician', description: 'I play in a band' },
+		{ id: 'audio_tech', label: 'Audio Technician', description: 'I mix live sound' },
+		{
+			id: 'tour_manager',
+			label: 'Tour Manager',
+			description: 'I manage tours and advancing'
+		},
+		{
+			id: 'stage_manager',
+			label: 'Stage Manager / PM',
+			description: 'I run festival stages'
+		}
+	];
+
+	const bandSizes: { id: BandSize; label: string; description: string }[] = [
+		{ id: '3piece', label: '3-piece', description: 'Guitar, bass, drums' },
+		{ id: '4piece', label: '4-piece', description: 'Two guitars, bass, drums' },
+		{ id: '5piece', label: '5-piece', description: 'Keys, two guitars, bass, drums' }
+	];
+</script>
+
+<div
+	class="fixed inset-0 z-50 flex items-center justify-center bg-bg-secondary/95 backdrop-blur-sm"
+	role="dialog"
+	aria-modal="true"
+	aria-label="Welcome to Lost the Plot"
+>
+	<!-- Skip button — always visible -->
+	<button
+		onclick={handleSkip}
+		class="absolute top-4 right-4 z-10 rounded-lg px-4 py-2 text-sm text-text-secondary transition hover:bg-surface-hover hover:text-text-primary"
+	>
+		Skip
+	</button>
+
+	<div class="mx-4 w-full max-w-md">
+		<!-- Step 0: Welcome -->
+		{#if step === 0}
+			<div class="flex flex-col items-center gap-8 text-center">
+				<h1 class="font-serif text-5xl font-bold text-text-primary">Lost the Plot</h1>
+				<p class="text-lg text-text-secondary">
+					Stage plots and input lists for musicians and sound engineers. Your data stays on
+					this device.
+				</p>
+				<button
+					data-onboarding-focus
+					onclick={nextStep}
+					class="rounded-lg bg-stone-900 px-8 py-3 text-base font-medium text-white transition hover:bg-stone-800 dark:bg-stone-100 dark:text-stone-900 dark:hover:bg-stone-200"
+				>
+					Get Started
+				</button>
+			</div>
+
+		<!-- Step 1: Role selection -->
+		{:else if step === 1}
+			<div class="flex flex-col items-center gap-6 text-center">
+				<h2 class="font-serif text-3xl font-bold text-text-primary">What's your role?</h2>
+				<p class="text-text-secondary">This helps us tailor the experience.</p>
+				<div class="flex w-full flex-col gap-2">
+					{#each roles as role, i}
+						<button
+							data-onboarding-focus={i === 0 ? '' : undefined}
+							onclick={() => selectRole(role.id)}
+							class="flex items-center gap-3 rounded-xl border border-border-primary bg-surface px-4 py-3 text-left transition hover:border-stone-400 hover:bg-surface-hover"
+						>
+							<div>
+								<div class="font-medium text-text-primary">{role.label}</div>
+								<div class="text-xs text-text-secondary">{role.description}</div>
+							</div>
+						</button>
+					{/each}
+				</div>
+			</div>
+
+		<!-- Step 2: Band name -->
+		{:else if step === 2}
+			<div class="flex flex-col items-center gap-6 text-center">
+				<h2 class="font-serif text-3xl font-bold text-text-primary">
+					{onboarding.userRole === 'musician' ? "What's your band called?" : 'Create your first band'}
+				</h2>
+				<p class="text-text-secondary">You can always rename or add more later.</p>
+				<div class="flex w-full flex-col gap-4">
+					<input
+						data-onboarding-focus
+						bind:this={bandNameInput}
+						bind:value={onboarding.bandName}
+						onkeydown={handleBandNameKeydown}
+						type="text"
+						placeholder="Band name"
+						class="w-full rounded-lg border border-border-primary bg-surface px-4 py-3 text-center text-lg text-text-primary placeholder:text-text-tertiary focus:border-stone-400 focus:outline-none dark:focus:border-stone-500"
+					/>
+					<button
+						onclick={nextStep}
+						disabled={!onboarding.bandName.trim()}
+						class="rounded-lg bg-stone-900 px-8 py-3 text-base font-medium text-white transition hover:bg-stone-800 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-stone-100 dark:text-stone-900 dark:hover:bg-stone-200"
+					>
+						Next
+					</button>
+				</div>
+				<button
+					onclick={prevStep}
+					class="text-sm text-text-tertiary transition hover:text-text-secondary"
+				>
+					Back
+				</button>
+			</div>
+
+		<!-- Step 3: Band members -->
+		{:else if step === 3}
+			<div class="flex flex-col items-center gap-6 text-center">
+				<h2 class="font-serif text-3xl font-bold text-text-primary">Who's in the band?</h2>
+				<p class="text-text-secondary">Add your band members. You can add roles and details later.</p>
+				<div class="flex w-full flex-col gap-3">
+					{#if onboarding.memberNames.length > 0}
+						<div class="flex flex-col gap-2">
+							{#each onboarding.memberNames as name, i}
+								<div
+									class="flex items-center justify-between rounded-lg border border-border-primary bg-surface px-4 py-2"
+								>
+									<span class="text-sm text-text-primary">{name}</span>
+									<button
+										onclick={() => removeMember(i)}
+										title="Remove {name}"
+										class="flex h-6 w-6 items-center justify-center rounded-full text-text-tertiary transition hover:bg-red-100 hover:text-red-600 dark:hover:bg-red-900/30"
+									>
+										<svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
+											<path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+										</svg>
+									</button>
+								</div>
+							{/each}
+						</div>
+					{/if}
+					<div class="flex gap-2">
+						<input
+							data-onboarding-focus
+							bind:this={memberInput}
+							bind:value={newMemberName}
+							onkeydown={handleMemberKeydown}
+							type="text"
+							placeholder="Member name"
+							class="flex-1 rounded-lg border border-border-primary bg-surface px-4 py-2.5 text-sm text-text-primary placeholder:text-text-tertiary focus:border-stone-400 focus:outline-none dark:focus:border-stone-500"
+						/>
+						<button
+							onclick={addMember}
+							disabled={!newMemberName.trim()}
+							class="rounded-lg border border-border-primary px-4 py-2.5 text-sm text-text-primary transition hover:bg-surface-hover disabled:cursor-not-allowed disabled:opacity-50"
+						>
+							Add
+						</button>
+					</div>
+					<button
+						onclick={nextStep}
+						class="mt-2 rounded-lg bg-stone-900 px-8 py-3 text-base font-medium text-white transition hover:bg-stone-800 dark:bg-stone-100 dark:text-stone-900 dark:hover:bg-stone-200"
+					>
+						{onboarding.memberNames.length === 0 ? 'Skip this step' : 'Next'}
+					</button>
+				</div>
+				<button
+					onclick={prevStep}
+					class="text-sm text-text-tertiary transition hover:text-text-secondary"
+				>
+					Back
+				</button>
+			</div>
+
+		<!-- Step 4: Band size / template -->
+		{:else if step === 4}
+			<div class="flex flex-col items-center gap-6 text-center">
+				<h2 class="font-serif text-3xl font-bold text-text-primary">Band layout</h2>
+				<p class="text-text-secondary">Pick a starting template for your stage plot.</p>
+				<div class="flex w-full flex-col gap-2">
+					{#each bandSizes as size}
+						<button
+							onclick={() => selectBandSize(size.id)}
+							class="flex items-center gap-3 rounded-xl border px-4 py-3 text-left transition {onboarding.bandSize === size.id ? 'border-stone-500 bg-surface-hover' : 'border-border-primary bg-surface hover:border-stone-400 hover:bg-surface-hover'}"
+						>
+							<div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-stone-100 text-stone-600 dark:bg-stone-800 dark:text-stone-300">
+								<span class="text-sm font-bold">{size.id.charAt(0)}</span>
+							</div>
+							<div>
+								<div class="font-medium text-text-primary">{size.label}</div>
+								<div class="text-xs text-text-secondary">{size.description}</div>
+							</div>
+						</button>
+					{/each}
+				</div>
+				<button
+					onclick={prevStep}
+					class="text-sm text-text-tertiary transition hover:text-text-secondary"
+				>
+					Back
+				</button>
+			</div>
+
+		<!-- Step 5: Bass position -->
+		{:else if step === 5}
+			<div class="flex flex-col items-center gap-6 text-center">
+				<h2 class="font-serif text-3xl font-bold text-text-primary">Bass position</h2>
+				<p class="text-text-secondary">Where does your bass player stand?</p>
+				<div class="flex w-full gap-3">
+					<button
+						onclick={() => selectBassPosition('stage_right')}
+						disabled={creating}
+						class="flex flex-1 flex-col items-center gap-2 rounded-xl border border-border-primary bg-surface px-4 py-6 transition hover:border-stone-400 hover:bg-surface-hover disabled:opacity-50"
+					>
+						<span class="text-2xl font-bold text-text-primary">SR</span>
+						<span class="text-sm text-text-secondary">Stage Right</span>
+					</button>
+					<button
+						onclick={() => selectBassPosition('stage_left')}
+						disabled={creating}
+						class="flex flex-1 flex-col items-center gap-2 rounded-xl border border-border-primary bg-surface px-4 py-6 transition hover:border-stone-400 hover:bg-surface-hover disabled:opacity-50"
+					>
+						<span class="text-2xl font-bold text-text-primary">SL</span>
+						<span class="text-sm text-text-secondary">Stage Left</span>
+					</button>
+				</div>
+				<button
+					onclick={() => selectBassPosition('none')}
+					disabled={creating}
+					class="rounded-lg border border-border-primary px-4 py-2.5 text-sm text-text-secondary transition hover:bg-surface-hover hover:text-text-primary disabled:opacity-50"
+				>
+					No bass
+				</button>
+				{#if creating}
+					<p class="text-sm text-text-secondary">Setting up your band...</p>
+				{/if}
+				<button
+					onclick={prevStep}
+					disabled={creating}
+					class="text-sm text-text-tertiary transition hover:text-text-secondary disabled:opacity-50"
+				>
+					Back
+				</button>
+			</div>
+		{/if}
+
+		<!-- Progress dots -->
+		{#if step > 0}
+			<div class="mt-8 flex justify-center gap-2">
+				{#each Array(TOTAL_STEPS) as _, i}
+					<div
+						class="h-1.5 rounded-full transition-all {i === step ? 'w-6 bg-stone-900 dark:bg-stone-100' : i < step ? 'w-1.5 bg-stone-400 dark:bg-stone-500' : 'w-1.5 bg-stone-200 dark:bg-stone-700'}"
+					></div>
+				{/each}
+			</div>
+		{/if}
+	</div>
+</div>

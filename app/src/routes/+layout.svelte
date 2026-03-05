@@ -13,15 +13,33 @@
 	import { onMount } from 'svelte';
 	import JumpBar from '$lib/components/JumpBar.svelte';
 	import EscapeBack from '$lib/components/EscapeBack.svelte';
+	import OnboardingGate from '$lib/components/OnboardingGate.svelte';
+	import MenuOverlay from '$lib/components/MenuOverlay.svelte';
 
 	let { children } = $props();
 
 	let jumpBarOpen = $state(false);
+	let menuOpen = $state(false);
 
 	function handleGlobalKeydown(e: KeyboardEvent) {
 		if ((e.ctrlKey || e.metaKey) && e.key === 'j') {
 			e.preventDefault();
 			jumpBarOpen = true;
+		}
+
+		if ((e.key === 'm' || e.key === 'M') && !e.ctrlKey && !e.metaKey && !e.altKey) {
+			const target = e.target;
+			if (target instanceof HTMLElement) {
+				const tag = target.tagName;
+				if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || target.isContentEditable) {
+					return;
+				}
+			}
+			if (document.querySelector('[role="dialog"], [role="alertdialog"], dialog[open]')) {
+				return;
+			}
+			e.preventDefault();
+			menuOpen = !menuOpen;
 		}
 	}
 
@@ -174,6 +192,29 @@
 			</span>
 		</div>
 	</div>
+	<!-- Menu button (hidden on home page) -->
+	{#if $page.url.pathname !== '/'}
+		<button
+			class="fixed top-4 right-4 z-50 flex h-10 w-10 cursor-pointer flex-col items-center justify-center gap-[5px] rounded-md border-none bg-transparent p-0"
+			onclick={() => (menuOpen = !menuOpen)}
+			aria-label={menuOpen ? 'Close menu' : 'Open menu'}
+		>
+			<span
+				class="block h-[2px] w-6 rounded-full bg-text-primary transition-all duration-300"
+				class:translate-y-[7px]={menuOpen}
+				class:rotate-45={menuOpen}
+			></span>
+			<span
+				class="block h-[2px] w-6 rounded-full bg-text-primary transition-all duration-300"
+				class:opacity-0={menuOpen}
+			></span>
+			<span
+				class="block h-[2px] w-6 rounded-full bg-text-primary transition-all duration-300"
+				class:-translate-y-[7px]={menuOpen}
+				class:-rotate-45={menuOpen}
+			></span>
+		</button>
+	{/if}
 	<!-- Mobile top wordmark bar -->
 	<div class="sticky top-0 z-20 flex items-center px-4 py-2 sm:hidden" aria-hidden="true">
 		<a
@@ -186,7 +227,9 @@
 	<div
 		class="relative z-10 container mx-auto max-w-[1600px] px-4 sm:pr-6 sm:pl-32 lg:pr-8 lg:pl-36"
 	>
-		{@render children()}
+		<OnboardingGate>
+			{@render children()}
+		</OnboardingGate>
 	</div>
 	<footer
 		class="pointer-events-none fixed right-0 bottom-0 left-0 z-10 flex items-center justify-center py-1 text-[10px] text-text-tertiary/50 select-none"
@@ -204,6 +247,7 @@
 </div>
 
 <JumpBar bind:open={jumpBarOpen} />
+<MenuOverlay bind:open={menuOpen} />
 
 {#if showRefresh || showOffline}
 	<div
