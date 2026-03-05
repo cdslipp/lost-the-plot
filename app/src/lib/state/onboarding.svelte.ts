@@ -5,8 +5,10 @@ import { db } from '$lib/db';
 const LS_KEY = 'stageplotter-onboarding-completed';
 
 export type UserRole = 'tour_manager' | 'audio_tech' | 'stage_manager' | 'musician';
+export type ActType = 'solo_duo' | 'band';
 export type BandSize = '3piece' | '4piece' | '5piece';
 export type BassPosition = 'stage_left' | 'stage_right' | 'none';
+export type MonitorType = 'wedges' | 'iems' | 'both';
 
 class OnboardingState {
 	needsOnboarding: boolean | null = $state(null);
@@ -14,10 +16,13 @@ class OnboardingState {
 
 	// Collected data
 	userRole: UserRole | null = $state(null);
+	actType: ActType | null = $state(null);
 	bandName: string = $state('');
 	memberNames: string[] = $state([]);
+	hasDrums: boolean | null = $state(null);
 	bandSize: BandSize | null = $state(null);
 	bassPosition: BassPosition | null = $state(null);
+	monitorType: MonitorType | null = $state(null);
 
 	async check(): Promise<void> {
 		// Fast-path: localStorage says we're done

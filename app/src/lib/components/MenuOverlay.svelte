@@ -1,7 +1,8 @@
 <script lang="ts">
-	import { fly } from 'svelte/transition';
+	import { fly, fade } from 'svelte/transition';
 	import { NAV_LINKS } from '$lib/config';
 	import { page } from '$app/stores';
+	import { Shader, Aurora } from 'shaders/svelte';
 
 	let { open = $bindable(false) }: { open: boolean } = $props();
 
@@ -21,12 +22,30 @@
 
 {#if open}
 	<!-- svelte-ignore a11y_no_static_element_interactions -->
-	<div
-		class="menu-overlay fixed inset-0 z-40 backdrop-blur-2xl"
-		transition:fly={{ y: -window.innerHeight, duration: 300 }}
-		onkeydown={handleKeydown}
-	>
-		<div class="flex h-full flex-col items-center justify-center gap-6">
+	<div class="fixed inset-0 z-40" onkeydown={handleKeydown}>
+		<!-- Shader background layer (no transform ancestor → backdrop-filter works immediately) -->
+		<div class="absolute inset-0" transition:fade={{ duration: 300 }}>
+			<Shader>
+				<Aurora
+					colorA="#a8a29e"
+					colorB="#d6d3d1"
+					colorC="#78716c"
+					speed={4}
+					intensity={40}
+					waviness={30}
+					height={150}
+				/>
+			</Shader>
+		</div>
+
+		<!-- Semi-transparent scrim so text remains readable -->
+		<div class="menu-scrim absolute inset-0" transition:fade={{ duration: 300 }}></div>
+
+		<!-- Nav links slide in independently -->
+		<div
+			class="relative flex h-full flex-col items-center justify-center gap-6"
+			transition:fly={{ y: -window.innerHeight, duration: 300 }}
+		>
 			<nav class="flex flex-col items-center gap-6">
 				{#each NAV_LINKS as link}
 					<a
@@ -47,18 +66,13 @@
 {/if}
 
 <style>
-	.menu-overlay {
-		background: rgba(250, 250, 249, 0.75);
-		background-image:
-			radial-gradient(ellipse at 30% 20%, rgba(214, 211, 209, 0.4) 0%, transparent 60%),
-			radial-gradient(ellipse at 70% 80%, rgba(231, 229, 228, 0.3) 0%, transparent 50%);
+	.menu-scrim {
+		background: rgba(250, 250, 249, 0.1);
+		backdrop-filter: blur(4px);
 	}
 
-	:global(.dark) .menu-overlay {
-		background: rgba(28, 25, 23, 0.75);
-		background-image:
-			radial-gradient(ellipse at 30% 20%, rgba(68, 64, 60, 0.4) 0%, transparent 60%),
-			radial-gradient(ellipse at 70% 80%, rgba(87, 83, 78, 0.25) 0%, transparent 50%);
+	:global(.dark) .menu-scrim {
+		background: rgba(28, 25, 23, 0.1);
 	}
 
 	.nav-word {

@@ -8,20 +8,32 @@
 	import {
 		onboarding,
 		type UserRole,
+		type ActType,
 		type BandSize,
-		type BassPosition
+		type BassPosition,
+		type MonitorType
 	} from '$lib/state/onboarding.svelte';
 	import { onMount, tick } from 'svelte';
 
-	const TOTAL_STEPS = 6;
+	// Steps: welcome, role, act type, band name, members, drums?, band size, bass position, monitors
+	const STEP_NAMES = [
+		'welcome',
+		'role',
+		'act_type',
+		'band_name',
+		'members',
+		'drums',
+		'band_size',
+		'bass_position',
+		'monitors'
+	] as const;
 
 	let step = $derived(onboarding.currentStep);
+	let stepName = $derived(STEP_NAMES[step] ?? 'welcome');
 	let creating = $state(false);
 
-	// Step 2: band name
+	// Step refs
 	let bandNameInput: HTMLInputElement | undefined = $state();
-
-	// Step 3: members
 	let newMemberName = $state('');
 	let memberInput: HTMLInputElement | undefined = $state();
 
@@ -31,7 +43,6 @@
 	});
 
 	$effect(() => {
-		// Re-focus when step changes
 		void step;
 		tick().then(focusStep);
 	});
@@ -45,8 +56,12 @@
 		await onboarding.markComplete();
 	}
 
+	function goTo(name: (typeof STEP_NAMES)[number]) {
+		onboarding.currentStep = STEP_NAMES.indexOf(name);
+	}
+
 	function nextStep() {
-		onboarding.currentStep = Math.min(step + 1, TOTAL_STEPS - 1);
+		onboarding.currentStep = Math.min(step + 1, STEP_NAMES.length - 1);
 	}
 
 	function prevStep() {
@@ -58,6 +73,16 @@
 		nextStep();
 	}
 
+	function selectActType(type: ActType) {
+		onboarding.actType = type;
+		nextStep();
+	}
+
+	function selectDrums(has: boolean) {
+		onboarding.hasDrums = has;
+		nextStep();
+	}
+
 	function selectBandSize(size: BandSize) {
 		onboarding.bandSize = size;
 		nextStep();
@@ -65,6 +90,11 @@
 
 	function selectBassPosition(pos: BassPosition) {
 		onboarding.bassPosition = pos;
+		nextStep();
+	}
+
+	function selectMonitorType(type: MonitorType) {
+		onboarding.monitorType = type;
 		handleFinish();
 	}
 
@@ -163,7 +193,7 @@
 
 	<div class="mx-4 w-full max-w-md">
 		<!-- Step 0: Welcome -->
-		{#if step === 0}
+		{#if stepName === 'welcome'}
 			<div class="flex flex-col items-center gap-8 text-center">
 				<h1 class="font-serif text-5xl font-bold text-text-primary">Lost the Plot</h1>
 				<p class="text-lg text-text-secondary">
@@ -180,7 +210,7 @@
 			</div>
 
 		<!-- Step 1: Role selection -->
-		{:else if step === 1}
+		{:else if stepName === 'role'}
 			<div class="flex flex-col items-center gap-6 text-center">
 				<h2 class="font-serif text-3xl font-bold text-text-primary">What's your role?</h2>
 				<p class="text-text-secondary">This helps us tailor the experience.</p>
@@ -200,11 +230,49 @@
 				</div>
 			</div>
 
-		<!-- Step 2: Band name -->
-		{:else if step === 2}
+		<!-- Step 2: Solo/Duo or Band -->
+		{:else if stepName === 'act_type'}
+			<div class="flex flex-col items-center gap-6 text-center">
+				<h2 class="font-serif text-3xl font-bold text-text-primary">What kind of act?</h2>
+				<p class="text-text-secondary">We'll adjust the setup flow accordingly.</p>
+				<div class="flex w-full flex-col gap-2">
+					<button
+						data-onboarding-focus
+						onclick={() => selectActType('solo_duo')}
+						class="flex items-center gap-3 rounded-xl border border-border-primary bg-surface px-4 py-3 text-left transition hover:border-stone-400 hover:bg-surface-hover"
+					>
+						<div>
+							<div class="font-medium text-text-primary">Solo / Duo</div>
+							<div class="text-xs text-text-secondary">One or two performers</div>
+						</div>
+					</button>
+					<button
+						onclick={() => selectActType('band')}
+						class="flex items-center gap-3 rounded-xl border border-border-primary bg-surface px-4 py-3 text-left transition hover:border-stone-400 hover:bg-surface-hover"
+					>
+						<div>
+							<div class="font-medium text-text-primary">Band</div>
+							<div class="text-xs text-text-secondary">Three or more performers</div>
+						</div>
+					</button>
+				</div>
+				<button
+					onclick={prevStep}
+					class="text-sm text-text-tertiary transition hover:text-text-secondary"
+				>
+					Back
+				</button>
+			</div>
+
+		<!-- Step 3: Band name -->
+		{:else if stepName === 'band_name'}
 			<div class="flex flex-col items-center gap-6 text-center">
 				<h2 class="font-serif text-3xl font-bold text-text-primary">
-					{onboarding.userRole === 'musician' ? "What's your band called?" : 'Create your first band'}
+					{onboarding.userRole === 'musician'
+						? onboarding.actType === 'solo_duo'
+							? "What's your act called?"
+							: "What's your band called?"
+						: 'Create your first band'}
 				</h2>
 				<p class="text-text-secondary">You can always rename or add more later.</p>
 				<div class="flex w-full flex-col gap-4">
@@ -214,7 +282,7 @@
 						bind:value={onboarding.bandName}
 						onkeydown={handleBandNameKeydown}
 						type="text"
-						placeholder="Band name"
+						placeholder={onboarding.actType === 'solo_duo' ? 'Act name' : 'Band name'}
 						class="w-full rounded-lg border border-border-primary bg-surface px-4 py-3 text-center text-lg text-text-primary placeholder:text-text-tertiary focus:border-stone-400 focus:outline-none dark:focus:border-stone-500"
 					/>
 					<button
@@ -233,11 +301,13 @@
 				</button>
 			</div>
 
-		<!-- Step 3: Band members -->
-		{:else if step === 3}
+		<!-- Step 4: Band members -->
+		{:else if stepName === 'members'}
 			<div class="flex flex-col items-center gap-6 text-center">
-				<h2 class="font-serif text-3xl font-bold text-text-primary">Who's in the band?</h2>
-				<p class="text-text-secondary">Add your band members. You can add roles and details later.</p>
+				<h2 class="font-serif text-3xl font-bold text-text-primary">
+					{onboarding.actType === 'solo_duo' ? "Who's performing?" : "Who's in the band?"}
+				</h2>
+				<p class="text-text-secondary">Add your performers. You can add roles and details later.</p>
 				<div class="flex w-full flex-col gap-3">
 					{#if onboarding.memberNames.length > 0}
 						<div class="flex flex-col gap-2">
@@ -266,7 +336,7 @@
 							bind:value={newMemberName}
 							onkeydown={handleMemberKeydown}
 							type="text"
-							placeholder="Member name"
+							placeholder="Name"
 							class="flex-1 rounded-lg border border-border-primary bg-surface px-4 py-2.5 text-sm text-text-primary placeholder:text-text-tertiary focus:border-stone-400 focus:outline-none dark:focus:border-stone-500"
 						/>
 						<button
@@ -292,8 +362,38 @@
 				</button>
 			</div>
 
-		<!-- Step 4: Band size / template -->
-		{:else if step === 4}
+		<!-- Step 5: Drums? -->
+		{:else if stepName === 'drums'}
+			<div class="flex flex-col items-center gap-6 text-center">
+				<h2 class="font-serif text-3xl font-bold text-text-primary">Do you have drums?</h2>
+				<p class="text-text-secondary">This affects the default stage layout.</p>
+				<div class="flex w-full gap-3">
+					<button
+						data-onboarding-focus
+						onclick={() => selectDrums(true)}
+						class="flex flex-1 flex-col items-center gap-2 rounded-xl border border-border-primary bg-surface px-4 py-6 transition hover:border-stone-400 hover:bg-surface-hover"
+					>
+						<span class="text-2xl font-bold text-text-primary">Yes</span>
+						<span class="text-sm text-text-secondary">Acoustic or electronic kit</span>
+					</button>
+					<button
+						onclick={() => selectDrums(false)}
+						class="flex flex-1 flex-col items-center gap-2 rounded-xl border border-border-primary bg-surface px-4 py-6 transition hover:border-stone-400 hover:bg-surface-hover"
+					>
+						<span class="text-2xl font-bold text-text-primary">No</span>
+						<span class="text-sm text-text-secondary">No drum kit on stage</span>
+					</button>
+				</div>
+				<button
+					onclick={prevStep}
+					class="text-sm text-text-tertiary transition hover:text-text-secondary"
+				>
+					Back
+				</button>
+			</div>
+
+		<!-- Step 6: Band size / template -->
+		{:else if stepName === 'band_size'}
 			<div class="flex flex-col items-center gap-6 text-center">
 				<h2 class="font-serif text-3xl font-bold text-text-primary">Band layout</h2>
 				<p class="text-text-secondary">Pick a starting template for your stage plot.</p>
@@ -321,24 +421,22 @@
 				</button>
 			</div>
 
-		<!-- Step 5: Bass position -->
-		{:else if step === 5}
+		<!-- Step 7: Bass position -->
+		{:else if stepName === 'bass_position'}
 			<div class="flex flex-col items-center gap-6 text-center">
 				<h2 class="font-serif text-3xl font-bold text-text-primary">Bass position</h2>
 				<p class="text-text-secondary">Where does your bass player stand?</p>
 				<div class="flex w-full gap-3">
 					<button
 						onclick={() => selectBassPosition('stage_right')}
-						disabled={creating}
-						class="flex flex-1 flex-col items-center gap-2 rounded-xl border border-border-primary bg-surface px-4 py-6 transition hover:border-stone-400 hover:bg-surface-hover disabled:opacity-50"
+						class="flex flex-1 flex-col items-center gap-2 rounded-xl border border-border-primary bg-surface px-4 py-6 transition hover:border-stone-400 hover:bg-surface-hover"
 					>
 						<span class="text-2xl font-bold text-text-primary">SR</span>
 						<span class="text-sm text-text-secondary">Stage Right</span>
 					</button>
 					<button
 						onclick={() => selectBassPosition('stage_left')}
-						disabled={creating}
-						class="flex flex-1 flex-col items-center gap-2 rounded-xl border border-border-primary bg-surface px-4 py-6 transition hover:border-stone-400 hover:bg-surface-hover disabled:opacity-50"
+						class="flex flex-1 flex-col items-center gap-2 rounded-xl border border-border-primary bg-surface px-4 py-6 transition hover:border-stone-400 hover:bg-surface-hover"
 					>
 						<span class="text-2xl font-bold text-text-primary">SL</span>
 						<span class="text-sm text-text-secondary">Stage Left</span>
@@ -346,11 +444,56 @@
 				</div>
 				<button
 					onclick={() => selectBassPosition('none')}
-					disabled={creating}
-					class="rounded-lg border border-border-primary px-4 py-2.5 text-sm text-text-secondary transition hover:bg-surface-hover hover:text-text-primary disabled:opacity-50"
+					class="rounded-lg border border-border-primary px-4 py-2.5 text-sm text-text-secondary transition hover:bg-surface-hover hover:text-text-primary"
 				>
 					No bass
 				</button>
+				<button
+					onclick={prevStep}
+					class="text-sm text-text-tertiary transition hover:text-text-secondary"
+				>
+					Back
+				</button>
+			</div>
+
+		<!-- Step 8: Monitors -->
+		{:else if stepName === 'monitors'}
+			<div class="flex flex-col items-center gap-6 text-center">
+				<h2 class="font-serif text-3xl font-bold text-text-primary">Monitoring</h2>
+				<p class="text-text-secondary">How does the band hear themselves on stage?</p>
+				<div class="flex w-full flex-col gap-2">
+					<button
+						data-onboarding-focus
+						onclick={() => selectMonitorType('wedges')}
+						disabled={creating}
+						class="flex items-center gap-3 rounded-xl border border-border-primary bg-surface px-4 py-3 text-left transition hover:border-stone-400 hover:bg-surface-hover disabled:opacity-50"
+					>
+						<div>
+							<div class="font-medium text-text-primary">Floor wedges</div>
+							<div class="text-xs text-text-secondary">Traditional monitor speakers on stage</div>
+						</div>
+					</button>
+					<button
+						onclick={() => selectMonitorType('iems')}
+						disabled={creating}
+						class="flex items-center gap-3 rounded-xl border border-border-primary bg-surface px-4 py-3 text-left transition hover:border-stone-400 hover:bg-surface-hover disabled:opacity-50"
+					>
+						<div>
+							<div class="font-medium text-text-primary">In-ear monitors</div>
+							<div class="text-xs text-text-secondary">IEMs with wireless or wired packs</div>
+						</div>
+					</button>
+					<button
+						onclick={() => selectMonitorType('both')}
+						disabled={creating}
+						class="flex items-center gap-3 rounded-xl border border-border-primary bg-surface px-4 py-3 text-left transition hover:border-stone-400 hover:bg-surface-hover disabled:opacity-50"
+					>
+						<div>
+							<div class="font-medium text-text-primary">Both</div>
+							<div class="text-xs text-text-secondary">Mix of wedges and IEMs</div>
+						</div>
+					</button>
+				</div>
 				{#if creating}
 					<p class="text-sm text-text-secondary">Setting up your band...</p>
 				{/if}
@@ -367,7 +510,7 @@
 		<!-- Progress dots -->
 		{#if step > 0}
 			<div class="mt-8 flex justify-center gap-2">
-				{#each Array(TOTAL_STEPS) as _, i}
+				{#each Array(STEP_NAMES.length) as _, i}
 					<div
 						class="h-1.5 rounded-full transition-all {i === step ? 'w-6 bg-stone-900 dark:bg-stone-100' : i < step ? 'w-1.5 bg-stone-400 dark:bg-stone-500' : 'w-1.5 bg-stone-200 dark:bg-stone-700'}"
 					></div>
