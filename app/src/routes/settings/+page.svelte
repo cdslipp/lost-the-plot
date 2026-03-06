@@ -1,5 +1,6 @@
 <script lang="ts">
 	// SPDX-License-Identifier: AGPL-3.0-only
+	import { APP_NAME } from '$lib/config';
 	import ListPageLayout from '$lib/components/ListPageLayout.svelte';
 	import { AlertDialog, Switch } from 'bits-ui';
 	import { mode, setMode } from 'mode-watcher';
@@ -30,24 +31,33 @@
 	async function handleDeleteAllData() {
 		deleting = true;
 		try {
-			await db.exec(`
-				DELETE FROM festival_band_backline;
-				DELETE FROM festival_slots;
-				DELETE FROM festival_days;
-				DELETE FROM festival_bands;
-				DELETE FROM festivals;
-				DELETE FROM setlist_songs;
-				DELETE FROM setlists;
-				DELETE FROM gigs;
-				DELETE FROM plot_persons;
-				DELETE FROM items;
-				DELETE FROM musicians;
-				DELETE FROM songs;
-				DELETE FROM persons;
-				DELETE FROM gear_items;
-				DELETE FROM stage_plots;
-				DELETE FROM bands;
-			`);
+			// Delete in dependency order; use individual statements to avoid
+			// failures on tables that may not exist (e.g. dropped in migrations)
+			const tables = [
+				'festival_band_backline',
+				'festival_slots',
+				'festival_days',
+				'festival_bands',
+				'festivals',
+				'setlist_songs',
+				'setlists',
+				'gigs',
+				'plot_persons',
+				'plot_input_channels',
+				'plot_output_channels',
+				'plot_items',
+				'plot_outputs',
+				'songs',
+				'persons',
+				'gear_items',
+				'stage_plots',
+				'bands',
+				'_app_meta'
+			];
+			for (const table of tables) {
+				await db.run(`DELETE FROM ${table}`);
+			}
+			localStorage.removeItem('stageplotter-onboarding-completed');
 			window.location.href = '/';
 		} catch (e) {
 			console.error('Failed to delete all data:', e);
@@ -55,6 +65,10 @@
 		}
 	}
 </script>
+
+<svelte:head>
+	<title>Settings | {APP_NAME}</title>
+</svelte:head>
 
 <ListPageLayout title="Settings">
 	<div class="flex flex-col gap-6">
@@ -106,6 +120,70 @@
 							class="pointer-events-none block h-5 w-5 rounded-full bg-white shadow-sm ring-0 transition-transform data-[state=checked]:translate-x-5 data-[state=unchecked]:translate-x-0"
 						/>
 					</Switch.Root>
+				</div>
+			</div>
+		</section>
+
+		<!-- Features -->
+		<section>
+			<h2 class="mb-3 font-serif text-lg font-semibold text-text-primary">Features</h2>
+			<div class="flex flex-col gap-3">
+				<div class="rounded-xl border border-border-primary bg-surface p-4">
+					<div class="flex items-center justify-between">
+						<div>
+							<p class="text-sm font-medium text-text-primary">Festivals</p>
+							<p class="text-xs text-text-tertiary">Show festivals in the menu</p>
+						</div>
+						<Switch.Root
+							checked={preferences.showFestivals}
+							onCheckedChange={(checked) => {
+								preferences.showFestivals = checked;
+							}}
+							class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent bg-stone-300 transition-colors data-[state=checked]:bg-stone-700 dark:bg-stone-600 dark:data-[state=checked]:bg-stone-400"
+						>
+							<Switch.Thumb
+								class="pointer-events-none block h-5 w-5 rounded-full bg-white shadow-sm ring-0 transition-transform data-[state=checked]:translate-x-5 data-[state=unchecked]:translate-x-0"
+							/>
+						</Switch.Root>
+					</div>
+				</div>
+				<div class="rounded-xl border border-border-primary bg-surface p-4">
+					<div class="flex items-center justify-between">
+						<div>
+							<p class="text-sm font-medium text-text-primary">Tours</p>
+							<p class="text-xs text-text-tertiary">Show tours in the menu</p>
+						</div>
+						<Switch.Root
+							checked={preferences.showTours}
+							onCheckedChange={(checked) => {
+								preferences.showTours = checked;
+							}}
+							class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent bg-stone-300 transition-colors data-[state=checked]:bg-stone-700 dark:bg-stone-600 dark:data-[state=checked]:bg-stone-400"
+						>
+							<Switch.Thumb
+								class="pointer-events-none block h-5 w-5 rounded-full bg-white shadow-sm ring-0 transition-transform data-[state=checked]:translate-x-5 data-[state=unchecked]:translate-x-0"
+							/>
+						</Switch.Root>
+					</div>
+				</div>
+				<div class="rounded-xl border border-border-primary bg-surface p-4">
+					<div class="flex items-center justify-between">
+						<div>
+							<p class="text-sm font-medium text-text-primary">Songs</p>
+							<p class="text-xs text-text-tertiary">Show songs in the menu</p>
+						</div>
+						<Switch.Root
+							checked={preferences.showSongs}
+							onCheckedChange={(checked) => {
+								preferences.showSongs = checked;
+							}}
+							class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent bg-stone-300 transition-colors data-[state=checked]:bg-stone-700 dark:bg-stone-600 dark:data-[state=checked]:bg-stone-400"
+						>
+							<Switch.Thumb
+								class="pointer-events-none block h-5 w-5 rounded-full bg-white shadow-sm ring-0 transition-transform data-[state=checked]:translate-x-5 data-[state=unchecked]:translate-x-0"
+							/>
+						</Switch.Root>
+					</div>
 				</div>
 			</div>
 		</section>

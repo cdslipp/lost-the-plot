@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { page } from '$app/stores';
+	import { page } from '$app/state';
 	import { beforeNavigate } from '$app/navigation';
 	import { SetlistEditorState, setSetlistState } from '$lib/state/setlistEditorState.svelte';
 	import SetlistEditorToolbar from '$lib/components/SetlistEditorToolbar.svelte';
@@ -11,10 +11,11 @@
 	import SongCommandPalette from '$lib/components/SongCommandPalette.svelte';
 	import { exportSetlistToPdf } from '$lib/utils/pdf';
 	import type { SetlistSongRow } from '$lib/db/repositories/setlists';
+	import { APP_NAME } from '$lib/config';
 
-	let bandId = $derived($page.params.bandId);
+	let bandId = $derived(page.params.bandId);
 
-	const editor = new SetlistEditorState($page.params.bandId!, parseInt($page.params.gigId!));
+	const editor = new SetlistEditorState(page.params.bandId!, parseInt(page.params.gigId!));
 	setSetlistState(editor);
 
 	let loaded = $state(false);
@@ -90,6 +91,10 @@
 	);
 </script>
 
+<svelte:head>
+	<title>{editor.gigName || 'Setlist'} | {APP_NAME}</title>
+</svelte:head>
+
 <svelte:window onkeydown={handleKeydown} />
 
 {#if notFound}
@@ -148,6 +153,7 @@
 							songs: editor.setlistSongs[enc.id] || []
 						}))
 					]}
+					<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
 					<div class="sheet-wrapper" onclick={() => (editor.activeSetlistId = group.set.id)}>
 						<EditableSetlistSheet
 							{sections}

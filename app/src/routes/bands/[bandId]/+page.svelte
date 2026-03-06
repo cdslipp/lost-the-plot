@@ -2,7 +2,7 @@
 	// SPDX-License-Identifier: AGPL-3.0-only
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
-	import { page } from '$app/stores';
+	import { page } from '$app/state';
 	import { db } from '$lib/db';
 	import { Dialog, ContextMenu } from 'bits-ui';
 	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
@@ -16,8 +16,10 @@
 		getTemplates,
 		createPlotFromTemplate
 	} from '$lib/db/repositories/plots';
+	import { getToursByBandId } from '$lib/db/repositories/tours';
+	import { APP_NAME } from '$lib/config';
 
-	let bandId = $derived($page.params.bandId as string);
+	let bandId = $derived(page.params.bandId as string);
 
 	let band = $state<{ id: string; name: string } | null>(null);
 	let plots = $state<
@@ -60,8 +62,11 @@
 			changeover_minutes: number | null;
 			plot_id: string | null;
 			notes: string | null;
+			venue_id: number | null;
+			tour_id: string | null;
 		}[]
 	>([]);
+	let tours = $state<{ id: string; name: string }[]>([]);
 	let loading = $state(true);
 	let editingBandName = $state(false);
 	let bandNameInput = $state('');
@@ -131,15 +136,20 @@
 			changeover_minutes: number | null;
 			plot_id: string | null;
 			notes: string | null;
+			venue_id: number | null;
+			tour_id: string | null;
 		}>(
-			'SELECT id, name, venue, date, time, set_time, changeover_minutes, plot_id, notes FROM gigs WHERE band_id = ? ORDER BY date DESC',
+			'SELECT id, name, venue, date, time, set_time, changeover_minutes, plot_id, notes, venue_id, tour_id FROM gigs WHERE band_id = ? ORDER BY date DESC',
 			[bandId]
 		);
+
+		const tourRows = await getToursByBandId(bandId);
+		tours = tourRows.map((t) => ({ id: t.id, name: t.name }));
 
 		loading = false;
 
 		// Auto-enter edit mode for newly created bands
-		if ($page.url.searchParams.has('new')) {
+		if (page.url.searchParams.has('new')) {
 			editingBandName = true;
 			// Clean up the URL
 			goto(`/bands/${bandId}`, { replaceState: true });
@@ -205,6 +215,10 @@
 	});
 </script>
 
+<svelte:head>
+	<title>{band?.name ?? 'Band'} | {APP_NAME}</title>
+</svelte:head>
+
 <DetailPageLayout
 	backHref="/bands"
 	backLabel="Back to bands"
@@ -246,12 +260,12 @@
 					<span class="text-sm font-medium">Create your first stage plot</span>
 				</button>
 			{:else}
-				<div class="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+				<div class="grid auto-rows-fr grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
 					{#each plots as plot (plot.id)}
 						<ContextMenu.Root>
 							<ContextMenu.Trigger>
 								<div
-									class="group relative rounded-xl border border-border-primary bg-surface p-2.5 shadow-sm transition hover:border-stone-400"
+									class="group relative h-full rounded-xl border border-border-primary bg-surface p-2.5 shadow-sm transition hover:border-stone-400"
 								>
 									<a href="/bands/{bandId}/plots/{plot.id}" class="block">
 										<h3 class="font-medium text-text-primary group-hover:text-stone-600">
@@ -312,7 +326,7 @@
 					{/each}
 					<button
 						onclick={() => (showNewPlotDialog = true)}
-						class="group flex min-h-[76px] flex-col items-start justify-center rounded-xl border border-dashed border-border-primary bg-surface px-3 py-2.5 text-left text-sm text-text-tertiary transition hover:border-stone-400 hover:text-text-secondary"
+						class="group flex h-full flex-col items-start justify-center rounded-xl border border-dashed border-border-primary bg-surface px-3 py-2.5 text-left text-sm text-text-tertiary transition hover:border-stone-400 hover:text-text-secondary"
 					>
 						<span class="flex items-center gap-2 text-text-secondary">
 							<svg
@@ -338,7 +352,12 @@
 		<hr class="border-border-primary" />
 
 		<!-- Gigs Section -->
-		<GigsSection {bandId} bind:gigs plots={plots.map((p) => ({ id: p.id, name: p.name }))} />
+		<GigsSection
+			{bandId}
+			bind:gigs
+			plots={plots.map((p) => ({ id: p.id, name: p.name }))}
+			{tours}
+		/>
 
 		<hr class="border-border-primary" />
 

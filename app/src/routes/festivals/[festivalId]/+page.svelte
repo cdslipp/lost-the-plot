@@ -2,7 +2,7 @@
 	// SPDX-License-Identifier: AGPL-3.0-only
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
-	import { page } from '$app/stores';
+	import { page } from '$app/state';
 	import { db } from '$lib/db';
 	import { generateId } from '@stageplotter/shared';
 	import DetailPageLayout from '$lib/components/DetailPageLayout.svelte';
@@ -26,10 +26,11 @@
 	import DayTabs from './components/DayTabs.svelte';
 	import SlotList from './components/SlotList.svelte';
 	import BandsPanel from './components/BandsPanel.svelte';
+	import { APP_NAME } from '$lib/config';
 
 	let bandsPanelOpen = $state(true);
 
-	let festivalId = $derived($page.params.festivalId as string);
+	let festivalId = $derived(page.params.festivalId as string);
 
 	let festival = $state<{ id: string; name: string } | null>(null);
 	let loading = $state(true);
@@ -80,7 +81,7 @@
 
 		loading = false;
 
-		if ($page.url.searchParams.has('new')) {
+		if (page.url.searchParams.has('new')) {
 			editingName = true;
 			goto(`/festivals/${festivalId}`, { replaceState: true });
 		}
@@ -198,6 +199,10 @@
 		load();
 	});
 </script>
+
+<svelte:head>
+	<title>{festival?.name ?? 'Festival'} | {APP_NAME}</title>
+</svelte:head>
 
 <DetailPageLayout
 	backHref="/festivals"

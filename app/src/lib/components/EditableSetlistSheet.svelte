@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { SetlistSongRow, SetlistType } from '$lib/db/repositories/setlists';
+	import { autofocus } from '$lib/actions';
 
 	export type SheetSection = {
 		setlistId: number;
@@ -246,9 +247,11 @@
 		if (e.key === 'Escape' && selectedSongId != null) ondeselect?.();
 	}}
 />
+<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
 <div
 	class="setlist-sheet"
 	bind:this={sheetEl}
+	role="presentation"
 	style="
 		width: {dims.w}px;
 		height: {dims.h}px;
@@ -270,7 +273,7 @@
 							if (e.key === 'Enter') commitName(section.setlistId);
 							if (e.key === 'Escape') editingSetlistId = null;
 						}}
-						autofocus
+						use:autofocus
 					/>
 				{:else}
 					<button
@@ -299,7 +302,7 @@
 							if (e.key === 'Enter') commitName(section.setlistId);
 							if (e.key === 'Escape') editingSetlistId = null;
 						}}
-						autofocus
+						use:autofocus
 					/>
 				{:else}
 					<button
@@ -322,7 +325,7 @@
 					dragIndex !== null &&
 					!(dragSectionId === section.setlistId && dragIndex === i)}
 				{@const isSelected = selectedSongId != null && entry.song_id === selectedSongId}
-				<!-- svelte-ignore a11y_click_events_have_key_events -->
+				<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
 				<div
 					class="setlist-row-wrapper"
 					class:dragging={isDragging}

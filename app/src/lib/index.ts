@@ -8,7 +8,7 @@ export { default as ImportExport } from './components/ImportExport.svelte';
 export { default as Inspector } from './components/Inspector.svelte';
 
 // Utilities
-export * from './utils/canvas';
+export * from './utils/paperConfig';
 export * from './utils/scale';
 
 // SVG Components

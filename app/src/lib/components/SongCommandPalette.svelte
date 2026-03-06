@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { Command } from 'bits-ui';
 	import type { SongRow } from '$lib/db/repositories/songs';
+	import { commandScore } from '$lib/utils/search';
 
 	type Props = {
 		open?: boolean;
@@ -21,18 +22,6 @@
 		searchValue.trim().length > 0 &&
 			!songs.some((s) => s.title.toLowerCase() === searchValue.trim().toLowerCase())
 	);
-
-	function fuzzyFilter(value: string, search: string): number {
-		if (!search.trim()) return 1;
-		const searchLower = search.toLowerCase().replace(/\s+/g, '');
-		const target = value.toLowerCase();
-		let j = 0;
-		for (let i = 0; i < target.length && j < searchLower.length; i++) {
-			if (target[i] === searchLower[j]) j++;
-		}
-		if (j < searchLower.length) return 0;
-		return searchLower.length / target.length;
-	}
 
 	function handleSelect(song: SongRow) {
 		if (songsInSet.has(song.id)) return;
@@ -78,7 +67,7 @@
 			<Command.Root
 				class="flex flex-col overflow-hidden rounded-xl border border-border-primary bg-surface shadow-2xl"
 				shouldFilter={true}
-				filter={fuzzyFilter}
+				filter={commandScore}
 				loop={true}
 			>
 				<div class="border-b border-border-primary px-4 py-3">

@@ -211,9 +211,8 @@
 					<ContextMenu.Root>
 						<ContextMenu.Trigger>
 							<div
-								class="flex h-10 items-center {chLinkedTop
-									? ''
-									: 'border-b border-border-primary'} {isRowSelected
+								id="channel-row-{channelNum}"
+								class="flex h-10 items-center border-b border-border-primary {isRowSelected
 									? 'bg-blue-50 dark:bg-blue-900/20'
 									: ''}"
 							>
@@ -236,9 +235,9 @@
 											if (mode === 'input') {
 												onChannelSelect?.(channelNum, e);
 											} else {
-												// Output channels: select linked output on canvas if present
+												// Output channels: select the source canvas item (monitor/speaker) if known
 												const out = outputByChannel.get(channelNum);
-												if (out) onSelectionChange?.([out.id], e);
+												if (out?.item_id != null) onSelectionChange?.([out.item_id], e);
 											}
 										}}
 									>
@@ -254,7 +253,7 @@
 								</div>
 
 								<!-- Name cell -->
-								<div class="flex-1 px-1 {chLinkedTop ? 'border-b border-border-primary' : ''}">
+								<div class="flex-1 px-1">
 									{#if mode === 'input' && !readonlyMode}
 										<input
 											type="text"

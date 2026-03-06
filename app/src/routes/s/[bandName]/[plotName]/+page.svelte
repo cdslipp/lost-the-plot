@@ -1,6 +1,6 @@
 <script lang="ts">
 	// SPDX-License-Identifier: AGPL-3.0-only
-	import { page } from '$app/stores';
+	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
 	import { browser } from '$app/environment';
@@ -12,15 +12,16 @@
 	import { insertPersonsForBand } from '$lib/db/repositories/persons';
 	import { exportToPdf } from '$lib/utils/pdf';
 	import { getCurrentImageSrc } from '$lib/utils/canvasUtils';
+	import { APP_NAME } from '$lib/config';
 
 	const MARKETING_URL = 'https://plot.slipp.cam';
 	const APP_URL = 'https://ltp.slipp.cam';
 
 	let bandName = $derived(
-		decodeURIComponent(($page.params as Record<string, string>).bandName ?? '')
+		decodeURIComponent((page.params as Record<string, string>).bandName ?? '')
 	);
 	let plotName = $derived(
-		decodeURIComponent(($page.params as Record<string, string>).plotName ?? '')
+		decodeURIComponent((page.params as Record<string, string>).plotName ?? '')
 	);
 
 	let plot = $state<DecodedPlot | null>(null);
@@ -210,7 +211,7 @@
 </script>
 
 <svelte:head>
-	<title>{plotName} - {bandName} | Lost the Plot</title>
+	<title>{plotName} - {bandName} | {APP_NAME}</title>
 </svelte:head>
 
 <div class="flex h-[calc(100dvh-4.25rem)] flex-col gap-3 overflow-hidden py-3">

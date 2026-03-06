@@ -8,3 +8,4 @@ export { default as ChevronDownIcon } from './ChevronDownIcon.svelte';
 export { default as ChevronRightIcon } from './ChevronRightIcon.svelte';
 export { default as StarFilledIcon } from './StarFilledIcon.svelte';
 export { default as StarOutlineIcon } from './StarOutlineIcon.svelte';
+export { default as DotsMenuIcon } from './DotsMenuIcon.svelte';

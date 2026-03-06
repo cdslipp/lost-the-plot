@@ -7,29 +7,35 @@
 		"app",
 		"app/desktop",
 		"marketing",
+		"categorizer",
 		"packages/*"
 	],
 	"scripts": {
-		"dev": "cd app && bun run dev",
-		"dev:desktop": "cd app && bun run dev:desktop",
-		"dev:marketing": "cd marketing && bun run dev",
-		"build": "cd app && bun run build",
-		"build:desktop": "cd app && bun run build:desktop",
-		"build:marketing": "cd marketing && bun run build",
-		"check": "cd app && bun run check",
+		"dev": "bun run --filter @stageplotter/app dev",
+		"dev:desktop": "bun run --filter @stageplotter/app dev:desktop",
+		"dev:marketing": "bun run --filter marketing dev",
+		"dev:categorizer": "bun run --filter categorizer dev",
+		"build": "bun run --filter @stageplotter/app build",
+		"build:desktop": "bun run --filter @stageplotter/app build:desktop",
+		"build:marketing": "bun run --filter marketing build",
+		"build:categorizer": "bun run --filter categorizer build",
+		"check": "bun run --filter @stageplotter/app check",
 		"lint": "prettier --check . && eslint .",
 		"format": "prettier --write ."
 	},
 	"devDependencies": {
-		"@eslint/compat": "^1.4.0",
-		"@eslint/js": "^9.39.1",
-		"eslint": "^9.39.1",
+		"@eslint/compat": "^1.4.1",
+		"@eslint/js": "^9.39.3",
+		"eslint": "^9.39.3",
 		"eslint-config-prettier": "^10.1.8",
-		"eslint-plugin-svelte": "^3.13.1",
+		"eslint-plugin-svelte": "^3.15.0",
 		"globals": "^16.5.0",
-		"prettier": "^3.7.4",
-		"prettier-plugin-svelte": "^3.4.0",
+		"prettier": "^3.8.1",
+		"prettier-plugin-svelte": "^3.5.1",
 		"prettier-plugin-tailwindcss": "^0.7.2",
-		"typescript-eslint": "^8.48.1"
+		"typescript-eslint": "^8.56.1"
+	},
+	"dependencies": {
+		"shaders": "^2.3.75"
 	}
 }

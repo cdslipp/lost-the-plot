@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { page } from '$app/stores';
+	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
 
 	/**
@@ -38,7 +38,7 @@
 			return;
 		}
 
-		const parentPath = getParentPath($page.url.pathname);
+		const parentPath = getParentPath(page.url.pathname);
 		if (parentPath) {
 			e.preventDefault();
 			goto(parentPath);

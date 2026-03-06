@@ -384,7 +384,7 @@
 			? 'mt-1'
 			: ''} rounded-xl border border-dashed border-border-primary bg-surface shadow-sm"
 	>
-		<button type="submit" class="hidden"></button>
+		<button type="submit" class="hidden" aria-label="Submit song"></button>
 		<div class="flex items-center gap-2 p-2">
 			<svg
 				xmlns="http://www.w3.org/2000/svg"

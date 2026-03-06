@@ -6,7 +6,7 @@
 		type CanvasConfig,
 		type CanvasDimensions,
 		type StageArea
-	} from '$lib/utils/canvas';
+	} from '$lib/utils/paperConfig';
 	import { getPlotState } from '$lib/state/stagePlotState.svelte';
 
 	const ps = getPlotState();

@@ -28,3 +28,8 @@ export * as migration015 from './migrations/015_add_gear.js';
 export * as migration016 from './migrations/016_add_advance_status_and_band_files.js';
 export * as migration017 from './migrations/017_add_setlist_type.js';
 export * as migration018 from './migrations/018_add_plot_templates.js';
+export * as migration019 from './migrations/019_add_venues.js';
+export * as migration020 from './migrations/020_add_tours.js';
+export * as migration021 from './migrations/021_gear_catalog_fields.js';
+export * as migration022 from './migrations/022_normalize_plot_data.js';
+export * as migration023 from './migrations/023_app_meta.js';

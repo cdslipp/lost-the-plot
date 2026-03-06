@@ -4,6 +4,7 @@
 	import { getAllBands, type BandRow } from '$lib/db/repositories/bands';
 	import { getAllPlotsWithBandName, type PlotWithBand } from '$lib/db/repositories/plots';
 	import { listFestivals, type FestivalRow } from '$lib/db/repositories/festivals';
+	import { commandScore } from '$lib/utils/search';
 
 	type Props = {
 		open?: boolean;
@@ -32,18 +33,6 @@
 		bands = b;
 		plots = p;
 		festivals = f;
-	}
-
-	function fuzzyFilter(value: string, search: string, keywords?: string[]): number {
-		if (!search.trim()) return 1;
-		const searchLower = search.toLowerCase().replace(/\s+/g, '');
-		const target = (keywords ? `${value} ${keywords.join(' ')}` : value).toLowerCase();
-		let j = 0;
-		for (let i = 0; i < target.length && j < searchLower.length; i++) {
-			if (target[i] === searchLower[j]) j++;
-		}
-		if (j < searchLower.length) return 0;
-		return searchLower.length / target.length;
 	}
 
 	function selectBand(band: BandRow) {
@@ -88,7 +77,7 @@
 			<Command.Root
 				class="flex flex-col overflow-hidden rounded-xl border border-border-primary bg-surface shadow-2xl"
 				shouldFilter={true}
-				filter={fuzzyFilter}
+				filter={commandScore}
 				loop={true}
 			>
 				<div class="border-b border-border-primary px-4 py-3">

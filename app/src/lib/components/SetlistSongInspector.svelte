@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { getSetlistState } from '$lib/state/setlistEditorState.svelte';
 	import SegmentedToggle from './SegmentedToggle.svelte';
+	import ToggleSwitch from './ToggleSwitch.svelte';
 	import { toggleMode } from 'mode-watcher';
 
 	const editor = getSetlistState();
@@ -158,21 +159,11 @@
 				<!-- Show Keys toggle -->
 				<div class="flex items-center justify-between">
 					<span class="text-xs text-text-secondary">Show Keys</span>
-					<button
-						onclick={() => (editor.showKeys = !editor.showKeys)}
-						class="relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full transition-colors duration-200 {editor.showKeys
-							? 'bg-stone-900 dark:bg-stone-100'
-							: 'bg-gray-300 dark:bg-gray-600'}"
-						role="switch"
-						aria-checked={editor.showKeys}
-					>
-						<span
-							class="pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-sm ring-0 transition-transform duration-200 dark:bg-gray-900 {editor.showKeys
-								? 'translate-x-4'
-								: 'translate-x-0.5'}"
-							style="margin-top: 2px;"
-						></span>
-					</button>
+					<ToggleSwitch
+						checked={editor.showKeys}
+						onchange={(v) => (editor.showKeys = v)}
+						label="Show Keys"
+					/>
 				</div>
 
 				<!-- Text Case toggle -->
@@ -188,21 +179,11 @@
 				<!-- Show Numbers toggle -->
 				<div class="flex items-center justify-between">
 					<span class="text-xs text-text-secondary">Show Numbers</span>
-					<button
-						onclick={() => (editor.showNumbers = !editor.showNumbers)}
-						class="relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full transition-colors duration-200 {editor.showNumbers
-							? 'bg-stone-900 dark:bg-stone-100'
-							: 'bg-gray-300 dark:bg-gray-600'}"
-						role="switch"
-						aria-checked={editor.showNumbers}
-					>
-						<span
-							class="pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-sm ring-0 transition-transform duration-200 dark:bg-gray-900 {editor.showNumbers
-								? 'translate-x-4'
-								: 'translate-x-0.5'}"
-							style="margin-top: 2px;"
-						></span>
-					</button>
+					<ToggleSwitch
+						checked={editor.showNumbers}
+						onchange={(v) => (editor.showNumbers = v)}
+						label="Show Numbers"
+					/>
 				</div>
 			</div>
 

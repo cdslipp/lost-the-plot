@@ -2,6 +2,7 @@
 	import { Command } from 'bits-ui';
 	import { loadFinalAssets, filterItems, type ProcessedItem } from '$lib/utils/finalAssetsLoader';
 	import { modKey } from '$lib/utils/platform';
+	import { commandScore } from '$lib/utils/search';
 
 	type Item = ProcessedItem;
 
@@ -102,20 +103,6 @@
 		}));
 	});
 
-	function fuzzyFilter(value: string, search: string, keywords?: string[]): number {
-		if (!search.trim()) return 1;
-		const searchLower = search.toLowerCase().replace(/\s+/g, '');
-		const target = (keywords ? `${value} ${keywords.join(' ')}` : value).toLowerCase();
-		// Subsequence match: all search chars must appear in order
-		let j = 0;
-		for (let i = 0; i < target.length && j < searchLower.length; i++) {
-			if (target[i] === searchLower[j]) j++;
-		}
-		if (j < searchLower.length) return 0;
-		// Tighter matches (shorter value relative to search) score higher
-		return searchLower.length / target.length;
-	}
-
 	function handleSelect(item: Item) {
 		onselect?.(item);
 		open = false;
@@ -162,7 +149,7 @@
 			<Command.Root
 				class="flex flex-col overflow-hidden rounded-xl border border-border-primary bg-surface shadow-2xl"
 				shouldFilter={true}
-				filter={fuzzyFilter}
+				filter={commandScore}
 				loop={true}
 				columns={6}
 			>

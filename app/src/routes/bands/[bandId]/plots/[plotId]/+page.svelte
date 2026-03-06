@@ -7,7 +7,7 @@
 	import { PressedKeys } from 'runed';
 	import StageDeck from '$lib/components/StageDeck.svelte';
 	import { ContextMenu } from 'bits-ui';
-	import { page } from '$app/stores';
+	import { page } from '$app/state';
 	import { goto, beforeNavigate } from '$app/navigation';
 	import EditorToolbar from '$lib/components/EditorToolbar.svelte';
 	import EditorSidePanel from '$lib/components/EditorSidePanel.svelte';
@@ -15,19 +15,20 @@
 	import { exportToPdf } from '$lib/utils/pdf';
 	import { imagePxToFeet } from '$lib/utils/scale';
 	import { browser } from '$app/environment';
-	import { getVariantKeys, getCurrentImageSrc } from '$lib/utils/canvasUtils';
+	import { getVariantKeys, getCurrentImageSrc, loadImage } from '$lib/utils/canvasUtils';
 	import { StagePlotState, setPlotState } from '$lib/state/stagePlotState.svelte';
+	import { APP_NAME } from '$lib/config';
 
 	// --- Route params ---
-	let plotId = $derived($page.params.plotId);
-	let bandId = $derived($page.params.bandId);
+	let plotId = $derived(page.params.plotId);
+	let bandId = $derived(page.params.bandId);
 
 	// --- State class (source of truth) ---
-	const ps = new StagePlotState($page.params.plotId!, $page.params.bandId!);
+	const ps = new StagePlotState(page.params.plotId!, page.params.bandId!);
 	setPlotState(ps);
 
 	// --- New plot flag (auto-focus name) ---
-	let isNewPlot = $state($page.url.searchParams.has('new'));
+	let isNewPlot = $state(page.url.searchParams.has('new'));
 
 	// --- UI-only layout state ---
 	let layoutMode = $state<'mobile' | 'medium' | 'desktop'>('desktop');
@@ -35,7 +36,7 @@
 	let sidePanelTab = $state<'inspector' | 'people' | 'settings'>('inspector');
 	let mediumMainTab = $state<'canvas' | 'patch'>('canvas');
 	let mobileMainTab = $state<'canvas' | 'patch' | 'panel'>('canvas');
-	let mobilePanelTab = $state<'inspector' | 'people' | 'settings'>('inspector');
+
 
 	// --- Canvas DOM refs & contain-fit sizing ---
 	let canvasEl = $state<HTMLElement | null>(null);
@@ -44,7 +45,41 @@
 	let canvasPixelHeight = $state(533);
 	let pxPerFoot = $derived(canvasPixelWidth / ps.stageWidth);
 	let canvasResizeObserver: ResizeObserver | null = null;
-	let stagePlotContainer = $state<HTMLElement | null>(null);
+
+	// --- Zoom & pan state ---
+	let zoom = $state(1);
+	let panX = $state(0);
+	let panY = $state(0);
+	let isPanning = $state(false);
+	let spaceHeld = $state(false);
+
+	const BASE_ZOOM = 0.87;
+	const MIN_ZOOM = 0.25;
+	const MAX_ZOOM = 3;
+
+	function resetView() {
+		zoom = 1;
+		panX = 0;
+		panY = 0;
+	}
+
+	function zoomTo(newZoom: number, pivotX?: number, pivotY?: number) {
+		const clamped = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, newZoom));
+		if (pivotX !== undefined && pivotY !== undefined && canvasWrapperEl) {
+			const rect = canvasWrapperEl.getBoundingClientRect();
+			// Pivot relative to wrapper center (since transform-origin is center)
+			const cx = rect.width / 2;
+			const cy = rect.height / 2;
+			// Point under cursor in "pre-transform" space
+			const px = pivotX - cx - panX;
+			const py = pivotY - cy - panY;
+			// Scale that point and adjust pan to keep it under cursor
+			const scale = clamped / zoom;
+			panX += px - px * scale;
+			panY += py - py * scale;
+		}
+		zoom = clamped;
+	}
 
 	// --- Selection & interaction state (ID-based) ---
 	let selectedItemIds = $state<number[]>([]);
@@ -52,6 +87,21 @@
 	const selectedIdSet = $derived(new Set(selectedItemIds));
 	let isAddingItem = $state(false);
 	let replacingItemId = $state<number | null>(null);
+
+	// --- Scroll to patched channel when selected on stage ---
+	$effect(() => {
+		if (selectedItemIds.length === 1 && !selectedChannelNum) {
+			const itemId = selectedItemIds[0];
+			const channelNum = ps.channelByItemId.get(itemId);
+			if (channelNum) {
+				const el = document.getElementById(`channel-row-${channelNum}`);
+				if (el) {
+					el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+				}
+			}
+		}
+	});
+
 	let placingItem = $state<any>(null);
 	let pendingChannelLink = $state<number | null>(null);
 	let selecto: any;
@@ -126,6 +176,48 @@
 		if (!rotating) return;
 		ps.commitChange();
 		rotating = null;
+	}
+
+	// --- Zoom & Pan handlers ---
+	function handleWheel(event: WheelEvent) {
+		event.preventDefault();
+		if (event.ctrlKey || event.metaKey) {
+			// Zoom toward cursor
+			const wrapperRect = canvasWrapperEl!.getBoundingClientRect();
+			const pivotX = event.clientX - wrapperRect.left;
+			const pivotY = event.clientY - wrapperRect.top;
+			const delta = -event.deltaY * 0.005;
+			zoomTo(zoom * (1 + delta), pivotX, pivotY);
+		} else {
+			// Pan
+			panX -= event.deltaX;
+			panY -= event.deltaY;
+		}
+	}
+
+	let panStart = { x: 0, y: 0, panX: 0, panY: 0 };
+
+	function handlePanPointerDown(event: PointerEvent) {
+		// Middle mouse or space+left click
+		if (event.button === 1 || (spaceHeld && event.button === 0)) {
+			event.preventDefault();
+			event.stopPropagation();
+			isPanning = true;
+			panStart = { x: event.clientX, y: event.clientY, panX, panY };
+			(event.currentTarget as HTMLElement).setPointerCapture(event.pointerId);
+		}
+	}
+
+	function handlePanPointerMove(event: PointerEvent) {
+		if (!isPanning) return;
+		panX = panStart.panX + (event.clientX - panStart.x);
+		panY = panStart.panY + (event.clientY - panStart.y);
+	}
+
+	function handlePanPointerUp(event: PointerEvent) {
+		if (isPanning) {
+			isPanning = false;
+		}
 	}
 
 	// --- Keyboard ---
@@ -284,6 +376,8 @@
 	// --- Selecto lifecycle ---
 	$effect(() => {
 		const el = canvasEl;
+		// Subscribe to zoom so Selecto is recreated when zoom changes
+		const currentZoom = zoom;
 		if (!el || viewOnly) {
 			selecto?.destroy();
 			selecto = null;
@@ -292,11 +386,14 @@
 
 		selecto = new Selecto({
 			container: el,
+			rootContainer: canvasWrapperEl,
 			selectableTargets: ['.selectable-item'],
 			selectByClick: true,
 			selectFromInside: false,
 			toggleContinueSelect: 'shift',
+			ratio: 0,
 			dragCondition: (e: any) => {
+				if (spaceHeld || isPanning) return false;
 				const target = e.inputEvent.target;
 				const item = target.closest('.selectable-item');
 				return !item;
@@ -355,6 +452,13 @@
 		};
 	});
 
+	// Reset zoom/pan when stage dimensions change
+	$effect(() => {
+		void ps.stageWidth;
+		void ps.stageDepth;
+		resetView();
+	});
+
 	// --- Responsive layout ---
 	onMount(() => {
 		if (!browser) return;
@@ -388,17 +492,12 @@
 	}
 
 	async function preparePlacingItem(item: any, channel: any = null) {
-		const img = new Image();
-		img.src = item.image;
-		await new Promise((resolve) => {
-			img.onload = resolve;
-			img.onerror = () => resolve(undefined);
-		});
+		const { width, height } = await loadImage(item.image);
 		placingItem = {
 			type: item.type ?? item.item_type ?? 'input',
 			itemData: item,
-			width: imagePxToFeet(img.naturalWidth || 80),
-			height: imagePxToFeet(img.naturalHeight || 60),
+			width: imagePxToFeet(width || 80),
+			height: imagePxToFeet(height || 60),
 			x: -1000,
 			y: -1000,
 			channel
@@ -436,14 +535,9 @@
 		if (idx === -1) return;
 
 		const existing = ps.items[idx];
-		const img = new Image();
-		img.src = newItemData.image;
-		await new Promise((resolve) => {
-			img.onload = resolve;
-			img.onerror = () => resolve(undefined);
-		});
-		const newWidth = imagePxToFeet(img.naturalWidth || 80);
-		const newHeight = imagePxToFeet(img.naturalHeight || 60);
+		const { width: imgW, height: imgH } = await loadImage(newItemData.image);
+		const newWidth = imagePxToFeet(imgW || 80);
+		const newHeight = imagePxToFeet(imgH || 60);
 
 		ps.items[idx] = {
 			...existing,
@@ -473,6 +567,7 @@
 	}
 
 	function handleCanvasClick(event: MouseEvent) {
+		if (spaceHeld || isPanning) return;
 		if (justSelected) {
 			justSelected = false;
 			return;
@@ -532,7 +627,7 @@
 				});
 			}
 
-			ps.addDefaultOutputs(placingItem.itemData);
+			ps.addDefaultOutputs(placingItem.itemData, newItem.id);
 			ps.autoNumberItems();
 			placingItem = null;
 			ps.commitChange();
@@ -569,14 +664,10 @@
 		}
 	}
 
-	async function createPerson(name: string): Promise<number> {
-		return ps.createAndAddPerson(name);
-	}
-
 	// --- Drag handlers ---
 	function handleItemPointerDown(event: PointerEvent, item: any) {
 		if (event.button !== 0) return;
-		if (placingItem) return;
+		if (placingItem || spaceHeld || isPanning) return;
 		if ((event.target as HTMLElement).closest('button')) return;
 
 		const el = event.currentTarget as HTMLElement;
@@ -704,6 +795,16 @@
 	// --- PDF export ---
 	async function handleExportPdf() {
 		if (!canvasEl) return;
+		// Temporarily reset zoom/pan for clean export (CSS scale = zoom * BASE_ZOOM = 1)
+		const savedZoom = zoom;
+		const savedPanX = panX;
+		const savedPanY = panY;
+		zoom = 1 / BASE_ZOOM;
+		panX = 0;
+		panY = 0;
+		// Wait a tick for the DOM to update
+		await new Promise((r) => requestAnimationFrame(r));
+
 		// Build items list from inputChannels with assigned items
 		const pdfItems = ps.inputChannels
 			.filter((ch) => ch.itemId != null)
@@ -722,6 +823,11 @@
 			persons: ps.plotPersons.map((p) => ({ name: p.name, role: p.role || '' })),
 			pageFormat: ps.pdfPageFormat
 		});
+
+		// Restore zoom/pan
+		zoom = savedZoom;
+		panX = savedPanX;
+		panY = savedPanY;
 	}
 
 	function handleImportComplete() {
@@ -777,7 +883,25 @@
 	}
 </script>
 
-<svelte:window onkeydown={handleGlobalKeydown} />
+<svelte:head>
+	<title>{ps.plotName || 'Plot'} | {APP_NAME}</title>
+</svelte:head>
+
+<svelte:window
+	onkeydown={(e) => {
+		if (e.code === 'Space' && !e.repeat) {
+			const tag = (document.activeElement as HTMLElement)?.tagName;
+			if (tag !== 'INPUT' && tag !== 'TEXTAREA') {
+				e.preventDefault();
+				spaceHeld = true;
+			}
+		}
+		handleGlobalKeydown(e);
+	}}
+	onkeyup={(e) => {
+		if (e.code === 'Space') spaceHeld = false;
+	}}
+/>
 
 <div class="flex h-[calc(100dvh-4.25rem)] flex-col gap-3 overflow-hidden">
 	<div class="shrink-0">
@@ -824,13 +948,22 @@
 	{/snippet}
 
 	{#snippet canvasContent()}
-		<div bind:this={canvasWrapperEl} class="flex min-h-0 flex-1 items-center justify-center">
-			<div>
+		<!-- svelte-ignore a11y_no_static_element_interactions -->
+		<div
+			bind:this={canvasWrapperEl}
+			class="relative flex min-h-0 flex-1 items-center justify-center overflow-hidden"
+			onwheel={handleWheel}
+			onpointerdown={handlePanPointerDown}
+			onpointermove={handlePanPointerMove}
+			onpointerup={handlePanPointerUp}
+			style="cursor: {isPanning ? 'grabbing' : spaceHeld ? 'grab' : 'default'}"
+		>
+			<div style="transform: translate({panX}px, {panY}px) scale({zoom * BASE_ZOOM}); transform-origin: center center;">
 				{#if viewOnly}
 					<!-- View-only canvas: no context menus, no interactions -->
 					<div
 						bind:this={canvasEl}
-						class="items-container relative overflow-hidden bg-white dark:bg-gray-800"
+						class="items-container relative bg-white dark:bg-gray-800"
 						style="width: {canvasPixelWidth}px; height: {canvasPixelHeight}px;"
 					>
 						<CanvasOverlay
@@ -893,10 +1026,14 @@
 								<div
 									{...canvasCtxProps}
 									bind:this={canvasEl}
-									class="items-container relative overflow-hidden bg-white dark:bg-gray-800"
+									class="items-container relative bg-white dark:bg-gray-800"
 									style="width: {canvasPixelWidth}px; height: {canvasPixelHeight}px; cursor: {placingItem
 										? 'copy'
-										: 'default'}"
+										: isPanning
+											? 'grabbing'
+											: spaceHeld
+												? 'grab'
+												: 'default'}"
 									onmousemove={handleCanvasMouseMove}
 									onclick={handleCanvasClick}
 								>
@@ -1154,6 +1291,47 @@
 					</ContextMenu.Root>
 				{/if}
 			</div>
+
+			<!-- Zoom controls -->
+			{#if !viewOnly}
+				<div class="absolute right-2 bottom-2 z-30 flex items-center gap-1 rounded-lg border border-gray-300 bg-white/90 px-1 py-0.5 shadow-sm backdrop-blur-sm dark:border-gray-600 dark:bg-gray-800/90">
+					<button
+						type="button"
+						onclick={() => zoomTo(zoom / 1.2)}
+						class="flex h-6 w-6 items-center justify-center rounded text-sm text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
+						title="Zoom out"
+					>
+						&minus;
+					</button>
+					<button
+						type="button"
+						onclick={resetView}
+						class="min-w-[3rem] px-1 text-center text-xs text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700 rounded"
+						title="Reset zoom & pan"
+					>
+						{Math.round(zoom * 100)}%
+					</button>
+					<button
+						type="button"
+						onclick={() => zoomTo(zoom * 1.2)}
+						class="flex h-6 w-6 items-center justify-center rounded text-sm text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
+						title="Zoom in"
+					>
+						+
+					</button>
+					<div class="mx-0.5 h-4 w-px bg-gray-300 dark:bg-gray-600"></div>
+					<button
+						type="button"
+						onclick={() => { panX = 0; panY = 0; }}
+						class="flex h-6 w-6 items-center justify-center rounded text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
+						title="Re-center canvas"
+					>
+						<svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
+							<path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" />
+						</svg>
+					</button>
+				</div>
+			{/if}
 		</div>
 	{/snippet}
 
@@ -1161,13 +1339,12 @@
 		<div class="flex min-h-0 flex-1 gap-5 overflow-hidden">
 			<div
 				class="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden"
-				bind:this={stagePlotContainer}
-			>
-				<div class="flex min-h-0 flex-[2] flex-col overflow-hidden">
+				>
+				<div class="flex min-h-0 flex-[3] flex-col overflow-hidden">
 					{@render canvasContent()}
 				</div>
 
-				<div class="max-h-[500px] min-h-0 flex-1 overflow-hidden">
+				<div class="min-h-0 flex-[2] overflow-auto">
 					{@render patchContent(6)}
 				</div>
 			</div>
@@ -1177,6 +1354,7 @@
 					bind:activeTab={sidePanelTab}
 					bind:selectedItemIds
 					{selectedChannelNum}
+					{isAltPressed}
 					onPlaceRiser={placeRiser}
 					onAddPersonToPlot={addPersonToPlot}
 					onPlaceItemForChannel={placeItemForChannel}
@@ -1187,8 +1365,7 @@
 		<div class="flex min-h-0 flex-1 gap-5 overflow-hidden">
 			<div
 				class="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden"
-				bind:this={stagePlotContainer}
-			>
+				>
 				<div
 					class="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-border-primary bg-surface shadow-sm"
 				>
@@ -1211,11 +1388,11 @@
 						</div>
 					</div>
 					{#if mediumMainTab === 'canvas'}
-						<div class="min-h-0 flex-1 overflow-hidden p-4">
+						<div class="flex min-h-0 flex-1 flex-col overflow-hidden">
 							{@render canvasContent()}
 						</div>
 					{:else}
-						<div class="min-h-0 flex-1 overflow-hidden p-4">
+						<div class="min-h-0 flex-1 overflow-auto p-4">
 							{@render patchContent(4)}
 						</div>
 					{/if}
@@ -1227,6 +1404,7 @@
 					bind:activeTab={sidePanelTab}
 					bind:selectedItemIds
 					{selectedChannelNum}
+					{isAltPressed}
 					onPlaceRiser={placeRiser}
 					onAddPersonToPlot={addPersonToPlot}
 					onPlaceItemForChannel={placeItemForChannel}

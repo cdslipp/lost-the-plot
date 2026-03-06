@@ -10,6 +10,7 @@
 		disabled?: boolean;
 		class?: string;
 		isDuration?: boolean;
+		id?: string;
 	};
 
 	let {
@@ -20,7 +21,8 @@
 		use24h = true,
 		disabled = false,
 		class: className = '',
-		isDuration = false
+		isDuration = false,
+		id
 	}: Props = $props();
 
 	function formatValue(ms: number | null): string {
@@ -75,6 +77,7 @@
 	value={displayValue}
 	{placeholder}
 	{disabled}
+	{id}
 	onfocus={handleFocus}
 	oninput={handleInput}
 	onkeydown={handleKeydown}
