@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 
 import { db } from '$lib/db';
+import { preferences } from '$lib/state/preferences.svelte';
 
 const LS_KEY = 'stageplotter-onboarding-completed';
 
@@ -65,6 +66,17 @@ class OnboardingState {
 				"INSERT OR REPLACE INTO _app_meta (key, value, updated_at) VALUES ('user_role', ?, datetime('now'))",
 				[this.userRole]
 			);
+		}
+
+		// Enable relevant feature toggles based on selected role
+		if (this.userRole === 'tour_manager') {
+			preferences.showTours = true;
+		}
+		if (this.userRole === 'stage_manager') {
+			preferences.showFestivals = true;
+		}
+		if (this.userRole === 'musician') {
+			preferences.showSongs = true;
 		}
 
 		if (typeof window !== 'undefined') {

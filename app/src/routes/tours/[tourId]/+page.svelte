@@ -2,7 +2,7 @@
 	// SPDX-License-Identifier: AGPL-3.0-only
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
-	import { page } from '$app/stores';
+	import { page } from '$app/state';
 	import { db } from '$lib/db';
 	import DetailPageLayout from '$lib/components/DetailPageLayout.svelte';
 	import {
@@ -17,7 +17,7 @@
 	import { preferences } from '$lib/state/preferences.svelte';
 	import { APP_NAME } from '$lib/config';
 
-	let tourId = $derived($page.params.tourId as string);
+	let tourId = $derived(page.params.tourId as string);
 
 	let tour = $state<TourWithDetails | null>(null);
 	let gigs = $state<GigRow[]>([]);

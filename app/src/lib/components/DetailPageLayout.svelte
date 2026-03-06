@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
 	import CircleBackButton from '$lib/components/CircleBackButton.svelte';
+	import MenuTrigger from '$lib/components/MenuTrigger.svelte';
 	import { autofocus } from '$lib/actions';
 
 	type Props = {
@@ -45,7 +46,7 @@
 	</div>
 {:else}
 	<div class="flex flex-col gap-6">
-		<!-- Header: Back + Editable Name -->
+		<!-- Header: Back + Editable Name + Menu -->
 		<div class="flex items-center gap-3">
 			<CircleBackButton href={backHref} ariaLabel={backLabel} />
 			{#if editing}
@@ -95,6 +96,9 @@
 					</svg>
 				</button>
 			{/if}
+			<div class="ml-auto shrink-0">
+				<MenuTrigger />
+			</div>
 		</div>
 
 		<hr class="border-border-primary" />

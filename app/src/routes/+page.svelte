@@ -1,6 +1,6 @@
 <script lang="ts">
 	// SPDX-License-Identifier: AGPL-3.0-only
-	import { APP_NAME, NAV_LINKS } from '$lib/config';
+	import { APP_NAME, getNavLinks } from '$lib/config';
 </script>
 
 <svelte:head>
@@ -9,7 +9,7 @@
 
 <div class="flex h-[calc(100dvh-1.25rem)] flex-col items-center justify-center gap-12">
 	<nav class="flex flex-col items-center gap-6">
-		{#each NAV_LINKS as link}
+		{#each getNavLinks() as link}
 			<a
 				href={link.href}
 				class="nav-word font-serif text-[clamp(3rem,10vw,6rem)] leading-none font-bold text-text-primary no-underline"

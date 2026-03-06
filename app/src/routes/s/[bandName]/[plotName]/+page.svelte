@@ -1,6 +1,6 @@
 <script lang="ts">
 	// SPDX-License-Identifier: AGPL-3.0-only
-	import { page } from '$app/stores';
+	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
 	import { browser } from '$app/environment';
@@ -18,10 +18,10 @@
 	const APP_URL = 'https://ltp.slipp.cam';
 
 	let bandName = $derived(
-		decodeURIComponent(($page.params as Record<string, string>).bandName ?? '')
+		decodeURIComponent((page.params as Record<string, string>).bandName ?? '')
 	);
 	let plotName = $derived(
-		decodeURIComponent(($page.params as Record<string, string>).plotName ?? '')
+		decodeURIComponent((page.params as Record<string, string>).plotName ?? '')
 	);
 
 	let plot = $state<DecodedPlot | null>(null);

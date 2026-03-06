@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { page } from '$app/stores';
+	import { page } from '$app/state';
 	import { decodeSetlist, encodeSetlist, buildSetlistShareUrl } from '@stageplotter/shared';
 	import SetlistSheet from '$lib/components/SetlistSheet.svelte';
 	import CircleBackButton from '$lib/components/CircleBackButton.svelte';
@@ -17,8 +17,8 @@
 	let pageSize = $state<0 | 1>(0); // 0=letter, 1=A4
 	let showKeys = $state(true);
 
-	const bandName = $derived($page.params.bandName);
-	const gigName = $derived($page.params.gigName);
+	const bandName = $derived(page.params.bandName);
+	const gigName = $derived(page.params.gigName);
 
 	onMount(async () => {
 		const hash = window.location.hash.slice(1);

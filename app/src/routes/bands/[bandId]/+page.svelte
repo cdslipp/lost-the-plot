@@ -2,7 +2,7 @@
 	// SPDX-License-Identifier: AGPL-3.0-only
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
-	import { page } from '$app/stores';
+	import { page } from '$app/state';
 	import { db } from '$lib/db';
 	import { Dialog, ContextMenu } from 'bits-ui';
 	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
@@ -19,7 +19,7 @@
 	import { getToursByBandId } from '$lib/db/repositories/tours';
 	import { APP_NAME } from '$lib/config';
 
-	let bandId = $derived($page.params.bandId as string);
+	let bandId = $derived(page.params.bandId as string);
 
 	let band = $state<{ id: string; name: string } | null>(null);
 	let plots = $state<
@@ -149,7 +149,7 @@
 		loading = false;
 
 		// Auto-enter edit mode for newly created bands
-		if ($page.url.searchParams.has('new')) {
+		if (page.url.searchParams.has('new')) {
 			editingBandName = true;
 			// Clean up the URL
 			goto(`/bands/${bandId}`, { replaceState: true });

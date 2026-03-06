@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { page } from '$app/stores';
+	import { page } from '$app/state';
 	import { beforeNavigate } from '$app/navigation';
 	import { SetlistEditorState, setSetlistState } from '$lib/state/setlistEditorState.svelte';
 	import SetlistEditorToolbar from '$lib/components/SetlistEditorToolbar.svelte';
@@ -13,9 +13,9 @@
 	import type { SetlistSongRow } from '$lib/db/repositories/setlists';
 	import { APP_NAME } from '$lib/config';
 
-	let bandId = $derived($page.params.bandId);
+	let bandId = $derived(page.params.bandId);
 
-	const editor = new SetlistEditorState($page.params.bandId!, parseInt($page.params.gigId!));
+	const editor = new SetlistEditorState(page.params.bandId!, parseInt(page.params.gigId!));
 	setSetlistState(editor);
 
 	let loaded = $state(false);

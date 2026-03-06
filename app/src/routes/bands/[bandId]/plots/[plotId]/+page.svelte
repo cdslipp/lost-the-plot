@@ -7,7 +7,7 @@
 	import { PressedKeys } from 'runed';
 	import StageDeck from '$lib/components/StageDeck.svelte';
 	import { ContextMenu } from 'bits-ui';
-	import { page } from '$app/stores';
+	import { page } from '$app/state';
 	import { goto, beforeNavigate } from '$app/navigation';
 	import EditorToolbar from '$lib/components/EditorToolbar.svelte';
 	import EditorSidePanel from '$lib/components/EditorSidePanel.svelte';
@@ -20,15 +20,15 @@
 	import { APP_NAME } from '$lib/config';
 
 	// --- Route params ---
-	let plotId = $derived($page.params.plotId);
-	let bandId = $derived($page.params.bandId);
+	let plotId = $derived(page.params.plotId);
+	let bandId = $derived(page.params.bandId);
 
 	// --- State class (source of truth) ---
-	const ps = new StagePlotState($page.params.plotId!, $page.params.bandId!);
+	const ps = new StagePlotState(page.params.plotId!, page.params.bandId!);
 	setPlotState(ps);
 
 	// --- New plot flag (auto-focus name) ---
-	let isNewPlot = $state($page.url.searchParams.has('new'));
+	let isNewPlot = $state(page.url.searchParams.has('new'));
 
 	// --- UI-only layout state ---
 	let layoutMode = $state<'mobile' | 'medium' | 'desktop'>('desktop');

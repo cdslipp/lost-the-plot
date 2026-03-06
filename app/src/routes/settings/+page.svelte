@@ -124,6 +124,70 @@
 			</div>
 		</section>
 
+		<!-- Features -->
+		<section>
+			<h2 class="mb-3 font-serif text-lg font-semibold text-text-primary">Features</h2>
+			<div class="flex flex-col gap-3">
+				<div class="rounded-xl border border-border-primary bg-surface p-4">
+					<div class="flex items-center justify-between">
+						<div>
+							<p class="text-sm font-medium text-text-primary">Festivals</p>
+							<p class="text-xs text-text-tertiary">Show festivals in the menu</p>
+						</div>
+						<Switch.Root
+							checked={preferences.showFestivals}
+							onCheckedChange={(checked) => {
+								preferences.showFestivals = checked;
+							}}
+							class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent bg-stone-300 transition-colors data-[state=checked]:bg-stone-700 dark:bg-stone-600 dark:data-[state=checked]:bg-stone-400"
+						>
+							<Switch.Thumb
+								class="pointer-events-none block h-5 w-5 rounded-full bg-white shadow-sm ring-0 transition-transform data-[state=checked]:translate-x-5 data-[state=unchecked]:translate-x-0"
+							/>
+						</Switch.Root>
+					</div>
+				</div>
+				<div class="rounded-xl border border-border-primary bg-surface p-4">
+					<div class="flex items-center justify-between">
+						<div>
+							<p class="text-sm font-medium text-text-primary">Tours</p>
+							<p class="text-xs text-text-tertiary">Show tours in the menu</p>
+						</div>
+						<Switch.Root
+							checked={preferences.showTours}
+							onCheckedChange={(checked) => {
+								preferences.showTours = checked;
+							}}
+							class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent bg-stone-300 transition-colors data-[state=checked]:bg-stone-700 dark:bg-stone-600 dark:data-[state=checked]:bg-stone-400"
+						>
+							<Switch.Thumb
+								class="pointer-events-none block h-5 w-5 rounded-full bg-white shadow-sm ring-0 transition-transform data-[state=checked]:translate-x-5 data-[state=unchecked]:translate-x-0"
+							/>
+						</Switch.Root>
+					</div>
+				</div>
+				<div class="rounded-xl border border-border-primary bg-surface p-4">
+					<div class="flex items-center justify-between">
+						<div>
+							<p class="text-sm font-medium text-text-primary">Songs</p>
+							<p class="text-xs text-text-tertiary">Show songs in the menu</p>
+						</div>
+						<Switch.Root
+							checked={preferences.showSongs}
+							onCheckedChange={(checked) => {
+								preferences.showSongs = checked;
+							}}
+							class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent bg-stone-300 transition-colors data-[state=checked]:bg-stone-700 dark:bg-stone-600 dark:data-[state=checked]:bg-stone-400"
+						>
+							<Switch.Thumb
+								class="pointer-events-none block h-5 w-5 rounded-full bg-white shadow-sm ring-0 transition-transform data-[state=checked]:translate-x-5 data-[state=unchecked]:translate-x-0"
+							/>
+						</Switch.Root>
+					</div>
+				</div>
+			</div>
+		</section>
+
 		<!-- Data -->
 		<section>
 			<h2 class="mb-3 font-serif text-lg font-semibold text-text-primary">Data</h2>

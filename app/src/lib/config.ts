@@ -6,10 +6,13 @@
  */
 export const APP_NAME = 'Lost the Plot';
 
-export const NAV_LINKS: { label: string; href: string }[] = [
-	{ label: 'Bands', href: '/bands' },
-	{ label: 'Festivals', href: '/festivals' },
-	{ label: 'Tours', href: '/tours' },
-	{ label: 'Gear', href: '/gear' },
-	{ label: 'Settings', href: '/settings' }
-];
+import { preferences } from '$lib/state/preferences.svelte';
+
+export function getNavLinks(): { label: string; href: string }[] {
+	const links: { label: string; href: string }[] = [{ label: 'Bands', href: '/bands' }];
+	if (preferences.showSongs) links.push({ label: 'Songs', href: '/songs' });
+	if (preferences.showFestivals) links.push({ label: 'Festivals', href: '/festivals' });
+	if (preferences.showTours) links.push({ label: 'Tours', href: '/tours' });
+	links.push({ label: 'Gear', href: '/gear' }, { label: 'Settings', href: '/settings' });
+	return links;
+}

@@ -13,6 +13,7 @@
 		type BassPosition,
 		type MonitorType
 	} from '$lib/state/onboarding.svelte';
+	import { modKey } from '$lib/utils/platform';
 	import { onMount, tick } from 'svelte';
 
 	// Steps: welcome, role, act type, band name, members, drums?, band size, bass position, monitors
@@ -113,7 +114,11 @@
 	function handleMemberKeydown(e: KeyboardEvent) {
 		if (e.key === 'Enter') {
 			e.preventDefault();
-			addMember();
+			if (e.metaKey || e.ctrlKey) {
+				nextStep();
+			} else {
+				addMember();
+			}
 		}
 	}
 
@@ -349,9 +354,12 @@
 					</div>
 					<button
 						onclick={nextStep}
-						class="mt-2 rounded-lg bg-stone-900 px-8 py-3 text-base font-medium text-white transition hover:bg-stone-800 dark:bg-stone-100 dark:text-stone-900 dark:hover:bg-stone-200"
+						class="mt-2 inline-flex items-center justify-center rounded-lg bg-stone-900 px-8 py-3 text-base font-medium text-white transition hover:bg-stone-800 dark:bg-stone-100 dark:text-stone-900 dark:hover:bg-stone-200"
 					>
 						{onboarding.memberNames.length === 0 ? 'Skip this step' : 'Next'}
+						<kbd class="ml-2 rounded bg-stone-700 px-1.5 py-0.5 text-[10px] font-medium text-stone-200 dark:bg-stone-300 dark:text-stone-800">
+							{modKey}&#x23CE;
+						</kbd>
 					</button>
 				</div>
 				<button

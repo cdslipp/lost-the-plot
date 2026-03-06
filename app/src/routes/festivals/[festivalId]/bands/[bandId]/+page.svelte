@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
-	import { page } from '$app/stores';
+	import { page } from '$app/state';
 	import { generateId } from '@stageplotter/shared';
 	import DetailPageLayout from '$lib/components/DetailPageLayout.svelte';
 	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
@@ -27,8 +27,8 @@
 	import { downloadOpfsFile } from '$lib/utils/downloadFile';
 	import { APP_NAME } from '$lib/config';
 
-	let festivalId = $derived($page.params.festivalId as string);
-	let bandId = $derived($page.params.bandId as string);
+	let festivalId = $derived(page.params.festivalId as string);
+	let bandId = $derived(page.params.bandId as string);
 
 	let band = $state<FestivalBandRow | null>(null);
 	let files = $state<FestivalBandFileRow[]>([]);
