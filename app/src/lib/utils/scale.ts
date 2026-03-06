@@ -10,37 +10,10 @@ const REFERENCE_ITEM_WIDTH_PX = 57; // FenderAmp.png width
 const REFERENCE_ITEM_WIDTH_INCHES = 24.5; // Fender Deluxe Reverb actual width
 
 /**
- * Scale factor: pixels per inch
- */
-export const PIXELS_PER_INCH = REFERENCE_ITEM_WIDTH_PX / REFERENCE_ITEM_WIDTH_INCHES;
-// 57 ÷ 24.5 = 2.327 pixels per inch
-
-/**
  * Scale factor: inches per pixel
  */
-export const INCHES_PER_PIXEL = REFERENCE_ITEM_WIDTH_INCHES / REFERENCE_ITEM_WIDTH_PX;
+const INCHES_PER_PIXEL = REFERENCE_ITEM_WIDTH_INCHES / REFERENCE_ITEM_WIDTH_PX;
 // 24.5 ÷ 57 = 0.4298 inches per pixel
-
-/**
- * Convert inches to pixels using our established scale
- */
-export function inchesToPixels(inches: number): number {
-	return Math.round(inches * PIXELS_PER_INCH);
-}
-
-/**
- * Convert feet to pixels using our established scale
- */
-export function feetToPixels(feet: number): number {
-	return inchesToPixels(feet * 12);
-}
-
-/**
- * Convert pixels to inches using our established scale
- */
-export function pixelsToInches(pixels: number): number {
-	return pixels * INCHES_PER_PIXEL;
-}
 
 /**
  * Format a measurement in inches as feet'inches"

@@ -1,6 +1,6 @@
 # Stage Plot Pro Feature Comparison
 
-Comparing StagePlotter against **Stage Plot Pro** (v2.9.9.2, no longer maintained — developer deceased). Stage Plot Pro was a $39.99 Mac/Windows desktop app with ~300 equipment items.
+Comparing StagePlotter against **Stage Plot Pro** (v2.9.9.2, no longer maintained). Stage Plot Pro was a $39.99 Mac/Windows desktop app with ~300 equipment items.
 
 ---
 
