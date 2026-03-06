@@ -3,7 +3,7 @@
 	import { generateId } from '@stageplotter/shared';
 	import { createBand } from '$lib/db/repositories/bands';
 	import { createPerson } from '$lib/db/repositories/persons';
-	import { createPlot } from '$lib/db/repositories/plots';
+	import { createPlot, savePlotEntities, type PlotItemRow } from '$lib/db/repositories/plots';
 	import { addPersonToPlot } from '$lib/db/repositories/plotPersons';
 	import {
 		onboarding,
@@ -128,6 +128,169 @@
 		}
 	}
 
+	function buildTemplateItems(
+		plotId: string,
+		hasDrums: boolean,
+		bassPosition: string | null
+	): PlotItemRow[] {
+		const items: PlotItemRow[] = [];
+		const baseId = Date.now();
+
+		if (hasDrums) {
+			const drumId = baseId;
+			const drumItemData = {
+				name: 'Drum Kit - Two Toms',
+				item_type: 'drumset',
+				slug: 'drums-drum-kits-twotoms',
+				category: 'drums',
+				subcategory: 'kit',
+				path: 'drums/drum_kits/twotoms',
+				variants: {
+					L: 'TwoTomsL.png',
+					RA: 'TwoTomsRA.png',
+					LA: 'TwoTomsLA.png',
+					R: 'TwoTomsR.png',
+					default: 'TwoToms.png'
+				},
+				variant_order: ['default', 'LA', 'L', 'R', 'RA'],
+				default_inputs: [
+					{ name: 'Kick', connector: 'XLR' },
+					{ name: 'Snare', connector: 'XLR', stand: 'none', link_mode: 'mono', phantom_power: false },
+					{ name: 'HH', connector: 'XLR', stand: 'none', link_mode: 'mono', phantom_power: false },
+					{ name: 'OH L', connector: 'XLR', stand: 'none', link_mode: 'mono', phantom_power: false },
+					{ name: 'OH R', connector: 'XLR', stand: 'none', link_mode: 'mono', phantom_power: false }
+				],
+				default_outputs: [],
+				auto_number_prefix: 'Drums',
+				provision_default: 'artist_provided',
+				is_backline: true
+			};
+
+			items.push({
+				id: drumId,
+				plot_id: plotId,
+				name: 'Drum Kit - Two Toms',
+				type: 'drumset',
+				category: 'drums',
+				current_variant: 'default',
+				pos_x: 9,
+				pos_y: 3,
+				width: 6.125,
+				height: 3.94,
+				rotation: 0,
+				person_id: null,
+				item_data: JSON.stringify(drumItemData),
+				sort_order: 0,
+				size: null
+			});
+
+			// Add input children for each default input
+			drumItemData.default_inputs.forEach((input, idx) => {
+				items.push({
+					id: drumId + idx + 1,
+					plot_id: plotId,
+					name: input.name,
+					type: 'input',
+					category: 'Input',
+					current_variant: 'default',
+					pos_x: 0,
+					pos_y: 0,
+					width: 0,
+					height: 0,
+					rotation: 0,
+					person_id: null,
+					item_data: JSON.stringify({
+						...input,
+						item_type: 'input',
+						name: input.name,
+						category: 'Input',
+						path: ''
+					}),
+					sort_order: items.length,
+					size: null
+				});
+			});
+		}
+
+		if (bassPosition === 'stage_right' || bassPosition === 'stage_left') {
+			const bassId = baseId + 100;
+			const bassItemData = {
+				name: 'Bass Amp',
+				item_type: 'amp',
+				slug: 'amps-bass-bassamp',
+				category: 'amps',
+				subcategory: 'bass_amp',
+				path: 'amps/bass/bassamp',
+				variants: {
+					L: 'BassAmpL.png',
+					RA: 'BassAmpRA.png',
+					LA: 'BassAmpLA.png',
+					R: 'BassAmpR.png',
+					default: 'BassAmp.png'
+				},
+				variant_order: ['default', 'LA', 'L', 'R', 'RA'],
+				default_inputs: [
+					{ name: 'Amp', connector: 'XLR', stand: 'none', link_mode: 'mono', phantom_power: false }
+				],
+				default_outputs: [],
+				auto_number_prefix: 'Bass',
+				provision_default: 'artist_provided',
+				is_backline: true
+			};
+
+			const posX = bassPosition === 'stage_right' ? 2.85 : 19;
+			const posY = bassPosition === 'stage_right' ? 1.6 : 1.3;
+
+			items.push({
+				id: bassId,
+				plot_id: plotId,
+				name: 'Bass Amp',
+				type: 'amp',
+				category: 'amps',
+				current_variant: 'default',
+				pos_x: posX,
+				pos_y: posY,
+				width: 1.86,
+				height: 1.47,
+				rotation: 0,
+				person_id: null,
+				item_data: JSON.stringify(bassItemData),
+				sort_order: items.length,
+				size: null
+			});
+
+			// Add input child for bass amp
+			items.push({
+				id: bassId + 1,
+				plot_id: plotId,
+				name: 'Amp',
+				type: 'input',
+				category: 'Input',
+				current_variant: 'default',
+				pos_x: 0,
+				pos_y: 0,
+				width: 0,
+				height: 0,
+				rotation: 0,
+				person_id: null,
+				item_data: JSON.stringify({
+					name: 'Amp',
+					connector: 'XLR',
+					stand: 'none',
+					link_mode: 'mono',
+					phantom_power: false,
+					item_type: 'input',
+					category: 'Input',
+					path: ''
+				}),
+				sort_order: items.length + 1,
+				size: null
+			});
+		}
+
+		return items;
+	}
+
 	async function handleFinish() {
 		if (creating) return;
 		creating = true;
@@ -145,15 +308,26 @@
 
 			// Create default plot
 			const plotId = generateId();
-			await createPlot(plotId, 'Main Plot', bandId);
+			await createPlot(plotId, 'Main Stage Plot', bandId);
 
 			// Add all members to the plot
 			for (const personId of personIds) {
 				await addPersonToPlot(plotId, personId);
 			}
 
+			// Pre-populate stage plot with items based on onboarding answers
+			const templateItems = buildTemplateItems(plotId, onboarding.hasDrums === true, onboarding.bassPosition);
+			if (templateItems.length > 0) {
+				await savePlotEntities(plotId, {
+					items: templateItems,
+					outputs: [],
+					inputChannels: [],
+					outputChannels: []
+				});
+			}
+
 			await onboarding.markComplete();
-			goto(`/bands/${bandId}?new=1`);
+			goto(`/bands/${bandId}/plots/${plotId}?new=1`);
 		} catch (e) {
 			console.error('Failed to create band:', e);
 			creating = false;
