@@ -220,7 +220,7 @@
 		</OnboardingGate>
 	</div>
 	<footer
-		class="pointer-events-none fixed right-0 bottom-0 left-0 z-10 flex items-center justify-center py-1 text-xs text-text-tertiary/50 select-none"
+		class="pointer-events-none fixed right-0 bottom-0 left-0 z-10 flex items-center justify-center py-1 text-xs text-text-tertiary/50 select-none sm:pl-32 lg:pl-36"
 	>
 		<a
 			href="https://slipp.cam"

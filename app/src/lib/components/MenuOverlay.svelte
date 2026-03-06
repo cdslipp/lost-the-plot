@@ -1,15 +1,50 @@
 <script lang="ts">
 	import { fly, fade } from 'svelte/transition';
+	import { tick } from 'svelte';
 	import { getNavLinks } from '$lib/config';
+	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import BackgroundShader from './BackgroundShader.svelte';
 
 	let { open = $bindable(false), instrumentSrc = '' }: { open: boolean; instrumentSrc?: string } = $props();
 
+	let linkEls: HTMLAnchorElement[] = [];
+
+	$effect(() => {
+		if (open) {
+			tick().then(() => {
+				linkEls[0]?.focus();
+			});
+		}
+	});
+
 	function handleKeydown(e: KeyboardEvent) {
 		if (e.key === 'Escape' && open) {
 			e.preventDefault();
 			open = false;
+			return;
+		}
+
+		if (!open) return;
+
+		const links = getNavLinks();
+		const currentIndex = linkEls.findIndex((el) => el === document.activeElement);
+
+		if (e.key === 'ArrowDown') {
+			e.preventDefault();
+			const next = currentIndex < 0 ? 0 : (currentIndex + 1) % links.length;
+			linkEls[next]?.focus();
+		} else if (e.key === 'ArrowUp') {
+			e.preventDefault();
+			const prev = currentIndex < 0 ? links.length - 1 : (currentIndex - 1 + links.length) % links.length;
+			linkEls[prev]?.focus();
+		} else if (e.key >= '1' && e.key <= '9') {
+			const idx = parseInt(e.key) - 1;
+			if (idx < links.length) {
+				e.preventDefault();
+				open = false;
+				goto(links[idx].href);
+			}
 		}
 	}
 
