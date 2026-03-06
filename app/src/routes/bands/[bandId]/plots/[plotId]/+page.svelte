@@ -385,13 +385,13 @@
 		}
 
 		selecto = new Selecto({
-			container: canvasWrapperEl ?? el,
-			rootContainer: canvasWrapperEl ?? el,
+			container: el,
+			rootContainer: canvasWrapperEl,
 			selectableTargets: ['.selectable-item'],
 			selectByClick: true,
 			selectFromInside: false,
 			toggleContinueSelect: 'shift',
-			ratio: currentZoom * BASE_ZOOM,
+			ratio: 0,
 			dragCondition: (e: any) => {
 				if (spaceHeld || isPanning) return false;
 				const target = e.inputEvent.target;

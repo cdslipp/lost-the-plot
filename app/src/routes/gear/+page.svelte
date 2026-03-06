@@ -2,9 +2,6 @@
 	// SPDX-License-Identifier: AGPL-3.0-only
 	import { onMount } from 'svelte';
 	import { APP_NAME } from '$lib/config';
-	import { db } from '$lib/db';
-	import { generateId } from '@stageplotter/shared';
-	import { createGearItem, type GearCategory } from '$lib/db/repositories/gear';
 	import { loadFinalAssets, type ProcessedItem } from '$lib/utils/finalAssetsLoader';
 
 	let catalogItems = $state<ProcessedItem[]>([]);
@@ -12,8 +9,6 @@
 	let searchQuery = $state('');
 	let categoryFilter = $state('all');
 	let typeFilter = $state('all');
-	let duplicatingId = $state<string | null>(null);
-
 	const categories = $derived.by(() => {
 		const cats = new Set(catalogItems.map((i) => i.category));
 		return Array.from(cats).sort();
@@ -39,40 +34,8 @@
 		});
 	});
 
-	const categoryMap: Record<string, GearCategory> = {
-		guitars: 'guitars',
-		bass: 'bass',
-		keys: 'keys',
-		strings: 'strings',
-		winds: 'winds',
-		percussion: 'percussion',
-		drums: 'drums',
-		amps: 'amps',
-		mics: 'mics',
-		monitors: 'monitors',
-		equipment: 'equipment'
-	};
-
-	function toGearCategory(cat: string): GearCategory {
-		return categoryMap[cat] ?? 'other';
-	}
-
 	function formatLabel(s: string): string {
 		return s.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
-	}
-
-	async function duplicateToGear(item: ProcessedItem) {
-		duplicatingId = item.id;
-		try {
-			await db.init();
-			const id = generateId();
-			await createGearItem(id, item.name, toGearCategory(item.category), {
-				catalog_item_id: item.id,
-				image_path: item.image
-			});
-		} finally {
-			duplicatingId = null;
-		}
 	}
 
 	onMount(async () => {
@@ -169,15 +132,7 @@
 													</span>
 												</div>
 											</div>
-						<!-- Duplicate button (visible on hover / always on mobile) -->
-						<button
-							onclick={() => duplicateToGear(item)}
-							disabled={duplicatingId === item.id}
-							class="absolute top-2 right-2 rounded-lg bg-stone-800/80 px-2 py-1 text-[10px] font-medium text-white opacity-0 transition group-hover:opacity-100 hover:bg-stone-900 disabled:opacity-50 max-sm:opacity-70 sm:opacity-0 dark:bg-stone-200/80 dark:text-stone-900 dark:hover:bg-stone-100"
-						>
-							{duplicatingId === item.id ? 'Adding...' : '+ My Gear'}
-						</button>
-					</div>
+						</div>
 				{/each}
 			</div>
 		</div>

@@ -3,23 +3,28 @@
 	import { APP_NAME, getNavLinks } from '$lib/config';
 	import { goto } from '$app/navigation';
 
-	let linkEls: HTMLAnchorElement[] = [];
+	let navEl: HTMLElement;
+
+	function getLinks(): HTMLAnchorElement[] {
+		return navEl ? Array.from(navEl.querySelectorAll<HTMLAnchorElement>('.nav-word')) : [];
+	}
 
 	function handleKeydown(e: KeyboardEvent) {
-		const links = getNavLinks();
-		const currentIndex = linkEls.findIndex((el) => el === document.activeElement);
+		const links = getLinks();
+		const count = links.length;
+		const currentIndex = links.findIndex((el) => el === document.activeElement);
 
 		if (e.key === 'ArrowDown') {
 			e.preventDefault();
-			const next = currentIndex < 0 ? 0 : (currentIndex + 1) % links.length;
-			linkEls[next]?.focus();
+			const next = currentIndex < 0 ? 0 : (currentIndex + 1) % count;
+			links[next]?.focus();
 		} else if (e.key === 'ArrowUp') {
 			e.preventDefault();
-			const prev = currentIndex < 0 ? links.length - 1 : (currentIndex - 1 + links.length) % links.length;
-			linkEls[prev]?.focus();
+			const prev = currentIndex < 0 ? count - 1 : (currentIndex - 1 + count) % count;
+			links[prev]?.focus();
 		} else if (e.key >= '1' && e.key <= '9') {
 			const idx = parseInt(e.key) - 1;
-			if (idx < links.length) {
+			if (idx < count) {
 				e.preventDefault();
 				goto(links[idx].href);
 			}
@@ -34,10 +39,9 @@
 </svelte:head>
 
 <div class="flex h-[calc(100dvh-1.25rem)] flex-col items-center justify-center gap-12">
-	<nav class="flex flex-col items-center gap-6">
+	<nav bind:this={navEl} class="flex flex-col items-center gap-6">
 		{#each getNavLinks() as link, i}
 			<a
-				bind:this={linkEls[i]}
 				href={link.href}
 				class="nav-word font-serif text-[clamp(3rem,10vw,6rem)] leading-none font-bold text-text-primary no-underline"
 			>

@@ -1,64 +1,34 @@
-# StagePlotter
+# Lost the Plot
 
-Professional stage plot creator for live music. Plan your stage layout, equipment placement, and input list with a drag-and-drop canvas editor.
+Stage plot creator for live music. Drag-and-drop canvas editor for planning stage layouts, equipment placement, and input lists.
 
-**PWA**: [app.stageplotter.ca](https://app.stageplotter.ca) | **Desktop**: Coming soon
+Everything runs locally in the browser — no accounts, no cloud.
 
-## Features
+## Try it
 
-- Drag-and-drop canvas editor (1100×850px, letter landscape)
-- 500+ equipment assets (mics, drums, guitars, amps, keyboards, monitors, etc.)
-- Multi-selection with Selecto (click, shift-click, box select)
-- Patch list with channel assignment (inputs and outputs)
-- Musician management and assignment
-- Dark/light mode with consistent theming
-- Import/export JSON stage plots
-- Undo/redo with keyboard shortcuts
-- Offline-first with SQLite OPFS persistence
-- Stage builder (create rectangular stages from deck sections)
-- Context menu (edit, duplicate, delete)
-- Keyboard shortcuts (arrows to nudge, ⌘K to search, ⌘Z/Y undo/redo)
+**Web app**: [losttheplot.app](https://losttheplot.app)
 
-## Quick Start
+## Run locally
 
 ```bash
 bun install
 bun run dev
 ```
 
-## Architecture
+## What it does
 
-This is a monorepo shipping as both a PWA and a Tauri desktop app:
+- Drag-and-drop canvas editor
+- 500+ equipment assets (mics, drums, amps, keyboards, monitors, etc.)
+- Patch list with channel assignments
+- Band and musician management
+- Import/export as JSON
+- Offline-first with local SQLite storage
+- Dark mode
 
-| Target    | URL                   | Build                     |
-| --------- | --------------------- | ------------------------- |
-| PWA       | `app.stageplotter.ca` | `bun run build`           |
-| Desktop   | —                     | `bun run build:desktop`   |
-| Marketing | `stageplotter.ca`     | `bun run build:marketing` |
+## Tech
 
-See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the full architecture guide.
-
-## Documentation
-
-- [Architecture](docs/ARCHITECTURE.md) — System design and directory layout
-- [Development](docs/DEVELOPMENT.md) — Dev setup and workspace commands
-- [Deployment](docs/DEPLOYMENT.md) — Cloudflare Pages and Tauri distribution
-- [Contributing](docs/CONTRIBUTING.md) — How to contribute
-- [Canvas Architecture](docs/canvas-architecture.md) — Canvas and stage coordinate system
-- [Scale System](docs/scale-system.md) — Real-world measurement scale
-- [Data Model](docs/DATA_MODEL.md) — Entity relationships and JSON schemas
-- [Import/Export](docs/import-export.md) — JSON file format specification
-- [Items Library](docs/ITEMS_LIBRARY.md) — Catalog data and asset workflow
-
-## Tech Stack
-
-- **Svelte 5** + **SvelteKit 2** — Framework
-- **Tailwind CSS 4** — Styling
-- **Bits UI** — Headless accessible components
-- **SQLite WASM** + OPFS — Client-side persistence (PWA)
-- **Tauri v2** — Desktop app
-- **Cloudflare Pages** — PWA and marketing deployment
+Svelte 5, SvelteKit, Tailwind CSS 4, SQLite WASM + OPFS, Tauri v2 (desktop), Cloudflare Pages.
 
 ## License
 
-AGPL-3.0-only. See [LICENSE](LICENSE) for details.
+AGPL-3.0-only. See [LICENSE](LICENSE).

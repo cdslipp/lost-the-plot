@@ -8,12 +8,16 @@
 
 	let { open = $bindable(false), instrumentSrc = '' }: { open: boolean; instrumentSrc?: string } = $props();
 
-	let linkEls: HTMLAnchorElement[] = [];
+	let navEl: HTMLElement;
+
+	function getLinks(): HTMLAnchorElement[] {
+		return navEl ? Array.from(navEl.querySelectorAll<HTMLAnchorElement>('.nav-word')) : [];
+	}
 
 	$effect(() => {
 		if (open) {
 			tick().then(() => {
-				linkEls[0]?.focus();
+				getLinks()[0]?.focus();
 			});
 		}
 	});
@@ -27,20 +31,21 @@
 
 		if (!open) return;
 
-		const links = getNavLinks();
-		const currentIndex = linkEls.findIndex((el) => el === document.activeElement);
+		const links = getLinks();
+		const count = links.length;
+		const currentIndex = links.findIndex((el) => el === document.activeElement);
 
 		if (e.key === 'ArrowDown') {
 			e.preventDefault();
-			const next = currentIndex < 0 ? 0 : (currentIndex + 1) % links.length;
-			linkEls[next]?.focus();
+			const next = currentIndex < 0 ? 0 : (currentIndex + 1) % count;
+			links[next]?.focus();
 		} else if (e.key === 'ArrowUp') {
 			e.preventDefault();
-			const prev = currentIndex < 0 ? links.length - 1 : (currentIndex - 1 + links.length) % links.length;
-			linkEls[prev]?.focus();
+			const prev = currentIndex < 0 ? count - 1 : (currentIndex - 1 + count) % count;
+			links[prev]?.focus();
 		} else if (e.key >= '1' && e.key <= '9') {
 			const idx = parseInt(e.key) - 1;
-			if (idx < links.length) {
+			if (idx < count) {
 				e.preventDefault();
 				open = false;
 				goto(links[idx].href);
@@ -100,17 +105,18 @@
 				Lost the Plot
 			</span>
 
-			<nav class="flex flex-col items-center gap-6">
-				{#each getNavLinks() as link}
+			<nav bind:this={navEl} class="flex flex-col items-center gap-6">
+				{#each getNavLinks() as link, i}
 					<a
 						href={link.href}
 						onclick={handleLinkClick}
 						class="nav-word font-serif text-[clamp(3rem,10vw,6rem)] leading-none font-bold text-text-primary no-underline"
 						aria-current={page.url.pathname.startsWith(link.href) ? 'page' : undefined}
 					>
+						<span class="number-hint">{i + 1}</span>
 						<span class="nav-blob"></span>
-						{#each link.label.split('') as letter, i}
-							<span class="nav-letter" style="transition-delay: {i * 40}ms">{letter}</span>
+						{#each link.label.split('') as letter, j}
+							<span class="nav-letter" style="transition-delay: {j * 40}ms">{letter}</span>
 						{/each}
 					</a>
 				{/each}
@@ -168,7 +174,8 @@
 		background: #fafaf9;
 	}
 
-	.nav-word:hover .nav-blob {
+	.nav-word:hover .nav-blob,
+	.nav-word:focus-visible .nav-blob {
 		transform: scaleX(1);
 		opacity: 1;
 	}
@@ -182,13 +189,35 @@
 			color 0.2s;
 	}
 
-	.nav-word:hover .nav-letter {
+	.nav-word:hover .nav-letter,
+	.nav-word:focus-visible .nav-letter {
 		transform: translateY(-0.08em);
 		color: #fafaf9;
 	}
 
-	:global(.dark) .nav-word:hover .nav-letter {
+	:global(.dark) .nav-word:hover .nav-letter,
+	:global(.dark) .nav-word:focus-visible .nav-letter {
 		color: #1c1917;
+	}
+
+	.nav-word:focus-visible {
+		outline: none;
+	}
+
+	.number-hint {
+		position: absolute;
+		left: -1.5em;
+		top: 50%;
+		transform: translateY(-50%);
+		font-family: monospace;
+		font-size: 0.35em;
+		color: rgba(0, 0, 0, 0.3);
+		pointer-events: none;
+		z-index: 1;
+	}
+
+	:global(.dark) .number-hint {
+		color: rgba(255, 255, 255, 0.3);
 	}
 
 	.esc-key {
