@@ -18,10 +18,16 @@
 	import { getVariantKeys, getCurrentImageSrc, loadImage } from '$lib/utils/canvasUtils';
 	import { StagePlotState, setPlotState } from '$lib/state/stagePlotState.svelte';
 	import { APP_NAME } from '$lib/config';
+	import { setActionScope } from '$lib/action-runtime';
 
 	// --- Route params ---
 	let plotId = $derived($page.params.plotId);
 	let bandId = $derived($page.params.bandId);
+
+	$effect(() => {
+		setActionScope('plot', plotId, { bandId });
+		return () => setActionScope('global');
+	});
 
 	// --- State class (source of truth) ---
 	const ps = new StagePlotState($page.params.plotId!, $page.params.bandId!);
@@ -36,7 +42,6 @@
 	let sidePanelTab = $state<'inspector' | 'people' | 'settings'>('inspector');
 	let mediumMainTab = $state<'canvas' | 'patch'>('canvas');
 	let mobileMainTab = $state<'canvas' | 'patch' | 'panel'>('canvas');
-
 
 	// --- Canvas DOM refs & contain-fit sizing ---
 	let canvasEl = $state<HTMLElement | null>(null);
@@ -958,7 +963,10 @@
 			onpointerup={handlePanPointerUp}
 			style="cursor: {isPanning ? 'grabbing' : spaceHeld ? 'grab' : 'default'}"
 		>
-			<div style="transform: translate({panX}px, {panY}px) scale({zoom * BASE_ZOOM}); transform-origin: center center;">
+			<div
+				style="transform: translate({panX}px, {panY}px) scale({zoom *
+					BASE_ZOOM}); transform-origin: center center;"
+			>
 				{#if viewOnly}
 					<!-- View-only canvas: no context menus, no interactions -->
 					<div
@@ -1294,7 +1302,9 @@
 
 			<!-- Zoom controls -->
 			{#if !viewOnly}
-				<div class="absolute right-2 bottom-2 z-30 flex items-center gap-1 rounded-lg border border-gray-300 bg-white/90 px-1 py-0.5 shadow-sm backdrop-blur-sm dark:border-gray-600 dark:bg-gray-800/90">
+				<div
+					class="absolute right-2 bottom-2 z-30 flex items-center gap-1 rounded-lg border border-gray-300 bg-white/90 px-1 py-0.5 shadow-sm backdrop-blur-sm dark:border-gray-600 dark:bg-gray-800/90"
+				>
 					<button
 						type="button"
 						onclick={() => zoomTo(zoom / 1.2)}
@@ -1306,7 +1316,7 @@
 					<button
 						type="button"
 						onclick={resetView}
-						class="min-w-[3rem] px-1 text-center text-xs text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700 rounded"
+						class="min-w-[3rem] rounded px-1 text-center text-xs text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
 						title="Reset zoom & pan"
 					>
 						{Math.round(zoom * 100)}%
@@ -1322,12 +1332,22 @@
 					<div class="mx-0.5 h-4 w-px bg-gray-300 dark:bg-gray-600"></div>
 					<button
 						type="button"
-						onclick={() => { panX = 0; panY = 0; }}
+						onclick={() => {
+							panX = 0;
+							panY = 0;
+						}}
 						class="flex h-6 w-6 items-center justify-center rounded text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
 						title="Re-center canvas"
 					>
-						<svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
-							<path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" />
+						<svg
+							xmlns="http://www.w3.org/2000/svg"
+							class="h-3.5 w-3.5"
+							viewBox="0 0 20 20"
+							fill="currentColor"
+						>
+							<path
+								d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"
+							/>
 						</svg>
 					</button>
 				</div>
@@ -1337,9 +1357,7 @@
 
 	{#if layoutMode === 'desktop'}
 		<div class="flex min-h-0 flex-1 gap-5 overflow-hidden">
-			<div
-				class="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden"
-				>
+			<div class="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden">
 				<div class="flex min-h-0 flex-[3] flex-col overflow-hidden">
 					{@render canvasContent()}
 				</div>
@@ -1363,9 +1381,7 @@
 		</div>
 	{:else if layoutMode === 'medium'}
 		<div class="flex min-h-0 flex-1 gap-5 overflow-hidden">
-			<div
-				class="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden"
-				>
+			<div class="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden">
 				<div
 					class="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-border-primary bg-surface shadow-sm"
 				>

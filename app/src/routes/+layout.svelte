@@ -13,16 +13,18 @@
 	import { onMount } from 'svelte';
 	import JumpBar from '$lib/components/JumpBar.svelte';
 	import EscapeBack from '$lib/components/EscapeBack.svelte';
+	import { setActionScope, handleGlobalActionShortcuts } from '$lib/action-runtime';
+	import { globalUiState } from '$lib/action-runtime/ui.svelte';
 
 	let { children } = $props();
 
-	let jumpBarOpen = $state(false);
+	$effect(() => {
+		setActionScope('global');
+		return () => setActionScope('global');
+	});
 
-	function handleGlobalKeydown(e: KeyboardEvent) {
-		if ((e.ctrlKey || e.metaKey) && e.key === 'j') {
-			e.preventDefault();
-			jumpBarOpen = true;
-		}
+	async function handleGlobalKeydown(e: KeyboardEvent) {
+		await handleGlobalActionShortcuts(e);
 	}
 
 	// Redirect mobile/tablet users on initial load (not if they clicked "Continue")
@@ -203,7 +205,7 @@
 	</footer>
 </div>
 
-<JumpBar bind:open={jumpBarOpen} />
+<JumpBar bind:open={globalUiState.jumpBarOpen} />
 
 {#if showRefresh || showOffline}
 	<div

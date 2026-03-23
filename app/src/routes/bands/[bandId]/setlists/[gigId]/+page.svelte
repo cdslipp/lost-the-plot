@@ -12,8 +12,15 @@
 	import { exportSetlistToPdf } from '$lib/utils/pdf';
 	import type { SetlistSongRow } from '$lib/db/repositories/setlists';
 	import { APP_NAME } from '$lib/config';
+	import { setActionScope } from '$lib/action-runtime';
 
 	let bandId = $derived($page.params.bandId);
+	let gigId = $derived($page.params.gigId);
+
+	$effect(() => {
+		setActionScope('setlist', gigId, { bandId });
+		return () => setActionScope('global');
+	});
 
 	const editor = new SetlistEditorState($page.params.bandId!, parseInt($page.params.gigId!));
 	setSetlistState(editor);

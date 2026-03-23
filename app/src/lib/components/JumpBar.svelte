@@ -5,6 +5,8 @@
 	import { getAllPlotsWithBandName, type PlotWithBand } from '$lib/db/repositories/plots';
 	import { listFestivals, type FestivalRow } from '$lib/db/repositories/festivals';
 	import { commandScore } from '$lib/utils/search';
+	import { actionExecutor, formatShortcut } from '$lib/action-runtime';
+	import type { AnyActionDefinition } from '@stageplotter/action-registry';
 
 	type Props = {
 		open?: boolean;
@@ -16,6 +18,11 @@
 	let plots = $state<PlotWithBand[]>([]);
 	let festivals = $state<FestivalRow[]>([]);
 	let searchValue = $state('');
+	const availableActions = $derived.by(() =>
+		actionExecutor
+			.getAvailableActions()
+			.filter((action: AnyActionDefinition) => action.id !== 'ui.open-jumpbar')
+	);
 
 	$effect(() => {
 		if (open) {
@@ -48,6 +55,11 @@
 	function selectFestival(festival: FestivalRow) {
 		open = false;
 		goto(`/festivals/${festival.id}`);
+	}
+
+	async function selectAction(actionId: string) {
+		open = false;
+		await actionExecutor.executeAction(actionId);
 	}
 
 	function handleKeydown(e: KeyboardEvent) {
@@ -94,6 +106,41 @@
 						<Command.Empty class="py-8 text-center text-text-secondary">
 							No results found.
 						</Command.Empty>
+
+						{#if availableActions.length > 0}
+							<Command.Group>
+								<Command.GroupHeading
+									class="px-2 py-2 text-xs font-semibold tracking-wider text-text-secondary uppercase"
+								>
+									Actions
+								</Command.GroupHeading>
+								<Command.GroupItems>
+									{#each availableActions as action (action.id)}
+										<Command.Item
+											value={`${action.label} ${action.description ?? ''} ${action.id}`}
+											class="flex cursor-pointer items-center justify-between gap-3 rounded-lg px-3 py-2 transition-colors hover:bg-muted data-[selected]:bg-muted"
+											onSelect={() => selectAction(action.id)}
+										>
+											<div class="min-w-0">
+												<div class="text-sm font-medium text-text-primary">{action.label}</div>
+												{#if action.description}
+													<div class="truncate text-xs text-text-tertiary">
+														{action.description}
+													</div>
+												{/if}
+											</div>
+											{#if action.shortcut}
+												<span
+													class="rounded bg-muted px-1.5 py-0.5 text-[10px] text-text-secondary"
+												>
+													{formatShortcut(action.shortcut)}
+												</span>
+											{/if}
+										</Command.Item>
+									{/each}
+								</Command.GroupItems>
+							</Command.Group>
+						{/if}
 
 						{#if bands.length > 0}
 							<Command.Group>
