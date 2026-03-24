@@ -19,6 +19,3 @@ export const actionExecutor = createActionExecutor({
 		}
 	}
 });
-
-export const executeAction = actionExecutor.executeAction;
-export const undoLastAction = actionExecutor.undoLastAction;
