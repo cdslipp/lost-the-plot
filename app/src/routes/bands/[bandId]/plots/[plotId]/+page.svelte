@@ -18,7 +18,8 @@
 	import { getVariantKeys, getCurrentImageSrc, loadImage } from '$lib/utils/canvasUtils';
 	import { StagePlotState, setPlotState } from '$lib/state/stagePlotState.svelte';
 	import { APP_NAME } from '$lib/config';
-	import { setActionScope } from '$lib/action-runtime';
+	import { actionExecutor, setActionScope } from '$lib/action-runtime';
+	import { resetPlotActionBindings, setPlotActionBindings } from '$lib/action-runtime/plot.svelte';
 
 	// --- Route params ---
 	let plotId = $derived($page.params.plotId);
@@ -496,6 +497,39 @@
 		isAddingItem = true;
 	}
 
+	$effect(() => {
+		setPlotActionBindings({
+			openAddItemPalette: viewOnly ? null : openAddMenu,
+			undo: viewOnly
+				? null
+				: () => {
+						ps.history.undo();
+					},
+			redo: viewOnly
+				? null
+				: () => {
+						ps.history.redo();
+					},
+			clearSelection: () => {
+				placingItem = null;
+				clearSelections();
+			},
+			toggleMainPaneTab: () => {
+				if (layoutMode === 'medium') {
+					mediumMainTab = mediumMainTab === 'canvas' ? 'patch' : 'canvas';
+					return;
+				}
+				if (layoutMode === 'mobile') {
+					mobileMainTab = mobileMainTab === 'canvas' ? 'patch' : 'canvas';
+				}
+			},
+			canToggleMainPaneTab: !viewOnly && (layoutMode === 'medium' || layoutMode === 'mobile'),
+			isAddMenuOpen: isAddingItem
+		});
+
+		return () => resetPlotActionBindings();
+	});
+
 	async function preparePlacingItem(item: any, channel: any = null) {
 		const { width, height } = await loadImage(item.image);
 		placingItem = {
@@ -840,52 +874,6 @@
 		placingItem = null;
 		ps.commitChange();
 	}
-
-	// --- Global keyboard handler ---
-	function handleGlobalKeydown(event: KeyboardEvent) {
-		if (!viewOnly) {
-			if ((event.metaKey || event.ctrlKey) && event.key === 'k') {
-				event.preventDefault();
-				openAddMenu();
-			}
-			if ((event.metaKey || event.ctrlKey) && event.key === 'z' && !event.shiftKey) {
-				event.preventDefault();
-				ps.history.undo();
-				return;
-			}
-			if (
-				(event.metaKey || event.ctrlKey) &&
-				((event.key === 'z' && event.shiftKey) || event.key === 'y')
-			) {
-				event.preventDefault();
-				ps.history.redo();
-				return;
-			}
-		}
-		if (event.key === 'Escape') {
-			placingItem = null;
-			clearSelections();
-		}
-		if (event.key === 'Tab') {
-			if (isAddingItem) return;
-			const active = document.activeElement as HTMLElement | null;
-			if (
-				active &&
-				(active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.isContentEditable)
-			)
-				return;
-			if (layoutMode === 'medium') {
-				event.preventDefault();
-				mediumMainTab = mediumMainTab === 'canvas' ? 'patch' : 'canvas';
-				return;
-			}
-			if (layoutMode === 'mobile') {
-				event.preventDefault();
-				mobileMainTab = mobileMainTab === 'canvas' ? 'patch' : 'canvas';
-				return;
-			}
-		}
-	}
 </script>
 
 <svelte:head>
@@ -901,7 +889,6 @@
 				spaceHeld = true;
 			}
 		}
-		handleGlobalKeydown(e);
 	}}
 	onkeyup={(e) => {
 		if (e.code === 'Space') spaceHeld = false;
@@ -911,7 +898,9 @@
 <div class="flex h-[calc(100dvh-4.25rem)] flex-col gap-3 overflow-hidden">
 	<div class="shrink-0">
 		<EditorToolbar
-			onAddItem={openAddMenu}
+			onAddItem={() => {
+				void actionExecutor.executeAction('plot.open-add-item-palette');
+			}}
 			onImportComplete={handleImportComplete}
 			onExportPdf={handleExportPdf}
 			backHref={'/bands/' + bandId}

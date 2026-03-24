@@ -12,7 +12,11 @@
 	import { exportSetlistToPdf } from '$lib/utils/pdf';
 	import type { SetlistSongRow } from '$lib/db/repositories/setlists';
 	import { APP_NAME } from '$lib/config';
-	import { setActionScope } from '$lib/action-runtime';
+	import { actionExecutor, setActionScope } from '$lib/action-runtime';
+	import {
+		resetSetlistActionBindings,
+		setSetlistActionBindings
+	} from '$lib/action-runtime/setlist.svelte';
 
 	let bandId = $derived($page.params.bandId);
 	let gigId = $derived($page.params.gigId);
@@ -43,31 +47,24 @@
 		editor.flushPositionWrites();
 	});
 
-	// Global keydown handler: Cmd+K for command palette, Tab for cycling tabs
-	function handleKeydown(e: KeyboardEvent) {
-		if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
-			e.preventDefault();
-			if (!commandPaletteOpen) {
+	$effect(() => {
+		setSetlistActionBindings({
+			openSongPalette: () => {
 				if (editor.activeSetlistId === null && editor.setlists.length > 0) {
 					editor.activeSetlistId = editor.setlists[0].id;
 				}
 				commandPaletteOpen = true;
-			}
-		}
+			},
+			cycleTabs: () => editor.cycleTab(),
+			isSongPaletteOpen: commandPaletteOpen
+		});
 
-		// Tab key cycles through page group tabs (only when no input/textarea focused)
-		if (e.key === 'Tab' && !commandPaletteOpen) {
-			const tag = (e.target as HTMLElement)?.tagName;
-			if (tag !== 'INPUT' && tag !== 'TEXTAREA' && tag !== 'SELECT') {
-				e.preventDefault();
-				editor.cycleTab();
-			}
-		}
-	}
+		return () => resetSetlistActionBindings();
+	});
 
 	function openPaletteForSetlist(setlistId: number) {
 		editor.activeSetlistId = setlistId;
-		commandPaletteOpen = true;
+		void actionExecutor.executeAction('setlist.open-song-palette');
 	}
 
 	function handleSongSelect(song: { id: number }) {
@@ -102,8 +99,6 @@
 	<title>{editor.gigName || 'Setlist'} | {APP_NAME}</title>
 </svelte:head>
 
-<svelte:window onkeydown={handleKeydown} />
-
 {#if notFound}
 	<div class="flex h-full flex-1 flex-col items-center justify-center gap-4 text-text-secondary">
 		<p>Gig not found.</p>
@@ -120,7 +115,9 @@
 		<div class="shrink-0">
 			<SetlistEditorToolbar
 				backHref="/bands/{bandId}"
-				onAddSong={() => openPaletteForSetlist(editor.activeSetlistId ?? editor.setlists[0]?.id)}
+				onAddSong={() => {
+					void actionExecutor.executeAction('setlist.open-song-palette');
+				}}
 				onExportPdf={handleExportPdf}
 			/>
 		</div>
