@@ -47,6 +47,7 @@ export async function handleGlobalActionShortcuts(event: KeyboardEvent): Promise
 	if (matchingActions.length === 0) return false;
 
 	event.preventDefault();
+	event.stopPropagation();
 	await actionExecutor.executeAction(matchingActions[0].id);
 	return true;
 }

@@ -13,15 +13,10 @@
 	import { onMount } from 'svelte';
 	import JumpBar from '$lib/components/JumpBar.svelte';
 	import EscapeBack from '$lib/components/EscapeBack.svelte';
-	import { setActionScope, handleGlobalActionShortcuts } from '$lib/action-runtime';
+	import { handleGlobalActionShortcuts } from '$lib/action-runtime';
 	import { globalUiState } from '$lib/action-runtime/ui.svelte';
 
 	let { children } = $props();
-
-	$effect(() => {
-		setActionScope('global');
-		return () => setActionScope('global');
-	});
 
 	async function handleGlobalKeydown(e: KeyboardEvent) {
 		await handleGlobalActionShortcuts(e);
@@ -123,7 +118,7 @@
 	}
 </script>
 
-<svelte:window onkeydown={handleGlobalKeydown} />
+<svelte:window onkeydowncapture={handleGlobalKeydown} />
 
 <svelte:head>
 	<link rel="icon" href={favicon} />

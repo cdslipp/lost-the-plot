@@ -64,7 +64,11 @@
 
 	function openPaletteForSetlist(setlistId: number) {
 		editor.activeSetlistId = setlistId;
-		void actionExecutor.executeAction('setlist.open-song-palette');
+		void actionExecutor.executeAction('setlist.open-song-palette').then((result) => {
+			if (!result.success) {
+				commandPaletteOpen = true;
+			}
+		});
 	}
 
 	function handleSongSelect(song: { id: number }) {
@@ -116,7 +120,14 @@
 			<SetlistEditorToolbar
 				backHref="/bands/{bandId}"
 				onAddSong={() => {
-					void actionExecutor.executeAction('setlist.open-song-palette');
+					void actionExecutor.executeAction('setlist.open-song-palette').then((result) => {
+						if (!result.success) {
+							if (editor.activeSetlistId === null && editor.setlists.length > 0) {
+								editor.activeSetlistId = editor.setlists[0].id;
+							}
+							commandPaletteOpen = true;
+						}
+					});
 				}}
 				onExportPdf={handleExportPdf}
 			/>

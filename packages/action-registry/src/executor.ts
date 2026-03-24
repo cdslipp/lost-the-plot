@@ -14,9 +14,6 @@ import type {
 } from './types.js';
 
 function snapshotContext(ctx: ActionContext): ActionContext {
-	if (typeof structuredClone === 'function') {
-		return structuredClone(ctx);
-	}
 	return {
 		scope: ctx.scope,
 		entityId: ctx.entityId,

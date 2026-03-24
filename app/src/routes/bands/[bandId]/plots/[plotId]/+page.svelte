@@ -899,7 +899,9 @@
 	<div class="shrink-0">
 		<EditorToolbar
 			onAddItem={() => {
-				void actionExecutor.executeAction('plot.open-add-item-palette');
+				void actionExecutor.executeAction('plot.open-add-item-palette').then((result) => {
+					if (!result.success) openAddMenu();
+				});
 			}}
 			onImportComplete={handleImportComplete}
 			onExportPdf={handleExportPdf}

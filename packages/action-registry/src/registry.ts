@@ -9,7 +9,7 @@ const actionMap = new Map<string, AnyActionDefinition>();
 
 export function registerAction<TParams>(definition: ActionDefinition<TParams>): void {
 	if (actionMap.has(definition.id)) {
-		throw new Error(`Action already registered: ${definition.id}`);
+		console.warn(`Action already registered, replacing: ${definition.id}`);
 	}
 	actionMap.set(definition.id, definition as AnyActionDefinition);
 }
