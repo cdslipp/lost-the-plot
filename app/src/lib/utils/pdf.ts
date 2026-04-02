@@ -3,7 +3,8 @@ import html2canvas from 'html2canvas';
 
 interface PdfExportOptions {
 	plotName: string;
-	canvasEl: HTMLElement;
+	canvasDataUrl?: string;
+	canvasEl?: HTMLElement; // Keep for backwards compatibility if needed elsewhere
 	items: Array<{ name: string; channel: string; person_name: string }>;
 	persons: Array<{ name: string; role: string }>;
 	pageFormat?: 'letter' | 'a4';
@@ -11,47 +12,57 @@ interface PdfExportOptions {
 
 export async function exportToPdf({
 	plotName,
+	canvasDataUrl,
 	canvasEl,
 	items,
 	persons,
 	pageFormat = 'letter'
 }: PdfExportOptions) {
-	const exportAttr = 'data-pdf-export-root';
-	canvasEl.setAttribute(exportAttr, 'true');
+	let imgData = canvasDataUrl;
 
-	let canvas: HTMLCanvasElement;
-	try {
-		// Capture canvas as image
-		canvas = await html2canvas(canvasEl, {
-			scale: 4,
-			useCORS: true,
-			backgroundColor: '#ffffff',
-			logging: false,
-			onclone: (clonedDoc) => {
-				const root = clonedDoc.querySelector(`[${exportAttr}]`) as HTMLElement | null;
-				if (root) {
-					root.classList.add('pdf-export-root');
+	if (!imgData && canvasEl) {
+		const exportAttr = 'data-pdf-export-root';
+		canvasEl.setAttribute(exportAttr, 'true');
+
+		let canvas: HTMLCanvasElement;
+		try {
+			// Capture canvas as image
+			canvas = await html2canvas(canvasEl, {
+				scale: 4,
+				useCORS: true,
+				backgroundColor: '#ffffff',
+				logging: false,
+				onclone: (clonedDoc) => {
+					const root = clonedDoc.querySelector(`[${exportAttr}]`) as HTMLElement | null;
+					if (root) {
+						root.classList.add('pdf-export-root');
+					}
+					const style = clonedDoc.createElement('style');
+					style.textContent = `
+						.pdf-export-root,
+						.pdf-export-root * {
+							color: #111111 !important;
+							background-color: transparent !important;
+							border-color: #d6d3d1 !important;
+							outline-color: #d6d3d1 !important;
+							box-shadow: none !important;
+							text-shadow: none !important;
+						}
+						.pdf-export-root {
+							background-color: #ffffff !important;
+						}
+					`;
+					clonedDoc.head.appendChild(style);
 				}
-				const style = clonedDoc.createElement('style');
-				style.textContent = `
-					.pdf-export-root,
-					.pdf-export-root * {
-						color: #111111 !important;
-						background-color: transparent !important;
-						border-color: #d6d3d1 !important;
-						outline-color: #d6d3d1 !important;
-						box-shadow: none !important;
-						text-shadow: none !important;
-					}
-					.pdf-export-root {
-						background-color: #ffffff !important;
-					}
-				`;
-				clonedDoc.head.appendChild(style);
-			}
-		});
-	} finally {
-		canvasEl.removeAttribute(exportAttr);
+			});
+			imgData = canvas.toDataURL('image/png');
+		} finally {
+			canvasEl.removeAttribute(exportAttr);
+		}
+	}
+
+	if (!imgData) {
+		throw new Error('No canvas data provided for PDF export');
 	}
 
 	// Create portrait PDF
@@ -81,17 +92,23 @@ export async function exportToPdf({
 	const hasInputContent = inputItems.length > 0 || persons.length > 0;
 
 	// Scale canvas image to fit available width, reserving space for input list
-	const imgData = canvas.toDataURL('image/png');
 	const availableWidth = pageWidth - margin * 2;
 	const totalAvailableHeight = pageHeight - margin * 2 - headerHeight;
 	const minInputListSpace = hasInputContent ? 200 : 0;
 	const maxImageHeight = totalAvailableHeight - minInputListSpace;
 
-	const widthScale = availableWidth / canvas.width;
-	const heightScale = maxImageHeight / canvas.height;
+	// We need to determine the original aspect ratio of the image data
+	const img = new Image();
+	await new Promise((resolve) => {
+		img.onload = resolve;
+		img.src = imgData as string;
+	});
+
+	const widthScale = availableWidth / img.width;
+	const heightScale = maxImageHeight / img.height;
 	const scale = Math.min(widthScale, heightScale);
-	const finalWidth = canvas.width * scale;
-	const finalHeight = canvas.height * scale;
+	const finalWidth = img.width * scale;
+	const finalHeight = img.height * scale;
 
 	// Top-align below header, center horizontally
 	const imgX = margin + (availableWidth - finalWidth) / 2;

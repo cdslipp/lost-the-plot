@@ -3,15 +3,12 @@
 	import { onMount } from 'svelte';
 	import { ItemCommandPalette, StagePatch } from '$lib';
 	import type { ProcessedItem } from '$lib/utils/finalAssetsLoader';
-	import Selecto from 'selecto';
-	import { PressedKeys } from 'runed';
-	import StageDeck from '$lib/components/StageDeck.svelte';
-	import { ContextMenu } from 'bits-ui';
-	import { page } from '$app/stores';
+		import { PressedKeys } from 'runed';
+			import { page } from '$app/stores';
 	import { goto, beforeNavigate } from '$app/navigation';
 	import EditorToolbar from '$lib/components/EditorToolbar.svelte';
 	import EditorSidePanel from '$lib/components/EditorSidePanel.svelte';
-	import CanvasOverlay from '$lib/components/CanvasOverlay.svelte';
+	import StageCanvas from '$lib/components/canvas/StageCanvas.svelte';
 	import { exportToPdf } from '$lib/utils/pdf';
 	import { imagePxToFeet } from '$lib/utils/scale';
 	import { browser } from '$app/environment';
@@ -46,6 +43,7 @@
 
 	// --- Canvas DOM refs & contain-fit sizing ---
 	let canvasEl = $state<HTMLElement | null>(null);
+	let stageCanvasRef: ReturnType<typeof StageCanvas>;
 	let canvasWrapperEl = $state<HTMLElement | undefined>();
 	let canvasPixelWidth = $state(800);
 	let canvasPixelHeight = $state(533);
@@ -115,24 +113,10 @@
 	let justSelected = false;
 
 	// --- Pointer drag state ---
-	let dragging = $state<{
-		item: any;
-		offsetX: number;
-		offsetY: number;
-		startX: number;
-		startY: number;
-		ghostX: number;
-		ghostY: number;
-		moved: boolean;
-		group: Array<{ item: any; startX: number; startY: number }>;
-	} | null>(null);
+	
 
 	// --- Rotation drag state ---
-	let rotating = $state<{
-		item: any;
-		startAngle: number;
-		startRotation: number;
-	} | null>(null);
+	
 
 	/** Convert screen coordinates to stage coordinates (feet) */
 	function toStageCoords(clientX: number, clientY: number) {
@@ -143,46 +127,7 @@
 		};
 	}
 
-	function handleRotationStart(event: PointerEvent, item: any) {
-		event.stopPropagation();
-		event.preventDefault();
-		const el = event.currentTarget as HTMLElement;
-		el.setPointerCapture(event.pointerId);
-
-		const centerX = item.position.x + item.position.width / 2;
-		const centerY = item.position.y + item.position.height / 2;
-		const mouse = toStageCoords(event.clientX, event.clientY);
-		const startAngle = Math.atan2(mouse.y - centerY, mouse.x - centerX) * (180 / Math.PI);
-
-		rotating = {
-			item,
-			startAngle,
-			startRotation: item.position.rotation ?? 0
-		};
-	}
-
-	function handleRotationMove(event: PointerEvent) {
-		if (!rotating || !canvasEl) return;
-		const centerX = rotating.item.position.x + rotating.item.position.width / 2;
-		const centerY = rotating.item.position.y + rotating.item.position.height / 2;
-		const mouse = toStageCoords(event.clientX, event.clientY);
-		const currentAngle = Math.atan2(mouse.y - centerY, mouse.x - centerX) * (180 / Math.PI);
-		let delta = currentAngle - rotating.startAngle;
-		let newRotation = rotating.startRotation + delta;
-
-		// Shift key: snap to 15-degree increments
-		if (event.shiftKey) {
-			newRotation = Math.round(newRotation / 15) * 15;
-		}
-
-		rotating.item.position.rotation = newRotation;
-	}
-
-	function handleRotationEnd() {
-		if (!rotating) return;
-		ps.commitChange();
-		rotating = null;
-	}
+	
 
 	// --- Zoom & Pan handlers ---
 	function handleWheel(event: WheelEvent) {
@@ -379,33 +324,7 @@
 		return () => document.removeEventListener('pointerdown', handlePointerDown, true);
 	});
 
-	// --- Selecto lifecycle ---
-	$effect(() => {
-		const el = canvasEl;
-		// Subscribe to zoom so Selecto is recreated when zoom changes
-		const currentZoom = zoom;
-		if (!el || viewOnly) {
-			selecto?.destroy();
-			selecto = null;
-			return;
-		}
-
-		selecto = new Selecto({
-			container: canvasWrapperEl ?? el,
-			rootContainer: canvasWrapperEl ?? el,
-			selectableTargets: ['.selectable-item'],
-			selectByClick: true,
-			selectFromInside: false,
-			toggleContinueSelect: 'shift',
-			ratio: currentZoom * BASE_ZOOM,
-			dragCondition: (e: any) => {
-				if (spaceHeld || isPanning) return false;
-				const target = e.inputEvent.target;
-				const item = target.closest('.selectable-item');
-				return !item;
-			}
-		});
-
+	
 		selecto.on('select', (e: any) => {
 			selectedItemIds = e.selected
 				.map((el: HTMLElement) => parseInt(el.dataset?.id || '0'))
@@ -594,96 +513,7 @@
 	}
 
 	// --- Canvas mouse/click handlers ---
-	function handleCanvasMouseMove(event: MouseEvent) {
-		if (placingItem && canvasEl) {
-			const coords = toStageCoords(event.clientX, event.clientY);
-			let x = coords.x - placingItem.width / 2;
-			let y = coords.y - placingItem.height / 2;
-			const snapped = ps.snapToGrid(x, y, placingItem.width, placingItem.height);
-			placingItem.x = snapped.x;
-			placingItem.y = snapped.y;
-		}
-	}
-
-	function handleCanvasClick(event: MouseEvent) {
-		if (spaceHeld || isPanning) return;
-		if (justSelected) {
-			justSelected = false;
-			return;
-		}
-		if (placingItem && canvasEl) {
-			const coords = toStageCoords(event.clientX, event.clientY);
-			const rawX = coords.x - placingItem.width / 2;
-			const rawY = coords.y - placingItem.height / 2;
-			const snapped = ps.snapToGrid(rawX, rawY, placingItem.width, placingItem.height);
-
-			const newItem: any = {
-				id: Date.now(),
-				type: placingItem.type,
-				itemData: placingItem.itemData,
-				currentVariant: 'default',
-				position: {
-					width: placingItem.width,
-					height: placingItem.height,
-					x: Math.max(0, Math.min(snapped.x, ps.stageWidth - placingItem.width)),
-					y: Math.max(0, Math.min(snapped.y, ps.stageDepth - placingItem.height))
-				},
-				name: placingItem.itemData?.name || '',
-				person_id: placingItem.person_id ?? null
-			};
-
-			ps.items.push(newItem);
-
-			// Assign to channel only if explicitly set
-			const ch = placingItem.channel;
-			if (ch != null) {
-				ps.assignItemToChannel(newItem.id, ch);
-			}
-
-			const isMonitor = ps.isMonitorItem(placingItem.itemData);
-			const defaultInputs = isMonitor ? null : placingItem.itemData?.default_inputs;
-			if (defaultInputs && Array.isArray(defaultInputs)) {
-				defaultInputs.forEach((inputDef: any, idx: number) => {
-					const defItem: any = {
-						id: Date.now() + idx + 1,
-						type: 'input',
-						itemData: {
-							...inputDef,
-							item_type: 'input',
-							name: inputDef.name,
-							category: 'Input',
-							path: ''
-						},
-						name: inputDef.name,
-						person_id: null,
-						currentVariant: 'default',
-						position: { width: 0, height: 0, x: 0, y: 0 }
-					};
-					ps.items.push(defItem);
-					if (inputDef.ch) {
-						ps.assignItemToChannel(defItem.id, inputDef.ch);
-					}
-				});
-			}
-
-			ps.addDefaultOutputs(placingItem.itemData, newItem.id);
-			ps.autoNumberItems();
-			placingItem = null;
-			ps.commitChange();
-		} else {
-			const target = event.target as HTMLElement;
-			const clickedItem = target.closest('.selectable-item');
-			if (!clickedItem) {
-				clearSelections();
-			}
-		}
-	}
-
-	function openItemEditor(item: any, event: any) {
-		if (justSelected) {
-			justSelected = false;
-			return;
-		}
+	
 		event.stopPropagation();
 		selectItems([item.id]);
 		const itemEl = canvasEl?.querySelector(`[data-id="${item.id}"]`) as HTMLElement | null;
@@ -704,94 +534,7 @@
 	}
 
 	// --- Drag handlers ---
-	function handleItemPointerDown(event: PointerEvent, item: any) {
-		if (event.button !== 0) return;
-		if (placingItem || spaceHeld || isPanning) return;
-		if ((event.target as HTMLElement).closest('button')) return;
-
-		const el = event.currentTarget as HTMLElement;
-		el.setPointerCapture(event.pointerId);
-
-		const coords = toStageCoords(event.clientX, event.clientY);
-
-		const isInSelection = selectedIdSet.has(item.id);
-		let group: Array<{ item: any; startX: number; startY: number }>;
-		if (isInSelection && selectedItemIds.length > 1) {
-			// Single pass through items using the derived Set for O(1) membership checks
-			group = ps.items
-				.filter((i: any) => selectedIdSet.has(i.id))
-				.map((i: any) => ({ item: i, startX: i.position.x, startY: i.position.y }));
-		} else {
-			group = [{ item, startX: item.position.x, startY: item.position.y }];
-		}
-
-		dragging = {
-			item,
-			offsetX: coords.x - item.position.x,
-			offsetY: coords.y - item.position.y,
-			startX: item.position.x,
-			startY: item.position.y,
-			ghostX: item.position.x,
-			ghostY: item.position.y,
-			moved: false,
-			group
-		};
-	}
-
-	function handleItemPointerMove(event: PointerEvent) {
-		if (!dragging || !canvasEl) return;
-
-		const coords = toStageCoords(event.clientX, event.clientY);
-		const rawX = coords.x - dragging.offsetX;
-		const rawY = coords.y - dragging.offsetY;
-
-		if (!dragging.moved) {
-			const dx = rawX - dragging.startX;
-			const dy = rawY - dragging.startY;
-			if (Math.abs(dx) < 0.1 && Math.abs(dy) < 0.1) return;
-			dragging.moved = true;
-		}
-
-		const deltaX = rawX - dragging.startX;
-		const deltaY = rawY - dragging.startY;
-
-		if (isAltPressed) {
-			dragging.item.position.x = dragging.startX;
-			dragging.item.position.y = dragging.startY;
-			const clampedX = Math.max(0, Math.min(rawX, ps.stageWidth - dragging.item.position.width));
-			const clampedY = Math.max(0, Math.min(rawY, ps.stageDepth - dragging.item.position.height));
-			dragging.ghostX = clampedX;
-			dragging.ghostY = clampedY;
-		} else {
-			for (const entry of dragging.group) {
-				const newX = entry.startX + deltaX;
-				const newY = entry.startY + deltaY;
-				entry.item.position.x = Math.max(
-					0,
-					Math.min(newX, ps.stageWidth - entry.item.position.width)
-				);
-				entry.item.position.y = Math.max(
-					0,
-					Math.min(newY, ps.stageDepth - entry.item.position.height)
-				);
-			}
-		}
-	}
-
-	function handleItemPointerUp(event: PointerEvent) {
-		if (!dragging) return;
-
-		if (dragging.moved) {
-			if (isAltPressed) {
-				const snapped = ps.snapToGrid(
-					dragging.ghostX,
-					dragging.ghostY,
-					dragging.item.position.width,
-					dragging.item.position.height
-				);
-				const x = Math.max(0, Math.min(snapped.x, ps.stageWidth - dragging.item.position.width));
-				const y = Math.max(0, Math.min(snapped.y, ps.stageDepth - dragging.item.position.height));
-				ps.duplicateItem(dragging.item, { position: { ...dragging.item.position, x, y } });
+	 });
 			} else {
 				for (const entry of dragging.group) {
 					const snapped = ps.snapToGrid(
@@ -833,17 +576,7 @@
 
 	// --- PDF export ---
 	async function handleExportPdf() {
-		if (!canvasEl) return;
-		// Temporarily reset zoom/pan for clean export (CSS scale = zoom * BASE_ZOOM = 1)
-		const savedZoom = zoom;
-		const savedPanX = panX;
-		const savedPanY = panY;
-		zoom = 1 / BASE_ZOOM;
-		panX = 0;
-		panY = 0;
-		// Wait a tick for the DOM to update
-		await new Promise((r) => requestAnimationFrame(r));
-
+		if (!stageCanvasRef) return;
 		// Build items list from inputChannels with assigned items
 		const pdfItems = ps.inputChannels
 			.filter((ch) => ch.itemId != null)
@@ -854,6 +587,19 @@
 					channel: String(ch.channelNum),
 					person_name: item?.person_id ? ps.personsById[item.person_id]?.name || '' : ''
 				};
+			});
+		
+		// Get canvas data url directly from StageCanvas component
+		const dataUrl = stageCanvasRef.getCanvasDataURL();
+		
+		await exportToPdf({
+			plotName: ps.plotName,
+			canvasDataUrl: dataUrl,
+			items: pdfItems,
+			persons: ps.plotPersons.map((p) => ({ name: p.name, role: p.role || '' })),
+			pageFormat: ps.pdfPageFormat
+		});
+	};
 			});
 		await exportToPdf({
 			plotName: ps.plotName,
@@ -947,231 +693,116 @@
 		<!-- svelte-ignore a11y_no_static_element_interactions -->
 		<div
 			bind:this={canvasWrapperEl}
-			class="relative flex min-h-0 flex-1 items-center justify-center overflow-hidden"
+			class="relative flex min-h-0 flex-1 items-center justify-center overflow-hidden bg-white dark:bg-gray-800"
 			onwheel={handleWheel}
 			onpointerdown={handlePanPointerDown}
 			onpointermove={handlePanPointerMove}
 			onpointerup={handlePanPointerUp}
 			style="cursor: {isPanning ? 'grabbing' : spaceHeld ? 'grab' : 'default'}"
 		>
-			<div
-				style="transform: translate({panX}px, {panY}px) scale({zoom *
-					BASE_ZOOM}); transform-origin: center center;"
-			>
-				{#if viewOnly}
-					<!-- View-only canvas: no context menus, no interactions -->
-					<div
-						bind:this={canvasEl}
-						class="items-container relative bg-white dark:bg-gray-800"
-						style="width: {canvasPixelWidth}px; height: {canvasPixelHeight}px;"
-					>
-						<CanvasOverlay
-							showZones={ps.showZones}
-							stageWidth={ps.stageWidth}
-							stageDepth={ps.stageDepth}
-							{pxPerFoot}
-							itemCount={ps.items.length}
-						/>
+			<div style="width: {canvasPixelWidth}px; height: {canvasPixelHeight}px;" bind:this={canvasEl}>
+				<StageCanvas bind:this={stageCanvasRef}
+					{ps}
+					{viewOnly}
+					bind:zoom
+					bind:panX
+					bind:panY
+					bind:selectedItemIds
+					{canvasPixelWidth}
+					{canvasPixelHeight}
+					{pxPerFoot}
+					{isAltPressed}
+					{isPanning}
+					{spaceHeld}
+					{placingItem}
+					onContextMenu={(item, e) => {
+						// Placeholder for context menu if needed
+						// For now we'll just select it
+						if (!selectedItemIds.includes(item.id)) selectedItemIds = [item.id];
+					}}
+					onBackgroundClick={() => clearSelections()}
+					onCanvasClick={() => {
+						if (placingItem) {
+							// Item placement logic is now inside StageCanvas dragend or we do it here.
+							// Actually, let's keep placing logic here, but adapted.
+							const rawX = (stageCanvasRef?.getStage()?.getRelativePointerPosition()?.x || 0) / pxPerFoot - placingItem.width / 2;
+							const rawY = (stageCanvasRef?.getStage()?.getRelativePointerPosition()?.y || 0) / pxPerFoot - placingItem.height / 2;
+							const snapped = ps.snapToGrid(rawX, rawY, placingItem.width, placingItem.height);
 
-						{#each ps.items as item (item.id)}
-							<div
-								class="absolute select-none"
-								data-id={item.id}
-								style="left: {item.position.x * pxPerFoot}px; top: {item.position.y *
-									pxPerFoot}px; width: {item.position.width * pxPerFoot}px; height: {item.position
-									.height * pxPerFoot}px; transform: rotate({item.position.rotation ??
-									0}deg); transform-origin: center;"
-							>
-								{#if item.type === 'stageDeck'}
-									<StageDeck size={item.size} x={0} y={0} class="h-full w-full" />
-								{:else if item.type === 'riser'}
-									<div
-										class="relative h-full w-full rounded border-2 border-gray-500 bg-gray-400/50 dark:border-gray-400 dark:bg-gray-600/50"
-									>
-										<div
-											class="absolute right-1 bottom-0.5 text-[8px] text-gray-600 dark:text-gray-300"
-										>
-											{item.itemData?.riserWidth ?? '?'}' × {item.itemData?.riserDepth ?? '?'}'
-										</div>
-									</div>
-								{:else}
-									<img
-										src={getCurrentImageSrc(item)}
-										alt={item.itemData?.name || item.name || 'Stage Item'}
-										draggable="false"
-										class="h-full w-full"
-										style="pointer-events: none;"
-									/>
-								{/if}
+							const newItem: any = {
+								id: Date.now(),
+								type: placingItem.type,
+								itemData: placingItem.itemData,
+								currentVariant: 'default',
+								position: {
+									width: placingItem.width,
+									height: placingItem.height,
+									x: Math.max(0, Math.min(snapped.x, ps.stageWidth - placingItem.width)),
+									y: Math.max(0, Math.min(snapped.y, ps.stageDepth - placingItem.height))
+								},
+								name: placingItem.itemData?.name || '',
+								person_id: placingItem.person_id ?? null,
+								rotation: 0
+							};
 
-								{#if item.person_id && item.itemData?.item_type === 'person'}
-									{@const person = ps.personsById[item.person_id]}
-									{#if person}
-										<div
-											class="pointer-events-none absolute -top-5 left-1/2 -translate-x-1/2 rounded bg-white/90 px-1.5 py-0.5 text-[10px] font-semibold whitespace-nowrap text-gray-800 shadow-sm dark:bg-gray-800/90 dark:text-gray-200"
-										>
-											{person.name}
-										</div>
-									{/if}
-								{/if}
-							</div>
-						{/each}
-					</div>
-				{:else}
-					<!-- Full editor canvas with context menus and interactions -->
-					<ContextMenu.Root>
-						<ContextMenu.Trigger>
-							{#snippet child({ props: canvasCtxProps })}
-								<div
-									{...canvasCtxProps}
-									bind:this={canvasEl}
-									class="items-container relative bg-white dark:bg-gray-800"
-									style="width: {canvasPixelWidth}px; height: {canvasPixelHeight}px; cursor: {placingItem
-										? 'copy'
-										: isPanning
-											? 'grabbing'
-											: spaceHeld
-												? 'grab'
-												: 'default'}"
-									onmousemove={handleCanvasMouseMove}
-									onclick={handleCanvasClick}
-								>
-									<CanvasOverlay
-										showZones={ps.showZones}
-										stageWidth={ps.stageWidth}
-										stageDepth={ps.stageDepth}
-										{pxPerFoot}
-										itemCount={ps.items.length}
-									/>
+							ps.items.push(newItem);
 
-									{#each ps.items as item (item.id)}
-										<ContextMenu.Root>
-											<ContextMenu.Trigger>
-												{#snippet child({ props: itemProps })}
-													<div
-														{...itemProps}
-														class="group selectable-item absolute cursor-move select-none"
-														class:ring-2={selectedIdSet.has(item.id)}
-														class:ring-blue-500={selectedIdSet.has(item.id)}
-														data-id={item.id}
-														style="left: {item.position.x * pxPerFoot}px; top: {item.position.y *
-															pxPerFoot}px; width: {item.position.width *
-															pxPerFoot}px; height: {item.position.height *
-															pxPerFoot}px; touch-action: none; pointer-events: {placingItem
-															? 'none'
-															: 'auto'}; transform: rotate({item.position.rotation ??
-															0}deg); transform-origin: center;"
-														draggable="false"
-														ondragstart={(e) => e.preventDefault()}
-														onpointerdown={(e) => handleItemPointerDown(e, item)}
-														onpointermove={handleItemPointerMove}
-														onpointerup={handleItemPointerUp}
-														onclick={(e) => openItemEditor(item, e)}
-													>
-														{#if item.type === 'stageDeck'}
-															<StageDeck size={item.size} x={0} y={0} class="h-full w-full" />
-														{:else if item.type === 'riser'}
-															<div
-																class="relative h-full w-full rounded border-2 border-gray-500 bg-gray-400/50 dark:border-gray-400 dark:bg-gray-600/50"
-															>
-																<div
-																	class="absolute right-1 bottom-0.5 text-[8px] text-gray-600 dark:text-gray-300"
-																>
-																	{item.itemData?.riserWidth ?? '?'}' × {item.itemData
-																		?.riserDepth ?? '?'}'
-																</div>
-															</div>
-														{:else}
-															<img
-																src={getCurrentImageSrc(item)}
-																alt={item.itemData?.name || item.name || 'Stage Item'}
-																draggable="false"
-																class="h-full w-full"
-																style="pointer-events: none;"
-															/>
-														{/if}
+							const ch = placingItem.channel;
+							if (ch != null) {
+								ps.assignItemToChannel(newItem.id, ch);
+							}
 
-														{#if item.person_id && item.itemData?.item_type === 'person'}
-															{@const person = ps.personsById[item.person_id]}
-															{#if person}
-																<div
-																	class="pointer-events-none absolute -top-5 left-1/2 -translate-x-1/2 rounded bg-white/90 px-1.5 py-0.5 text-[10px] font-semibold whitespace-nowrap text-gray-800 shadow-sm dark:bg-gray-800/90 dark:text-gray-200"
-																>
-																	{person.name}
-																</div>
-															{/if}
-														{/if}
+							const isMonitor = ps.isMonitorItem(placingItem.itemData);
+							const defaultInputs = isMonitor ? null : placingItem.itemData?.default_inputs;
+							if (defaultInputs && Array.isArray(defaultInputs)) {
+								defaultInputs.forEach((inputDef: any, idx: number) => {
+									const defItem: any = {
+										id: Date.now() + idx + 1,
+										type: 'input',
+										itemData: {
+											...inputDef,
+											item_type: 'input',
+											name: inputDef.name,
+											category: 'Input',
+											path: ''
+										},
+										name: inputDef.name,
+										person_id: null,
+										currentVariant: 'default',
+										position: { width: 0, height: 0, x: 0, y: 0 }
+									};
+									ps.items.push(defItem);
+									if (inputDef.ch) {
+										ps.assignItemToChannel(defItem.id, inputDef.ch);
+									}
+								});
+							}
 
-														{#if selectedIdSet.has(item.id)}
-															{#if getVariantKeys(item).length > 1}
-																<div
-																	class="absolute -bottom-8 left-1/2 z-20 flex -translate-x-1/2 transform gap-1"
-																>
-																	<button
-																		onclick={(e) => {
-																			e.stopPropagation();
-																			ps.rotateItemRight(item);
-																		}}
-																		class="flex h-6 w-6 items-center justify-center rounded-full bg-blue-500 text-sm text-white shadow-md transition-colors hover:bg-blue-600"
-																		title="Rotate Right"
-																	>
-																		<svg
-																			xmlns="http://www.w3.org/2000/svg"
-																			class="h-4 w-4"
-																			viewBox="0 0 20 20"
-																			fill="currentColor"
-																		>
-																			<path
-																				fill-rule="evenodd"
-																				d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z"
-																				clip-rule="evenodd"
-																			/>
-																		</svg>
-																	</button>
-																</div>
-															{/if}
-															{#if item.type === 'riser'}
-																<!-- Rotation handle for risers -->
-																<div
-																	class="pointer-events-none absolute -bottom-10 left-1/2 z-20 flex -translate-x-1/2 flex-col items-center"
-																>
-																	<div class="h-4 w-px bg-blue-400"></div>
-																	<!-- svelte-ignore a11y_no_static_element_interactions -->
-																	<div
-																		class="pointer-events-auto flex h-6 w-6 cursor-grab items-center justify-center rounded-full bg-blue-500 text-white shadow-md transition-colors hover:bg-blue-600"
-																		title="Drag to rotate (Shift for 15° snap)"
-																		onpointerdown={(e) => handleRotationStart(e, item)}
-																		onpointermove={handleRotationMove}
-																		onpointerup={handleRotationEnd}
-																	>
-																		<svg
-																			xmlns="http://www.w3.org/2000/svg"
-																			class="h-3.5 w-3.5"
-																			viewBox="0 0 20 20"
-																			fill="currentColor"
-																		>
-																			<path
-																				fill-rule="evenodd"
-																				d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z"
-																				clip-rule="evenodd"
-																			/>
-																		</svg>
-																	</div>
-																</div>
-															{/if}
-														{/if}
+							ps.addDefaultOutputs(placingItem.itemData, newItem.id);
+							ps.autoNumberItems();
+							placingItem = null;
+							ps.commitChange();
+						}
+					}}
+				/>
+			</div>
 
-														<button
-															onclick={(e) => {
-																e.stopPropagation();
-																ps.deleteItem(item.id);
-															}}
-															class="absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs text-white opacity-0 transition-opacity group-hover:opacity-100"
-														>
-															&times;
-														</button>
-													</div>
-												{/snippet}
+			<!-- Zoom controls -->
+			{#if !viewOnly}
+				<div class="absolute right-2 bottom-2 z-30 flex items-center gap-1 rounded-lg border border-gray-300 bg-white/90 px-1 py-0.5 shadow-sm backdrop-blur-sm dark:border-gray-600 dark:bg-gray-800/90">
+					<button type="button" onclick={() => zoomTo(zoom / 1.2)} class="flex h-6 w-6 items-center justify-center rounded text-sm text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700" title="Zoom out">&minus;</button>
+					<button type="button" onclick={resetView} class="min-w-[3rem] rounded px-1 text-center text-xs text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700" title="Reset zoom & pan">{Math.round(zoom * 100)}%</button>
+					<button type="button" onclick={() => zoomTo(zoom * 1.2)} class="flex h-6 w-6 items-center justify-center rounded text-sm text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700" title="Zoom in">+</button>
+					<div class="mx-0.5 h-4 w-px bg-gray-300 dark:bg-gray-600"></div>
+					<button type="button" onclick={() => { panX = 0; panY = 0; }} class="flex h-6 w-6 items-center justify-center rounded text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700" title="Re-center canvas">
+						<svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
+							<path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" />
+						</svg>
+					</button>
+				</div>
+			{/if}
+		</div>
+	{/snippet}
 											</ContextMenu.Trigger>
 											<ContextMenu.Portal>
 												<ContextMenu.Content
