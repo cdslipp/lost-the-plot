@@ -201,8 +201,15 @@
 					e.target.stopDrag();
 					return;
 				}
-				const id = parseInt(e.target.id(), 10);
-				if (!selectedItemIds.includes(id) && e.target.parent === itemLayer) {
+				// Find the item group (direct child of itemLayer)
+				let node = e.target;
+				while (node && node.parent !== itemLayer) {
+					node = node.parent;
+				}
+				if (!node) return;
+
+				const id = parseInt(node.id(), 10);
+				if (!selectedItemIds.includes(id)) {
 					selectedItemIds = [id];
 				}
 			});
@@ -211,7 +218,14 @@
 				e.evt.preventDefault();
 				if (viewOnly || placingItem) return;
 				if (e.target !== stage && e.target.name() !== 'bg-grid') {
-					const id = parseInt(e.target.id(), 10);
+					// Find the item group
+					let node = e.target;
+					while (node && node.parent !== itemLayer) {
+						node = node.parent;
+					}
+					if (!node) return;
+
+					const id = parseInt(node.id(), 10);
 					if (!selectedItemIds.includes(id)) {
 						selectedItemIds = [id];
 					}
@@ -219,6 +233,42 @@
 					if (item && onContextMenu) {
 						onContextMenu(item, e.evt as MouseEvent);
 					}
+				}
+			});
+
+			// Item selection on click
+			stage.on('click tap', (e) => {
+				if (placingItem) {
+					if (onCanvasClick) onCanvasClick(e.evt as MouseEvent);
+					return;
+				}
+				if (viewOnly) return;
+
+				// Find the item group (including self if the group was clicked directly)
+				const itemNode = e.target.findAncestor('.item-group', true);
+
+				if (!itemNode) {
+					// Background click (or anything else not an item)
+					if (e.target === stage || e.target.name() === 'bg-grid') {
+						if (!isSelecting) {
+							selectedItemIds = [];
+							onBackgroundClick?.();
+						}
+					}
+					return;
+				}
+
+				const id = parseInt(itemNode.id(), 10);
+				if (isNaN(id)) return;
+
+				if (e.evt.shiftKey) {
+					if (selectedItemIds.includes(id)) {
+						selectedItemIds = selectedItemIds.filter((i) => i !== id);
+					} else {
+						selectedItemIds = [...selectedItemIds, id];
+					}
+				} else {
+					selectedItemIds = [id];
 				}
 			});
 
@@ -283,7 +333,8 @@
 						offsetX: w / 2,
 						offsetY: h / 2,
 						opacity: 0.6,
-						listening: false
+						listening: false,
+						image: new Image() // Placeholder
 					});
 					loadImage(placingItem.itemData?.image || '').then((img) => {
 						if (placingGhost) (placingGhost as Konva.Image).image(img);
@@ -465,7 +516,14 @@
 						})
 					);
 				} else {
-					const imgNode = new Konva.Image({ x: 0, y: 0, width: w, height: h, name: 'main-image' });
+					const imgNode = new Konva.Image({
+						x: 0,
+						y: 0,
+						width: w,
+						height: h,
+						image: new Image(), // Placeholder
+						name: 'main-image'
+					});
 					node.add(imgNode);
 					const src = getCurrentImageSrc(item);
 					loadImage(src).then((img) => {
@@ -616,6 +674,11 @@
 
 		return dataURL;
 	}
+
+	export function getStage() {
+		return stage;
+	}
 </script>
 
 <div bind:this={containerEl} class="h-full w-full outline-none"></div>
+s={containerEl} class="h-full w-full outline-none"></div>
